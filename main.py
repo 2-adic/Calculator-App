@@ -1,33 +1,44 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame
-from PyQt5.QtGui import QColor, QPainter, QIcon, QFont
-from PyQt5.QtCore import Qt, QPoint, QRect, pyqtSlot, QTimer
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, \
+    QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame
+from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette
+from PyQt6.QtCore import Qt, QPoint, QTimer
 import sympy as sy
 from pyperclip import copy
 from sortedcontainers import SortedDict
 
-# needs shadowing for the sides of the window
-# add a settings section
 '''
-* option to toggle commas; 1,000,000 <-> 1000000
-* option to toggle between radians and degrees
+General:
+    - "Cannot find reference 'connect' in 'pyqtSignal | pyqtSignal | function'" is a benign warning
+
+Bugs: 
+    - numbers that are given as a decimal are turned into a long expansion of zeros
+        - Ex: 1.1 -> 1.10000000000000000000
+        - Fix:
+            - turn all decimals given in the text box, into fractions before the answer is calculated
+                - to do this scan the text and when a number is found...
+
+    - fractions that are turned into a decimal and then turned back into a fraction aren't the same
+        - Fix:
+            - save the original fraction and display it when the user flips the answer back to a fraction
+
+    - change all text highlight color to the same color by making it the default
+    - also make the text highlight color change colors when you click off the area
+        - this is instead of the characters turning black
+        - maybe a gray color like what is used in firefox
+
+Future Features:
+    - need shadowing for the sides of the window
+
+    - add a settings section
+        - option to toggle commas; 1,000,000 <-> 1000000
+        - option to toggle between radians and degrees
+
+    - add window's snap functionallity
+        - updated to PyQt6 for this (heard the feature might be accessable in PyQt6)
+
 '''
-# numbers that are given as a decimal are turned into a long expansion of zeros
-'''
-Ex: 1.1 -> 1.10000000000000000000
-Fix:
-* turn all decimals given in the text box, into fractions before the answer is calculated
-    * to do this scan the text and when a number is found,
-    
-'''
-# fractions that are turned into a decimal and then turned back into a fraction aren't the same
-'''
-Fix:
-* save the original fraction and display it when the user flips the answer back to a fraction
-'''
-# change all text highlight color to the same color by making it the default
-# also make the text highlight color change colors when you click off the area
-# add functionality so when the user puts the window to the side of their screen, they can full-screen it
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -36,7 +47,7 @@ class MainWindow(QMainWindow):
         # Window ------------------------------------------------------------------------------------------------
         self.setGeometry(100, 100, 800, 600)  # initial window size / position
         self.setWindowTitle("Calculator")  # window title
-        self.setWindowFlags(Qt.FramelessWindowHint)  # removes default title bar
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)  # removes default title bar
 
         self.widget_resize_size = 5
         self.title_bar_height = 22  # Height of the title bar
@@ -59,7 +70,8 @@ class MainWindow(QMainWindow):
 
         # close button
         self.button_close = QPushButton('', self)
-        self.button_close.setIcon(QIcon('C:\\Users\\mglin\\PycharmProjects\\Apps\\Window\\Math App\\external\\button_close_icon.png'))
+        self.button_close.setIcon(
+            QIcon('C:\\Users\\mglin\\PycharmProjects\\Apps\\Window\\Math App\\external\\button_close_icon.png'))
         self.button_close.setStyleSheet(
             "QPushButton { background-color: transparent; color: rgb(181, 186, 193); border: none; font-size: 11px;}"
             "QPushButton:hover { background-color: rgb(242, 63, 66); border: none; }"
@@ -68,7 +80,8 @@ class MainWindow(QMainWindow):
 
         # maximize button
         self.button_maximize = QPushButton('', self)
-        self.button_maximize.setIcon(QIcon('C:\\Users\\mglin\\PycharmProjects\\Apps\\Window\\Math App\\external\\button_maximize_icon.png'))
+        self.button_maximize.setIcon(
+            QIcon('C:\\Users\\mglin\\PycharmProjects\\Apps\\Window\\Math App\\external\\button_maximize_icon.png'))
         self.button_maximize.setStyleSheet(
             "QPushButton { background-color: transparent; color: rgb(181, 186, 193); border: none; font-weight: bold; font-size: 11px;}"
             "QPushButton:hover { background-color: rgb(45, 46, 51); border: none; }"
@@ -77,7 +90,8 @@ class MainWindow(QMainWindow):
 
         # minimize button
         self.button_minimize = QPushButton('', self)
-        self.button_minimize.setIcon(QIcon('C:\\Users\\mglin\\PycharmProjects\\Apps\\Window\\Math App\\external\\button_minimize_icon.png'))
+        self.button_minimize.setIcon(
+            QIcon('C:\\Users\\mglin\\PycharmProjects\\Apps\\Window\\Math App\\external\\button_minimize_icon.png'))
         self.button_minimize.setStyleSheet(
             "QPushButton { background-color: transparent; border: none; }"
             "QPushButton:hover { background-color: rgb(45, 46, 51); border: none; }"
@@ -117,18 +131,24 @@ class MainWindow(QMainWindow):
 
         # answer button
         self.button_answer = QPushButton('Answer', self)
-        self.button_answer.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
-        self.button_answer.setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
+        self.button_answer.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing),
+                                       self.test_padding, self.test_button_width - (2 * self.test_padding),
+                                       self.title_bar_height - (2 * self.test_padding))
+        self.button_answer.setStyleSheet(
+            'background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
         self.button_answer.clicked.connect(self.get_answer)
-        self.button_answer.setCursor(Qt.PointingHandCursor)
+        self.button_answer.setCursor(Qt.CursorShape.PointingHandCursor)
         self.test_counter += 1
 
         # flip button
         self.button_flip = QPushButton('Flip', self)
-        self.button_flip.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
-        self.button_flip.setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
+        self.button_flip.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing),
+                                     self.test_padding, self.test_button_width - (2 * self.test_padding),
+                                     self.title_bar_height - (2 * self.test_padding))
+        self.button_flip.setStyleSheet(
+            'background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
         self.button_flip.clicked.connect(self.flip_type)
-        self.button_flip.setCursor(Qt.PointingHandCursor)
+        self.button_flip.setCursor(Qt.CursorShape.PointingHandCursor)
         self.test_counter += 1
 
         '''
@@ -149,35 +169,35 @@ class MainWindow(QMainWindow):
 
         # top
         self.widget_resize_top = QWidget(self)
-        self.widget_resize_top.setCursor(Qt.SizeVerCursor)
+        self.widget_resize_top.setCursor(Qt.CursorShape.SizeVerCursor)
 
         # bottom
         self.widget_resize_bottom = QWidget(self)
-        self.widget_resize_bottom.setCursor(Qt.SizeVerCursor)
+        self.widget_resize_bottom.setCursor(Qt.CursorShape.SizeVerCursor)
 
         # left
         self.widget_resize_left = QWidget(self)
-        self.widget_resize_left.setCursor(Qt.SizeHorCursor)
+        self.widget_resize_left.setCursor(Qt.CursorShape.SizeHorCursor)
 
         # right
         self.widget_resize_right = QWidget(self)
-        self.widget_resize_right.setCursor(Qt.SizeHorCursor)
+        self.widget_resize_right.setCursor(Qt.CursorShape.SizeHorCursor)
 
         # top left
         self.widget_resize_top_left = QWidget(self)
-        self.widget_resize_top_left.setCursor(Qt.SizeFDiagCursor)
+        self.widget_resize_top_left.setCursor(Qt.CursorShape.SizeFDiagCursor)
 
         # top right
         self.widget_resize_top_right = QWidget(self)
-        self.widget_resize_top_right.setCursor(Qt.SizeBDiagCursor)
+        self.widget_resize_top_right.setCursor(Qt.CursorShape.SizeBDiagCursor)
 
         # bottom left
         self.widget_resize_bottom_left = QWidget(self)
-        self.widget_resize_bottom_left.setCursor(Qt.SizeBDiagCursor)
+        self.widget_resize_bottom_left.setCursor(Qt.CursorShape.SizeBDiagCursor)
 
         # bottom right
         self.widget_resize_bottom_right = QWidget(self)
-        self.widget_resize_bottom_right.setCursor(Qt.SizeFDiagCursor)
+        self.widget_resize_bottom_right.setCursor(Qt.CursorShape.SizeFDiagCursor)
         # -------------------------------------------------------------------------------------------------------
 
         # answer box
@@ -185,13 +205,15 @@ class MainWindow(QMainWindow):
 
         self.box_answer_height = 80
         self.box_answer = QPushButton('Answer', self)
-        self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;')
+        self.box_answer.setStyleSheet(
+            'border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;')
         self.box_answer.clicked.connect(self.copy)
 
         # text box
         self.box_padding = 20
 
-        self.variables_accepted = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+        self.variables_accepted = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
+                                   'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
         self.variables = SortedDict()  # stores variables in a sorted dictionary, so it shows in alphabetical order
 
         # Create a QLineEdit with initial position (150, 50)
@@ -199,7 +221,7 @@ class MainWindow(QMainWindow):
         self.box_text.textChanged.connect(self.text_update)
 
         palette = self.box_text.palette()
-        palette.setColor(palette.Highlight, QColor(70, 115, 156))  # Set highlight color to red
+        palette.setColor(QPalette.ColorRole.Highlight, QColor(70, 115, 156))  # Set highlight color to red
         self.box_text.setPalette(palette)
 
         # old: rgb(56, 58, 64),
@@ -338,11 +360,10 @@ class MainWindow(QMainWindow):
         for x in self.variables:
             print(self.variables[x][1].text())
 
-
     def paintEvent(self, event):
 
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         # title bar
         painter.fillRect(0, 0, self.width(), self.title_bar_height, QColor(30, 31, 34))
@@ -409,7 +430,6 @@ class MainWindow(QMainWindow):
             if x in self.variables_accepted:
                 temp.add(x)
                 if x not in self.variables:
-
                     label = QLabel(f'{x} =', self)
 
                     text_box = QLineEdit(self)
@@ -426,12 +446,10 @@ class MainWindow(QMainWindow):
 
         self.scroll_area_fill()
 
-
     def scroll_area_fill(self):
         # this is for when you delete the main layout in the scroll_area_clear
 
         for x in self.variables:
-
             layout = QHBoxLayout()
             layout.addWidget(self.variables[x][0])
             layout.addWidget(self.variables[x][1])
@@ -439,8 +457,8 @@ class MainWindow(QMainWindow):
             self.scroll_layout.addLayout(layout)
 
             line = QFrame()
-            line.setFrameShape(QFrame.HLine)
-            line.setFrameShadow(QFrame.Sunken)
+            line.setFrameShape(QFrame.Shape.HLine)
+            line.setFrameShadow(QFrame.Shadow.Sunken)
             line.setStyleSheet(f"background-color: #313338; border-radius: 1px")
 
             self.scroll_layout.addWidget(line)
@@ -516,24 +534,27 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(0, self.window_update)
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.window_moving = False
             self.window_resize = False
 
     def mousePressEvent(self, event):
-        if event.buttons() == Qt.LeftButton:
-            self.offset = event.pos()
+
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            self.offset = event.position().toPoint()
 
             # Moving Window
             self.window_moving = False
             if self.widget_move.rect().contains(self.widget_move.mapFrom(self, self.offset)):
+                print('Test')
                 self.window_moving = True
-                self.offset = event.globalPos() - self.pos()
+                self.offset = event.globalPosition().toPoint() - self.pos()
+
                 return
 
             # if self.widget_resize_size < event.y() < self.title_bar_height and self.widget_resize_size < event.x() < self.width() - self.widget_resize_size:
             #     self.window_moving = True
-            #     self.offset = event.globalPos() - self.pos()
+            #     self.offset = event.globalPosition().toPoint() - self.pos()
             #     return
 
             # Resizing Widgets
@@ -575,18 +596,18 @@ class MainWindow(QMainWindow):
             # exits the maximized setting
             if self.isMaximized():
 
-                offset_x = min(int(self.normalGeometry().width() * (self.offset.x() / self.width())), self.normalGeometry().width() - (3 * self.button_width))
+                offset_x = min(int(self.normalGeometry().width() * (self.offset.x() / self.width())),
+                               self.normalGeometry().width() - (3 * self.button_width))
                 self.offset = QPoint(offset_x, self.offset.y())
 
                 self.button_maximize_logic()
 
-                mouse_position = event.globalPos() - self.offset
+                mouse_position = event.globalPosition().toPoint() - self.offset
 
             else:
-                mouse_position = event.globalPos() - self.offset
+                mouse_position = event.globalPosition().toPoint() - self.offset
 
             self.move(mouse_position)
-
 
         # Resizing Widgets
         elif self.window_resize:
@@ -699,7 +720,8 @@ class MainWindow(QMainWindow):
     def window_update(self):
         # move widget
         self.widget_move.move(self.widget_resize_size, self.widget_resize_size)
-        self.widget_move.resize(self.width() - self.widget_resize_size - (3 * self.title_bar_height), self.title_bar_height - self.widget_resize_size)
+        self.widget_move.resize(self.width() - self.widget_resize_size - (3 * self.title_bar_height),
+                                self.title_bar_height - self.widget_resize_size)
 
         # close button
         self.button_close.move(self.width() - self.button_width, 0)
@@ -742,20 +764,25 @@ class MainWindow(QMainWindow):
         self.widget_resize_bottom_left.resize(self.widget_resize_size, self.widget_resize_size)
 
         # bottom right
-        self.widget_resize_bottom_right.move(self.width() - self.widget_resize_size, self.height() - self.widget_resize_size)
+        self.widget_resize_bottom_right.move(self.width() - self.widget_resize_size,
+                                             self.height() - self.widget_resize_size)
         self.widget_resize_bottom_right.resize(self.widget_resize_size, self.widget_resize_size)
 
         # text box
         self.box_text.move(self.box_padding, self.box_padding + self.title_bar_height)
-        self.box_text.resize(int((self.width() * (2/5)) - (self.box_padding * 1.5)), self.height() - self.box_answer_height - (self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
+        self.box_text.resize(int((self.width() * (2 / 5)) - (self.box_padding * 1.5)),
+                             self.height() - self.box_answer_height - (
+                                     self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
 
         # answer box
         self.box_answer.move(self.box_padding, self.height() - self.box_padding - 80)
-        self.box_answer.resize(int((self.width() * (2/5)) - (self.box_padding * 1.5)), self.box_answer_height)
+        self.box_answer.resize(int((self.width() * (2 / 5)) - (self.box_padding * 1.5)), self.box_answer_height)
 
         # definition box
-        self.scroll_area.move((self.box_padding * 2) + int((self.width() * (2 / 5)) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height)
-        self.scroll_area.resize(int((self.width() * (3 / 5)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height)
+        self.scroll_area.move((self.box_padding * 2) + int((self.width() * (2 / 5)) - (self.box_padding * 1.5)),
+                              self.box_padding + self.title_bar_height)
+        self.scroll_area.resize(int((self.width() * (3 / 5)) - (self.box_padding * 1.5)),
+                                self.height() - (self.box_padding * 2) - self.title_bar_height)
 
 
 def main():
@@ -766,7 +793,7 @@ def main():
 
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
