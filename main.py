@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, \
-    QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame
-from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette
+    QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout
+from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent
 from PyQt6.QtCore import Qt, QPoint, QTimer
 import sympy as sy
 from pyperclip import copy
@@ -26,6 +26,8 @@ Bugs:
     - also make the text highlight color change colors when you click off the area
         - this is instead of the characters turning black
         - maybe a gray color like what is used in firefox
+        
+    - when deleting multiple variables at once, some variables in the definition area are still showing up
 
 Future Features:
     - need shadowing for the sides of the window
@@ -36,7 +38,10 @@ Future Features:
 
     - add window's snap functionallity
         - updated to PyQt6 for this (the feature might be accessable in PyQt6)
-
+        
+    - App Icon for taskbar (also one for when you hover on the window where it shows on the top right)
+    
+    - Minimizing functionallity for when the user clicks the app icon
 '''
 
 
@@ -202,6 +207,7 @@ class MainWindow(QMainWindow):
 
         # answer box
         self.answer = 'N/A'
+        self.answer_final = 'Answer'
 
         self.box_answer_height = 80
         self.box_answer = QPushButton('Answer', self)
@@ -212,9 +218,12 @@ class MainWindow(QMainWindow):
         # text box
         self.box_padding = 20
 
-        self.variables_accepted = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
-                                   'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
         self.variables = SortedDict()  # stores variables in a sorted dictionary, so it shows in alphabetical order
+
+        self.accepted_variables = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
+                                   'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+        self.accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        self.accepted_other = ['(']
 
         # Create a QLineEdit with initial position (150, 50)
         self.box_text = QPlainTextEdit(self)
@@ -268,40 +277,7 @@ class MainWindow(QMainWindow):
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setWidget(self.scroll_content)
-        '''
-        self.main_layout = QVBoxLayout()
-        self.main_layout.addWidget(self.scroll_area)
-         '''
-        # if many variables are deleted at once, some of them stay in the definitions area
-        # DELETE ONCE YOU FIND OUT THE SPACING CAUSE RN THEY ARE TOO SPACED OUT WHEN THERE ARE A FEW OF THEM -----
-        # keep the main window, cause there is an error without it
-        # also delete the try: except:
-        '''
-        self.textbox = []
 
-        for i in range(3):  # Add some labels for demonstration
-
-            layout = QHBoxLayout()
-
-            label = QLabel(f'x =', self)
-
-            self.textbox.append(QLineEdit(self))
-            self.textbox[i].setPlaceholderText('Enter value')
-
-            layout.addWidget(label)
-            layout.addWidget(self.textbox[i])
-
-            self.scroll_layout.addLayout(layout)
-
-            line = QFrame()
-            line.setFrameShape(QFrame.HLine)
-            line.setFrameShadow(QFrame.Sunken)
-            line.setStyleSheet(f"background-color: #313338; border-radius: 1px")
-
-            self.scroll_layout.addWidget(line)
-
-        self.scroll_layout.addStretch()
-        '''
         # --------------------------------------------------------------------------------------------------------
 
         self.scroll_area.setStyleSheet(
@@ -355,12 +331,18 @@ class MainWindow(QMainWindow):
         # initializes all widgets in their positions
         self.window_update()
 
-    def test(self):
+    def test(self) -> None:
+        """
+        Used for testing anything using a button in the window.
+        """
 
         for x in self.variables:
             print(self.variables[x][1].text())
 
-    def paintEvent(self, event):
+    def paintEvent(self, event) -> None:
+        """
+        Gives the background and titlebar their colors.
+        """
 
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -372,17 +354,70 @@ class MainWindow(QMainWindow):
         painter.fillRect(0, self.title_bar_height, self.width(), self.height() - self.title_bar_height,
                          QColor(49, 51, 56))
 
-    def get_info(self):
+    def get_info(self) -> None:
+        """
+        Prints the current width and height of the window with the use of a button.
+        """
+
         print(f'Width: {self.width()}, Height: {self.height()}')
 
-    def get_update(self):
-        # this function only exits to print 'Manually Updated', instead of the button just using window_update()
+    def get_update(self) -> None:
+        """
+        For manually updating the window with a button.
+        """
+
         self.window_update()
         print('Manually Updated')
 
-    def get_answer(self):
-        # turns the textbox to a string
-        text = self.box_text.toPlainText()
+    def answer_formatting_before(self, string: str) -> str:
+        """
+        Reformats the string before the answer is calculated.
+
+        Gives the user more freedom to type expressions different ways.
+
+        :param string: The user input.
+        """
+
+        # removes white spaces
+        string = string.replace(' ', '')
+        string = string.replace('\n', '')
+        string = string.replace('\t', '')
+
+        # adds multiplication symbol for implicit multiplication
+        x = 0
+        while x < len(string) - 1:
+            if string[x] in self.accepted_variables or string[x] in self.accepted_numbers or string[x] == ')':
+                if string[x + 1] in self.accepted_variables or string[x + 1] == '(':
+                    # inserts in front of x
+                    string = string[:x + 1] + '*' + string[x + 1:]
+                    x -= 1
+            x += 1
+
+        return string
+
+    def answer_formatting_after(self) -> str:
+        """
+        Reformats the string after the answer is calculated.
+
+        Makes it easier for the user to read the answer.
+        """
+
+        string = str(self.answer)
+
+        string = string.replace('**', '^')
+        return string
+
+    def get_answer(self) -> None:
+        """
+        Calculates the answer from the user input.
+
+        Displays the answer in the answer box.
+        """
+
+        text = self.box_text.toPlainText()  # gets the string from the text box
+        text = self.answer_formatting_before(text)  # reformats the string
+
+        print(text)
 
         # scans the text for any variables
         for x in text:
@@ -392,7 +427,7 @@ class MainWindow(QMainWindow):
                 if test_variable != '':
                     text = text.replace(f'{x}', f'({test_variable})')
 
-        # tests if the user something wrong and outputs 'error' if so
+        # tests if the user did something wrong and outputs 'error' if so
         try:
             self.answer = sy.sympify(text)
             print(f'Answer: {text} = {self.answer}')
@@ -400,9 +435,14 @@ class MainWindow(QMainWindow):
             self.answer = 'Error'
             print(f'Error: {e}')
 
-        self.box_answer.setText(f'{str(self.answer)}')
+        self.answer_final = self.answer_formatting_after()  # reformats the answer
 
-    def flip_type(self):
+        self.box_answer.setText(self.answer_final)  # displays the answer
+
+    def flip_type(self) -> None:
+        """
+        Flips the answer format between a rational and float.
+        """
 
         if type(self.answer) == sy.core.numbers.Float:
             self.answer = sy.Rational(self.answer)
@@ -411,23 +451,33 @@ class MainWindow(QMainWindow):
 
         self.box_answer.setText(f'{str(self.answer)}')
 
-    def copy(self):
+    def copy(self) -> None:
+        """
+        Lets the user copy the answer by clicking the answer box.
+        """
+
+        # adds flashing blue visual when button is clicked
         self.box_answer.setStyleSheet(
             'border: 3px solid rgb(35, 36, 40); background-color: rgb(81, 100, 117); border-radius: 6px; color: white; font-size: 15px;')
         QTimer.singleShot(150, lambda: self.box_answer.setStyleSheet(
             'border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;'))
 
-        # crashes to this when it is set to an actual number
-        copy(str(self.answer))
+        copy(self.answer_final)  # copies answer to clipboard
 
-    def text_update(self):
+    def text_update(self) -> None:
+        """
+        Activates each time a user changes their input in the text box.
+
+        Adds and removes variables in the variables box based on the new user input.
+        """
+
         text = self.box_text.toPlainText()
 
         temp = set()  # used later for deleting variables in self.variables which are not in the text box
 
         # adds all variables to a dictionary
         for x in text:
-            if x in self.variables_accepted:
+            if x in self.accepted_variables:
                 temp.add(x)
                 if x not in self.variables:
                     label = QLabel(f'{x} =', self)
@@ -446,8 +496,12 @@ class MainWindow(QMainWindow):
 
         self.scroll_area_fill()
 
-    def scroll_area_fill(self):
-        # this is for when you delete the main layout in the scroll_area_clear
+    def scroll_area_fill(self) -> None:
+        """
+        Displays widgets to the variable box.
+
+        Adds: labels and text boxes for each variable, lines to seperate each variable, and a stretch to push all widgets to the top.
+        """
 
         for x in self.variables:
             layout = QHBoxLayout()
@@ -465,7 +519,11 @@ class MainWindow(QMainWindow):
 
         self.scroll_layout.addStretch()
 
-    def scroll_area_clear(self):
+    def scroll_area_clear(self) -> None:
+        """
+        Removes all widgets from the variable box.
+        """
+
         for i in reversed(range(self.scroll_layout.count())):
             layout_item = self.scroll_layout.itemAt(i)
 
@@ -479,7 +537,13 @@ class MainWindow(QMainWindow):
                 # If the item is a spacer, remove it from the layout
                 self.scroll_layout.removeItem(layout_item)
 
-    def clear_inner_layout(self, layout):
+    def clear_inner_layout(self, layout: QLayout) -> None:
+        """
+        Removes layouts.
+
+        May only work for layouts in the format: (QLabel, QLineEdit). Need to test later.
+        """
+
         for i in reversed(range(layout.count())):
             item = layout.itemAt(i)
             widget = item.widget()
@@ -495,12 +559,21 @@ class MainWindow(QMainWindow):
                 # Recursively clear nested layouts
                 self.clear_inner_layout(item.layout())
 
-    def button_close_logic(self):
-        # logic before closing goes here (checks if work is saved, etc.)
+    def button_close_logic(self) -> None:
+        """
+        Checks if work was saved, then closes the window. Uses the exit button.
+        """
 
+        # logic for saving will go here
+
+        # eventually may want to keep the program running after the window exits
         exit()  # instantly exits the program
 
-    def button_maximize_logic(self):
+    def button_maximize_logic(self) -> None:
+        """
+        Maximizes the screem using the maximize button.
+        """
+
         if self.isMaximized():
             # return to state before maximized
             self.showNormal()
@@ -533,12 +606,23 @@ class MainWindow(QMainWindow):
 
         QTimer.singleShot(0, self.window_update)
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self,  event: QMouseEvent | None) -> None:
+        """
+        Sets moving variables to false if the user stops hold left click.
+
+        :param event: Detects when a mouse button is released.
+        """
+
         if event.button() == Qt.MouseButton.LeftButton:
             self.window_moving = False
             self.window_resize = False
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QMouseEvent | None) -> None:
+        """
+        Detects if the user pressed left click to resize or move the window.
+
+        :param event: Detects when a mouse button is pressed.
+        """
 
         if event.buttons() == Qt.MouseButton.LeftButton:
             self.offset = event.position().toPoint()
@@ -546,12 +630,12 @@ class MainWindow(QMainWindow):
             # Moving Window
             self.window_moving = False
             if self.widget_move.rect().contains(self.widget_move.mapFrom(self, self.offset)):
-                print('Test')
                 self.window_moving = True
                 self.offset = event.globalPosition().toPoint() - self.pos()
 
                 return
 
+            # not sure why this is here, will review later
             # if self.widget_resize_size < event.y() < self.title_bar_height and self.widget_resize_size < event.x() < self.width() - self.widget_resize_size:
             #     self.window_moving = True
             #     self.offset = event.globalPosition().toPoint() - self.pos()
@@ -589,7 +673,15 @@ class MainWindow(QMainWindow):
                     self.window_resize_direction = 7  # bottom right
                     self.window_resize = True
 
-    def mouseMoveEvent(self, event):
+    def mouseMoveEvent(self, event: QMouseEvent | None) -> None:
+        """
+        Detects when the user moves their mouse.
+
+        Use to detect if the user trying to move or resize the window.
+
+        :param event: Detects when the mouse moves.
+        """
+
         # Moving Window
         if self.window_moving:
 
@@ -614,7 +706,8 @@ class MainWindow(QMainWindow):
 
             # top (needs work)
             if self.window_resize_direction == 0:
-                temp_event_y = event.y()
+
+                temp_event_y = event.position().toPoint().y()
 
                 window_resize_move_y = self.height() - temp_event_y
                 if window_resize_move_y >= self.window_size_min_y:
@@ -624,14 +717,14 @@ class MainWindow(QMainWindow):
 
             # bottom
             elif self.window_resize_direction == 1:
-                window_resize_move_y = event.y()
+                window_resize_move_y = event.position().toPoint().y()
                 if window_resize_move_y >= self.window_size_min_y:
                     self.resize(self.width(), window_resize_move_y)
                     self.window_update()
 
             # left (needs work)
             elif self.window_resize_direction == 2:
-                temp_event_x = event.x()
+                temp_event_x = event.position().toPoint().x()
 
                 window_resize_move_x = self.width() - temp_event_x
                 if window_resize_move_x >= self.window_size_min_x:
@@ -641,15 +734,15 @@ class MainWindow(QMainWindow):
 
             # right
             elif self.window_resize_direction == 3:
-                window_resize_move_x = event.x()
+                window_resize_move_x = event.position().toPoint().x()
                 if window_resize_move_x >= self.window_size_min_x:
                     self.resize(window_resize_move_x, self.height())
                     self.window_update()
 
             # top left (needs major work)
             elif self.window_resize_direction == 4:
-                temp_event_x = event.x()
-                temp_event_y = event.y()
+                temp_event_x = event.position().toPoint().x()
+                temp_event_y = event.position().toPoint().y()
                 temp_self_x = self.x()
                 temp_self_y = self.y()
                 temp_height = self.height()
@@ -672,10 +765,10 @@ class MainWindow(QMainWindow):
 
             # top right (needs work)
             elif self.window_resize_direction == 5:
-                temp_event_y = event.y()
+                temp_event_y = event.position().toPoint().y()
                 temp_height = self.height()
 
-                window_resize_move_x = event.x()
+                window_resize_move_x = event.position().toPoint().x()
                 window_resize_move_y = temp_height - temp_event_y
                 if window_resize_move_x >= self.window_size_min_x and window_resize_move_y >= self.window_size_min_y:
                     self.move(self.x(), self.y() + temp_event_y)
@@ -691,11 +784,11 @@ class MainWindow(QMainWindow):
 
             # bottom left (needs work)
             elif self.window_resize_direction == 6:
-                temp_event_x = event.x()
+                temp_event_x = event.position().toPoint().x()
                 temp_width = self.width()
 
                 window_resize_move_x = temp_width - temp_event_x
-                window_resize_move_y = event.y()
+                window_resize_move_y = event.position().toPoint().y()
                 if window_resize_move_x >= self.window_size_min_x and window_resize_move_y >= self.window_size_min_y:
                     self.move(self.x() + temp_event_x, self.y())
                     self.resize(window_resize_move_x, window_resize_move_y)
@@ -711,13 +804,19 @@ class MainWindow(QMainWindow):
             # bottom right
             elif self.window_resize_direction == 7:
 
-                window_resize_move_x = max(self.window_size_min_x, event.x())
-                window_resize_move_y = max(self.window_size_min_y, event.y())
+                window_resize_move_x = max(self.window_size_min_x, event.position().toPoint().x())
+                window_resize_move_y = max(self.window_size_min_y, event.position().toPoint().y())
                 self.resize(window_resize_move_x, window_resize_move_y)
 
                 self.window_update()
 
-    def window_update(self):
+    def window_update(self) -> None:
+        """
+        Updates the positions of all widgets that need their positions updated.
+
+        May also be used to update other stuff in the future.
+        """
+
         # move widget
         self.widget_move.move(self.widget_resize_size, self.widget_resize_size)
         self.widget_move.resize(self.width() - self.widget_resize_size - (3 * self.title_bar_height),
@@ -788,9 +887,11 @@ class MainWindow(QMainWindow):
 def main():
     app = QApplication(sys.argv)
 
-    font = QFont('Consolas', 10)
+    # sets the default font
+    font = QFont('Consolas', 10)  # chosen font is monospaced
     app.setFont(font)
 
+    # starts the window
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
