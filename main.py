@@ -35,7 +35,7 @@ Future Features:
         - option to toggle between radians and degrees
 
     - add window's snap functionallity
-        - updated to PyQt6 for this (heard the feature might be accessable in PyQt6)
+        - updated to PyQt6 for this (the feature might be accessable in PyQt6)
 
 '''
 
