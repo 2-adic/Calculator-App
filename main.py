@@ -13,7 +13,7 @@ General:
 
 Bugs: 
     - When answer format is flipped to decimal, it doesn't give an exact answer
-        - Ex: 1.1 -> 11/10 -> *User clicks format flip button* -> 1.10000000000000000000
+        - Ex: 1.1 -> 11/10 -> *User clicks format flip button* -> 1.10000000000000
         - There might not be a solution for this bug
         - May not consider it a bug, since the decimal format is not meant to be exact in the first place
 
@@ -23,6 +23,10 @@ Bugs:
             - Maybe a gray color like what is used in firefox
         
     - When deleting multiple variables at once, some variables in the definition area are still showing up
+    
+    - Implicit multiplication before a decimal is not working
+        - Ex:
+            x.1 -> x(1/10): should be x*(1/10)
 
 Future Features:
     - Need shadowing for the sides of the window
@@ -439,8 +443,6 @@ class MainWindow(QMainWindow):
 
         text = self.box_text.toPlainText()  # gets the string from the text box
 
-        print(text)
-
         # scans the text for any variables
         for x in text:
             if x in self.variables:
@@ -493,7 +495,7 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(150, lambda: self.box_answer.setStyleSheet(
             'border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;'))
 
-        copy(self.answer_final)  # copies answer to clipboard
+        copy(str(self.answer_temp))  # copies answer to clipboard
 
     def text_update(self) -> None:
         """
