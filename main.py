@@ -12,36 +12,39 @@ General:
     - "Cannot find reference 'connect' in 'pyqtSignal | pyqtSignal | function'" is a benign warning
 
 Bugs: 
-    - numbers that are given as a decimal are turned into a long expansion of zeros
-        - Ex: 1.1 -> 1.10000000000000000000
-        - Fix:
-            - turn all decimals given in the text box, into fractions before the answer is calculated
-                - to do this scan the text and when a number is found...
+    - When answer format is flipped to decimal, it doesn't give an exact answer
+        - Ex: 1.1 -> 11/10 -> *User clicks format flip button* -> 1.10000000000000000000
+        - There might not be a solution for this bug
+        - May not consider it a bug, since the decimal format is not meant to be exact in the first place
 
-    - fractions that are turned into a decimal and then turned back into a fraction aren't the same
-        - Fix:
-            - save the original fraction and display it when the user flips the answer back to a fraction
-
-    - change all text highlight color to the same color by making it the default
-    - also make the text highlight color change colors when you click off the area
-        - this is instead of the characters turning black
-        - maybe a gray color like what is used in firefox
+    - Change all text highlight color to the same color by making it the default
+        - Also make the text highlight color change colors when you click off the area
+            - This is instead of the characters turning black
+            - Maybe a gray color like what is used in firefox
         
-    - when deleting multiple variables at once, some variables in the definition area are still showing up
+    - When deleting multiple variables at once, some variables in the definition area are still showing up
 
 Future Features:
-    - need shadowing for the sides of the window
+    - Need shadowing for the sides of the window
 
-    - add a settings section
-        - option to toggle commas; 1,000,000 <-> 1000000
-        - option to toggle between radians and degrees
+    - Add a settings section
+        - Option to toggle commas; 1,000,000 <-> 1000000
+        - Option to toggle between radians and degrees
 
-    - add window's snap functionallity
-        - updated to PyQt6 for this (the feature might be accessable in PyQt6)
+    - Add window's snap functionallity
+        - Updated to PyQt6 for this (the feature might be accessable in PyQt6)
         
-    - App Icon for taskbar (also one for when you hover on the window where it shows on the top right)
+    - App Icon for taskbar (also one for when you hover on the window where it shows on the top left)
     
     - Minimizing functionallity for when the user clicks the app icon
+    
+    - Plus minus (±)
+        - Ex, x = 2:
+            - When in exact form: 5x ± 1 -> (5*2) ± 1 -> 10 ± 1
+            - When in decimal form:  5x ± 1 -> 5x + 1 -> (5*2) + 1 -> 10 + 1 -> 11  (Displays both answers somehow)
+                                            -> 5x - 1 -> (5*2) - 1 -> 10 - 1 -> 9
+                                           
+    - Approximation (≈) symbol in the top left of the answer box if the decimal value is longer than a certain amount of digits / find another way to see if the value displayed isn't the exact value
 '''
 
 
@@ -168,7 +171,7 @@ class MainWindow(QMainWindow):
         # -------------------------------------------------------------------------------------------------------
 
         # Resizing Widgets --------------------------------------------------------------------------------------
-        self.window_resize = False  # initial state of resizing
+        self.window_resize = True  # initial state of resizing
         self.window_resize_direction = None  # initial direction of resizing
         self.widget_resize_toggle = True
 
@@ -208,6 +211,8 @@ class MainWindow(QMainWindow):
         # answer box
         self.answer = 'N/A'
         self.answer_final = 'Answer'
+        self.answer_temp = self.answer_final
+        self.flip_type_toggle = False
 
         self.box_answer_height = 80
         self.box_answer = QPushButton('Answer', self)
@@ -386,12 +391,28 @@ class MainWindow(QMainWindow):
         # adds multiplication symbol for implicit multiplication
         x = 0
         while x < len(string) - 1:
-            if string[x] in self.accepted_variables or string[x] in self.accepted_numbers or string[x] == ')':
+            if string[x] in self.accepted_variables or string[x] in self.accepted_numbers or string[x] == ')' or string[x] == '.':
                 if string[x + 1] in self.accepted_variables or string[x + 1] == '(':
                     # inserts in front of x
                     string = string[:x + 1] + '*' + string[x + 1:]
                     x -= 1
             x += 1
+
+        # turns all decimals into rationals
+        temp = string + ' '  # character added to end of string to recognize final number
+        num = ''
+        for x in temp:
+            if x in self.accepted_numbers or x == '.':
+                num += x
+            else:
+                if num == '.':  # user error; displays 'error' in answer box
+                    print('Not yet fixed, do later')
+
+                elif num != '' and '.' in num:  # num is not blank, and is a decimal
+                    # replaces the first instance of each number
+                    string = string.replace(num, f'({sy.Rational(num)})', 1)
+
+                num = ''  # resets num
 
         return string
 
@@ -414,8 +435,9 @@ class MainWindow(QMainWindow):
         Displays the answer in the answer box.
         """
 
+        self.flip_type_toggle = False  # resets the format type
+
         text = self.box_text.toPlainText()  # gets the string from the text box
-        text = self.answer_formatting_before(text)  # reformats the string
 
         print(text)
 
@@ -427,29 +449,38 @@ class MainWindow(QMainWindow):
                 if test_variable != '':
                     text = text.replace(f'{x}', f'({test_variable})')
 
+        text = self.answer_formatting_before(text)  # reformats the string
+
         # tests if the user did something wrong and outputs 'error' if so
         try:
             self.answer = sy.sympify(text)
+
+            # sometimes sy.sympify doesn't simplify completely, but removing spaces and looping fixes some problems
+            while str(self.answer).replace(' ', '') != str(sy.sympify(str(self.answer).replace(' ', ''))).replace(' ', ''):
+                self.answer = sy.sympify(str(self.answer).replace(' ', ''))
+
             print(f'Answer: {text} = {self.answer}')
         except Exception as e:
             self.answer = 'Error'
             print(f'Error: {e}')
 
-        self.answer_final = self.answer_formatting_after()  # reformats the answer
-
-        self.box_answer.setText(self.answer_final)  # displays the answer
+        self.answer_temp = self.answer_formatting_after()  # reformats the answer
+        self.box_answer.setText(self.answer_temp)  # displays the answer
 
     def flip_type(self) -> None:
         """
-        Flips the answer format between a rational and float.
+        Flips the answer format between decimal and exact.
         """
 
-        if type(self.answer) == sy.core.numbers.Float:
-            self.answer = sy.Rational(self.answer)
-        elif type(self.answer) == sy.core.numbers.Rational:
-            self.answer = sy.Float(self.answer)
+        self.flip_type_toggle = not self.flip_type_toggle  # keeps track of which format is being displayed
 
-        self.box_answer.setText(f'{str(self.answer)}')
+        # uses self.answer_temp to save the actual answer
+        if self.flip_type_toggle:
+            self.answer_temp = sy.N(self.answer)  # turns the answer into its decimal format
+        else:
+            self.answer_temp = self.answer  # returns the original answer
+
+        self.box_answer.setText(f'{str(self.answer_temp)}')  # displays the answer
 
     def copy(self) -> None:
         """
