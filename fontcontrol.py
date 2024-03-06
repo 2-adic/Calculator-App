@@ -22,7 +22,7 @@ def font_load(file_name):
     return QFontDatabase.applicationFontFamilies(font_id)[0]
 
 
-font_size = 10
+font_size = 8
 
 font_files = [
     'RobotoMono-VariableFont_wght.ttf',  # Roboto Mono (l could be mistaken for a 1, might change later)

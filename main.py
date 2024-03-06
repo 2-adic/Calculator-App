@@ -42,14 +42,14 @@ Bugs:
 
 Future Features:
     - Need shadowing for the sides of the window
-
+    
     - Add a settings section
         - Option to toggle commas; 1,000,000 <-> 1000000
         - Option to toggle between radians and degrees
-
+    
     - Add window's snap functionality
         - Updated to PyQt6 for this (the feature might be accessible in PyQt6)
-        
+    
     - App Icon for taskbar (also one for when you hover on the window where it shows on the top left)
     
     - Minimizing functionality for when the user clicks the app icon
@@ -243,7 +243,7 @@ class MainWindow(QMainWindow):
 
         # answer format label
         self.box_answer_format_label = QLabel('', self)
-        self.box_answer_format_label.setStyleSheet('font-size: 15px')
+        self.box_answer_format_label.setStyleSheet('font-size: 18px; color: white')
 
         # text box
         self.box_padding = 20
@@ -943,7 +943,6 @@ class MainWindow(QMainWindow):
 
         # answer format label
         self.box_answer_format_label.move(self.box_padding + 12, self.height() - self.box_padding - 80)
-
 
         # definition box
         self.scroll_area.move((self.box_padding * 2) + int((self.width() * (2 / 5)) - (self.box_padding * 1.5)),
