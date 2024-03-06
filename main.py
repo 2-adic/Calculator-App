@@ -1,11 +1,12 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, \
     QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout
-from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent
+from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QFontDatabase
 from PyQt6.QtCore import Qt, QPoint, QTimer
 import sympy as sy
 from pyperclip import copy
 from sortedcontainers import SortedDict
+import fontcontrol
 
 '''
 General:
@@ -27,6 +28,17 @@ Bugs:
     - Implicit multiplication before a decimal is not working
         - Ex:
             x.1 -> x(1/10): should be x*(1/10)
+            
+    - When using tab to go to the next variable, it sometimes skips to the textbox
+        - How it should work (in each step the user presses tab), it should loop as shown: text box -> variable 1 -> variable 2 -> variable -> n -> text box
+        - give the user a way to still type a tab in the text box (maybe mac: option + tab, Windows: 'not sure yet' + tab)
+        
+    - Resizing doesn't work on macOS
+        - Used to work before updating to PyQt6
+        - Not sure why, needs testing
+        - The window resizes, but the widgets don't resize
+        
+    - App crashes when user inputs ".." and clicks the answer button
 
 Future Features:
     - Need shadowing for the sides of the window
@@ -35,12 +47,12 @@ Future Features:
         - Option to toggle commas; 1,000,000 <-> 1000000
         - Option to toggle between radians and degrees
 
-    - Add window's snap functionallity
-        - Updated to PyQt6 for this (the feature might be accessable in PyQt6)
+    - Add window's snap functionality
+        - Updated to PyQt6 for this (the feature might be accessible in PyQt6)
         
     - App Icon for taskbar (also one for when you hover on the window where it shows on the top left)
     
-    - Minimizing functionallity for when the user clicks the app icon
+    - Minimizing functionality for when the user clicks the app icon
     
     - Plus minus (±)
         - Ex, x = 2:
@@ -48,7 +60,13 @@ Future Features:
             - When in decimal form:  5x ± 1 -> 5x + 1 -> (5*2) + 1 -> 10 + 1 -> 11  (Displays both answers somehow)
                                             -> 5x - 1 -> (5*2) - 1 -> 10 - 1 -> 9
                                            
-    - Approximation (≈) symbol in the top left of the answer box if the decimal value is longer than a certain amount of digits / find another way to see if the value displayed isn't the exact value
+    - Approximation (≈) symbol in the top left of the answer box if the decimal value is longer than a certain amount of digits / find another way to see if the value displayed isn't the exact value\
+        - A equals (=) symbol for when the format is exact
+    
+    - Represent functions like cos() with italics
+        - Make the "cos" highlight if the program detects it may be a function
+            - If the user does an input (click + control, not sure), cos turns into italics and is considered a function instead of c*o*s
+        - May want a font where the italics are the same width as the normal characters
 '''
 
 
@@ -131,18 +149,17 @@ class MainWindow(QMainWindow):
         self.test_counter += 1
         '''
 
-        '''
         # update button
         self.button_update = QPushButton('Update', self)
         self.button_update.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
         self.button_update.setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
         self.button_update.clicked.connect(self.get_update)
-        self.button_update.setCursor(Qt.PointingHandCursor)
+        self.button_update.setCursor(Qt.CursorShape.PointingHandCursor)
         self.test_counter += 1
-        '''
 
         # answer button
-        self.button_answer = QPushButton('Answer', self)
+        self.answer_default = 'Answer'
+        self.button_answer = QPushButton(self.answer_default, self)
         self.button_answer.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing),
                                        self.test_padding, self.test_button_width - (2 * self.test_padding),
                                        self.title_bar_height - (2 * self.test_padding))
@@ -213,16 +230,20 @@ class MainWindow(QMainWindow):
         # -------------------------------------------------------------------------------------------------------
 
         # answer box
-        self.answer = 'N/A'
-        self.answer_final = 'Answer'
+        self.answer = 'Error'  # user shouldn't be able to access this string yet
+        self.answer_final = self.answer_default
         self.answer_temp = self.answer_final
         self.flip_type_toggle = False
 
         self.box_answer_height = 80
-        self.box_answer = QPushButton('Answer', self)
+        self.box_answer = QPushButton(self.answer_default, self)
         self.box_answer.setStyleSheet(
             'border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;')
         self.box_answer.clicked.connect(self.copy)
+
+        # answer format label
+        self.box_answer_format_label = QLabel('', self)
+        self.box_answer_format_label.setStyleSheet('font-size: 15px')
 
         # text box
         self.box_padding = 20
@@ -420,14 +441,14 @@ class MainWindow(QMainWindow):
 
         return string
 
-    def answer_formatting_after(self) -> str:
+    def answer_formatting_after(self, answer: sy) -> str:
         """
         Reformats the string after the answer is calculated.
 
         Makes it easier for the user to read the answer.
         """
 
-        string = str(self.answer)
+        string = str(answer)
 
         string = string.replace('**', '^')
         return string
@@ -466,8 +487,10 @@ class MainWindow(QMainWindow):
             self.answer = 'Error'
             print(f'Error: {e}')
 
-        self.answer_temp = self.answer_formatting_after()  # reformats the answer
+        self.answer_temp = self.answer_formatting_after(self.answer)  # reformats the answer
         self.box_answer.setText(self.answer_temp)  # displays the answer
+
+        self.box_answer_format_label.setText('=')  # answer defaults in exact mode
 
     def flip_type(self) -> None:
         """
@@ -479,10 +502,13 @@ class MainWindow(QMainWindow):
         # uses self.answer_temp to save the actual answer
         if self.flip_type_toggle:
             self.answer_temp = sy.N(self.answer)  # turns the answer into its decimal format
+            self.box_answer_format_label.setText('≈')
         else:
             self.answer_temp = self.answer  # returns the original answer
+            self.box_answer_format_label.setText('=')
 
-        self.box_answer.setText(f'{str(self.answer_temp)}')  # displays the answer
+        self.answer_temp = self.answer_formatting_after(self.answer_temp)  # reformats the answer
+        self.box_answer.setText(self.answer_temp)  # displays the answer
 
     def copy(self) -> None:
         """
@@ -502,6 +528,7 @@ class MainWindow(QMainWindow):
         Activates each time a user changes their input in the text box.
 
         Adds and removes variables in the variables box based on the new user input.
+        Removes the answer from the answer box.
         """
 
         text = self.box_text.toPlainText()
@@ -526,14 +553,19 @@ class MainWindow(QMainWindow):
                 del self.variables[x]
 
         self.scroll_area_clear()
-
         self.scroll_area_fill()
+
+        # clears the answer box to prevent user from thinking the answer is for what was just typed in the text box
+        self.answer = self.answer_default  # sets answer to default answer so if the user flips the format, the default answer still displays
+        self.box_answer.setText(f'{str(self.answer)}')  # displays the answer
+
+        self.box_answer_format_label.setText('')
 
     def scroll_area_fill(self) -> None:
         """
         Displays widgets to the variable box.
 
-        Adds: labels and text boxes for each variable, lines to seperate each variable, and a stretch to push all widgets to the top.
+        Adds: labels and text boxes for each variable, lines to separate each variable, and a stretch to push all widgets to the top.
         """
 
         for x in self.variables:
@@ -739,7 +771,6 @@ class MainWindow(QMainWindow):
 
             # top (needs work)
             if self.window_resize_direction == 0:
-
                 temp_event_y = event.position().toPoint().y()
 
                 window_resize_move_y = self.height() - temp_event_y
@@ -910,6 +941,10 @@ class MainWindow(QMainWindow):
         self.box_answer.move(self.box_padding, self.height() - self.box_padding - 80)
         self.box_answer.resize(int((self.width() * (2 / 5)) - (self.box_padding * 1.5)), self.box_answer_height)
 
+        # answer format label
+        self.box_answer_format_label.move(self.box_padding + 12, self.height() - self.box_padding - 80)
+
+
         # definition box
         self.scroll_area.move((self.box_padding * 2) + int((self.width() * (2 / 5)) - (self.box_padding * 1.5)),
                               self.box_padding + self.title_bar_height)
@@ -921,8 +956,12 @@ def main():
     app = QApplication(sys.argv)
 
     # sets the default font
-    font = QFont('Consolas', 10)  # chosen font is monospaced
-    app.setFont(font)
+    font_family = fontcontrol.font_load(fontcontrol.font_files[0])
+    if font_family:
+        font = QFont(font_family, fontcontrol.font_size)
+        app.setFont(font)
+    else:
+        print("Error: Font didn't load, default system font will be used instead.")
 
     # starts the window
     window = MainWindow()
