@@ -17,11 +17,6 @@ Bugs:
         - Ex: 1.1 -> 11/10 -> *User clicks format flip button* -> 1.10000000000000
         - There might not be a solution for this bug
         - May not consider it a bug, since the decimal format is not meant to be exact in the first place
-
-    - Change all text highlight color to the same color by making it the default
-        - Also make the text highlight color change colors when you click off the area
-            - This is instead of the characters turning black
-            - Maybe a gray color like what is used in firefox
         
     - When deleting multiple variables at once, some variables in the definition area are still showing up
     
@@ -39,6 +34,8 @@ Bugs:
         - The window resizes, but the widgets don't resize
         
     - App crashes when user inputs ".." and clicks the answer button
+    
+    - Long answers clip outside of the answer box
 
 Future Features:
     - Need shadowing for the sides of the window
@@ -259,10 +256,6 @@ class MainWindow(QMainWindow):
         self.box_text = QPlainTextEdit(self)
         self.box_text.textChanged.connect(self.text_update)
 
-        palette = self.box_text.palette()
-        palette.setColor(QPalette.ColorRole.Highlight, QColor(70, 115, 156))  # Set highlight color to red
-        self.box_text.setPalette(palette)
-
         # old: rgb(56, 58, 64),
         self.box_text.setStyleSheet(
             '''
@@ -272,29 +265,6 @@ class MainWindow(QMainWindow):
                 border-radius: 6px;
                 color: white;
                 font-size: 15px;
-            }
-            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
-                background: red;
-            }
-            QScrollBar:vertical {
-                border: none;
-                background-color: rgba(0, 0, 0, 0);
-                width: 12px;
-                margin: 4px 4px 4px 0px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #232428;
-                border-radius: 4px;
-                min-height: 20px;
-            }
-            QScrollBar::add-line:vertical {
-                width: 0px;
-            }
-            QScrollBar::sub-line:vertical {
-                width: 0px;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                background: none;
             }
             '''
         )
@@ -961,6 +931,15 @@ def main():
         app.setFont(font)
     else:
         print("Error: Font didn't load, default system font will be used instead.")
+
+    # default settings
+    # could not change inactive highlight color with style sheet a style sheet; a style sheet overrides the inactive highlight color
+    palette = app.palette()
+    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor('#46739c'))  # active highlight color
+    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor('#ffffff'))  # active highlight text color
+    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor('#b0b0b0'))  # inactive highlight color
+    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor('#ffffff'))  # inactive highlight text color
+    app.setPalette(palette)
 
     # starts the window
     window = MainWindow()
