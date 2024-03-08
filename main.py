@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWid
 from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QFontDatabase
 from PyQt6.QtCore import Qt, QPoint, QTimer
 import sympy as sy
-from pyperclip import copy
+import pyperclip
 from sortedcontainers import SortedDict
 import fontcontrol
 
@@ -36,6 +36,8 @@ Bugs:
     - App crashes when user inputs ".." and clicks the answer button
     
     - Long answers clip outside of the answer box
+    
+    - If the user in a variable box while their mouse is on top of a variable text box,the mouse flashes between two shapes
 
 Future Features:
     - Need shadowing for the sides of the window
@@ -64,6 +66,13 @@ Future Features:
         - Make the "cos" highlight if the program detects it may be a function
             - If the user does an input (click + control, not sure), cos turns into italics and is considered a function instead of c*o*s
         - May want a font where the italics are the same width as the normal characters
+        
+    - If a variable is typed in the text box of another variable, add the new variable to the variable box
+    
+    - Add a scroll bar to the answer text box to see very large answers
+    
+    - Need to test if circularly defined variables are being detected every time
+        - Need to give error for all cases where this occurs (not giving an error at all atm)
 '''
 
 
@@ -146,6 +155,7 @@ class MainWindow(QMainWindow):
         self.test_counter += 1
         '''
 
+        '''
         # update button
         self.button_update = QPushButton('Update', self)
         self.button_update.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
@@ -153,6 +163,7 @@ class MainWindow(QMainWindow):
         self.button_update.clicked.connect(self.get_update)
         self.button_update.setCursor(Qt.CursorShape.PointingHandCursor)
         self.test_counter += 1
+        '''
 
         # answer button
         self.answer_default = 'Answer'
@@ -177,15 +188,14 @@ class MainWindow(QMainWindow):
         self.button_flip.setCursor(Qt.CursorShape.PointingHandCursor)
         self.test_counter += 1
 
-        '''
         # test button
+        self.button_test_toggle = False
         self.button_test = QPushButton('Test', self)
         self.button_test.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
         self.button_test.setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
         self.button_test.clicked.connect(self.test)
-        self.button_test.setCursor(Qt.PointingHandCursor)
+        self.button_test.setCursor(Qt.CursorShape.PointingHandCursor)
         self.test_counter += 1
-        '''
         # -------------------------------------------------------------------------------------------------------
 
         # Resizing Widgets --------------------------------------------------------------------------------------
@@ -243,8 +253,10 @@ class MainWindow(QMainWindow):
         self.box_answer_format_label.setStyleSheet('font-size: 18px; color: white')
 
         # text box
+        self.user_select = None
         self.box_padding = 20
 
+        self.user_mouse_set = False
         self.variables = SortedDict()  # stores variables in a sorted dictionary, so it shows in alphabetical order
 
         self.accepted_variables = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
@@ -336,8 +348,15 @@ class MainWindow(QMainWindow):
         Used for testing anything using a button in the window.
         """
 
-        for x in self.variables:
-            print(self.variables[x][1].text())
+        self.button_test_toggle = not self.button_test_toggle
+
+        if self.button_test_toggle:
+            self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
+        else:
+            self.scroll_area.setCursor(Qt.CursorShape.ArrowCursor)
+
+        print(self.variables)
+
 
     def paintEvent(self, event) -> None:
         """
@@ -423,6 +442,28 @@ class MainWindow(QMainWindow):
         string = string.replace('**', '^')
         return string
 
+    def variable_formatting(self, variables: SortedDict) -> dict:
+        temp1 = variables.copy()
+
+        for x in temp1:
+            temp1[x] = temp1[x][1].text()
+
+            if temp1[x] == '':
+                temp1[x] = x
+
+        # starts here
+        for x in range(len(temp1)):
+            temp2 = temp1.copy()
+            for y in temp2:
+                for z in temp2:
+                    temp1[z] = temp1[z].replace(y, f'({temp2[y]})')
+
+        for x in temp1:
+            if x in temp1[x]:
+                print('Error: A variable is circularly defined.')
+
+        return temp1
+
     def get_answer(self) -> None:
         """
         Calculates the answer from the user input.
@@ -435,12 +476,13 @@ class MainWindow(QMainWindow):
         text = self.box_text.toPlainText()  # gets the string from the text box
 
         # scans the text for any variables
-        for x in text:
-            if x in self.variables:
-                test_variable = self.variables[x][1].text()
+        temp = self.variable_formatting(self.variables)
 
-                if test_variable != '':
-                    text = text.replace(f'{x}', f'({test_variable})')
+        for x in text:
+            if x in temp:
+                test_variable = temp[x]
+
+                text = text.replace(f'{x}', f'({test_variable})')
 
         text = self.answer_formatting_before(text)  # reformats the string
 
@@ -491,7 +533,7 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(150, lambda: self.box_answer.setStyleSheet(
             'border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;'))
 
-        copy(str(self.answer_temp))  # copies answer to clipboard
+        pyperclip.copy(str(self.answer_temp))  # copies answer to clipboard
 
     def text_update(self) -> None:
         """
@@ -501,11 +543,13 @@ class MainWindow(QMainWindow):
         Removes the answer from the answer box.
         """
 
+        self.user_select = self.sender()  # saves which text box the user was typing in
+
         text = self.box_text.toPlainText()
 
         temp = set()  # used later for deleting variables in self.variables which are not in the text box
 
-        # adds all variables to a dictionary
+        # adds all variables from the text box to a dictionary
         for x in text:
             if x in self.accepted_variables:
                 temp.add(x)
@@ -517,13 +561,33 @@ class MainWindow(QMainWindow):
 
                     self.variables[x] = (label, text_box)
 
+        for y in self.variables:
+            for x in self.variables[y][1].text():
+                if x in self.accepted_variables:
+                    temp.add(x)
+                    if x not in self.variables:
+                        label = QLabel(f'{x} =', self)
+
+                        text_box = QLineEdit(self)
+                        text_box.setPlaceholderText(f'{x}')
+
+                        self.variables[x] = (label, text_box)
+
         # deletes all variables not in the text box
         for x in self.variables:
             if x not in temp:
                 del self.variables[x]
 
-        self.scroll_area_clear()
-        self.scroll_area_fill()
+        '''
+        # fix - cursor_flash: may delete
+        for x in self.variables:
+            if self.variables[x][1].underMouse():
+                self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
+        self.user_mouse_set = True
+        '''
+
+        self.scroll_area_clear()  # deletes the all variables in the variable box
+        self.scroll_area_fill()  # adds all variables found in the variable box
 
         # clears the answer box to prevent user from thinking the answer is for what was just typed in the text box
         self.answer = self.answer_default  # sets answer to default answer so if the user flips the format, the default answer still displays
@@ -541,6 +605,8 @@ class MainWindow(QMainWindow):
         for x in self.variables:
             layout = QHBoxLayout()
             layout.addWidget(self.variables[x][0])
+
+            self.variables[x][1].textChanged.connect(self.text_update)
             layout.addWidget(self.variables[x][1])
 
             self.scroll_layout.addLayout(layout)
@@ -554,16 +620,25 @@ class MainWindow(QMainWindow):
 
         self.scroll_layout.addStretch()
 
+        if self.user_select != self.box_text:
+            self.user_select.setFocus()
+
     def scroll_area_clear(self) -> None:
         """
         Removes all widgets from the variable box.
         """
-
         for i in reversed(range(self.scroll_layout.count())):
             layout_item = self.scroll_layout.itemAt(i)
 
             if layout_item.widget():
                 widget_to_remove = layout_item.widget()
+                # Check if the widget is a QLineEdit and disconnect the textChanged signal
+                if isinstance(widget_to_remove, QLineEdit):
+                    try:
+                        widget_to_remove.textChanged.disconnect(self.text_update)
+                    except TypeError:
+                        # No connections to disconnect
+                        pass
                 self.scroll_layout.removeWidget(widget_to_remove)
                 widget_to_remove.setParent(None)
             elif layout_item.layout():
@@ -578,14 +653,22 @@ class MainWindow(QMainWindow):
 
         May only work for layouts in the format: (QLabel, QLineEdit). Need to test later.
         """
-
         for i in reversed(range(layout.count())):
             item = layout.itemAt(i)
             widget = item.widget()
             if widget:
-                # Check if the widget is QLabel or QLineEdit and should be kept
-                if isinstance(widget, (QLabel, QLineEdit)) and widget in [w for v in self.variables.values() for w in
-                                                                          v]:
+                # Check if the widget is a QLineEdit and should be kept
+                if isinstance(widget, QLineEdit):
+                    try:
+                        widget.textChanged.disconnect(self.text_update)
+                    except TypeError:
+                        # No connections to disconnect
+                        pass
+                    # Remove the QLineEdit widget from its parent layout
+                    layout.removeWidget(widget)
+                    widget.setParent(None)
+                elif isinstance(widget, QLabel):
+                    # Handle QLabel widgets if necessary
                     layout.removeWidget(widget)
                     widget.setParent(None)
                 else:
@@ -714,8 +797,17 @@ class MainWindow(QMainWindow):
 
         Use to detect if the user trying to move or resize the window.
 
-        :param event: Detects when the mouse moves.
+        :param event: Detects when the mouse is left-clicked and moves.
         """
+
+        '''
+        # fix - cursor_flash: may delete
+        print('true')
+        if self.user_mouse_set:
+            print('double true')
+            self.scroll_area.setCursor(Qt.CursorShape.ArrowCursor)
+            self.user_mouse_set = False
+        '''
 
         # Moving Window
         if self.window_moving:
