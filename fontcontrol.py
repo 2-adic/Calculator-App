@@ -4,15 +4,12 @@ Used to control the font of the window.
 
 import os
 from PyQt6.QtGui import QFontDatabase
+import files
 
 
 def font_load(file_name):
-    file_name = 'fonts/' + file_name  # uses fonts in the font folder
 
-    # gets the directory of the current script
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    # constructs the full path to the font file
-    font_path = os.path.join(dir_path, file_name)
+    font_path = files.file_path(file_name, 'fonts')  # gets the font file path
 
     # loads the font and return the family name
     font_id = QFontDatabase.addApplicationFont(font_path)

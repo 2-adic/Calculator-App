@@ -7,6 +7,7 @@ import sympy as sy
 import pyperclip
 from sortedcontainers import SortedDict
 import fontcontrol
+import files
 
 '''
 General:
@@ -73,6 +74,8 @@ Future Features:
     
     - Need to test if circularly defined variables are being detected every time
         - Need to give error for all cases where this occurs (not giving an error at all atm)
+        
+    - Add pin feature for variables so they don't get removed while its active
 '''
 
 
@@ -106,8 +109,7 @@ class MainWindow(QMainWindow):
 
         # close button
         self.button_close = QPushButton('', self)
-        self.button_close.setIcon(
-            QIcon('C:\\Users\\mglin\\PycharmProjects\\Apps\\Window\\Math App\\external\\button_close_icon.png'))
+        self.button_close.setIcon(QIcon(files.file_path('button_close_icon.png', 'icons')))
         self.button_close.setStyleSheet(
             "QPushButton { background-color: transparent; color: rgb(181, 186, 193); border: none; font-size: 11px;}"
             "QPushButton:hover { background-color: rgb(242, 63, 66); border: none; }"
@@ -116,8 +118,7 @@ class MainWindow(QMainWindow):
 
         # maximize button
         self.button_maximize = QPushButton('', self)
-        self.button_maximize.setIcon(
-            QIcon('C:\\Users\\mglin\\PycharmProjects\\Apps\\Window\\Math App\\external\\button_maximize_icon.png'))
+        self.button_maximize.setIcon(QIcon(files.file_path('button_maximize_icon.png', 'icons')))
         self.button_maximize.setStyleSheet(
             "QPushButton { background-color: transparent; color: rgb(181, 186, 193); border: none; font-weight: bold; font-size: 11px;}"
             "QPushButton:hover { background-color: rgb(45, 46, 51); border: none; }"
@@ -126,8 +127,7 @@ class MainWindow(QMainWindow):
 
         # minimize button
         self.button_minimize = QPushButton('', self)
-        self.button_minimize.setIcon(
-            QIcon('C:\\Users\\mglin\\PycharmProjects\\Apps\\Window\\Math App\\external\\button_minimize_icon.png'))
+        self.button_minimize.setIcon(QIcon(files.file_path('button_minimize_icon.png', 'icons')))
         self.button_minimize.setStyleSheet(
             "QPushButton { background-color: transparent; border: none; }"
             "QPushButton:hover { background-color: rgb(45, 46, 51); border: none; }"
@@ -459,7 +459,8 @@ class MainWindow(QMainWindow):
                     temp1[z] = temp1[z].replace(y, f'({temp2[y]})')
 
         for x in temp1:
-            if x in temp1[x]:
+            if x in temp1[x] and f'({x})' != temp1[x]:
+
                 print('Error: A variable is circularly defined.')
 
         return temp1
