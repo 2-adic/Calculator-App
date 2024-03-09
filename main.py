@@ -357,7 +357,6 @@ class MainWindow(QMainWindow):
 
         print(self.variables)
 
-
     def paintEvent(self, event) -> None:
         """
         Gives the background and titlebar their colors.
