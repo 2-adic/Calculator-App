@@ -76,6 +76,9 @@ Future Features:
         - Need to give error for all cases where this occurs (not giving an error at all atm)
         
     - Add pin feature for variables so they don't get removed while its active
+    
+    - Integral functionality
+        - ∫_d_
 '''
 
 
