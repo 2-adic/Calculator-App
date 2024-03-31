@@ -8,6 +8,7 @@ import pyperclip
 from sortedcontainers import SortedDict
 import fontcontrol
 import files
+from str_format import contains_substring
 
 '''
 General:
@@ -79,6 +80,9 @@ Future Features:
 
     - Integral functionality
         - ∫_d_
+    
+    - Implement option to get answers in LaTeX format
+        - Find a way to change the font of the LaTeX image
 '''
 
 
@@ -464,15 +468,28 @@ class MainWindow(QMainWindow):
                 temp1[x] = x
 
         # starts here
-        for x in range(len(temp1)):
+        for x in temp1:
+
+            if temp1[x] == x or not contains_substring(temp1[x], list(self.variables.keys())):
+                continue
+
             temp2 = temp1.copy()
             for y in temp2:
                 for z in temp2:
+
+                    if temp2[z] == z or not contains_substring(temp2[z], list(self.variables.keys())):
+                        continue
+
                     temp1[z] = temp1[z].replace(y, f'({temp2[y]})')
 
+            print(temp1)
+
         for x in temp1:
-            if x in temp1[x] and f'({x})' != temp1[x]:
+            if x in temp1[x] and f'({x})' != temp1[x] and x != temp1[x]:
                 print('Error: A variable is circularly defined.')
+                # add logic here to return an answer of 'Error'
+
+                break
 
         return temp1
 

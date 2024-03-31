@@ -95,7 +95,34 @@ def get_elements_in_bracket(string: str, index: int) -> tuple[list, int]:
 
 
 def replace_substring(original: str, start: int, end: int, replacement: str) -> str:
+    """
+    Replaces the given substring with the new substring.
+
+    :param original: The string with the substring.
+    :param start: The first index of the substring to be replaced.
+    :param end: The last index of the substring to be replaced.
+    :param replacement: The substring to replace the old substring.
+    :return: The finalized string.
+    """
+
     # Ensure the end index is not beyond the string length
     end = min(end, len(original))
     # Slice the original string and insert the replacement
     return original[:start] + '(' + str(replacement) + ')' + original[end + 1:]
+
+
+def contains_substring(string: str, array: list) -> bool:
+    """
+    Returns if a substring is in the given string.
+
+    :param string: String to be checked.
+    :param array: List of all substrings to check.
+    :return:
+    """
+
+    # tests all substring in the array
+    for x in array:
+        if x in string:
+            return True  # if one is found, a substring was in the string
+
+    return False  # if none were found, a substring is not in the string
