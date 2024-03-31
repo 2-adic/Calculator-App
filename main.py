@@ -201,7 +201,12 @@ class MainWindow(QMainWindow):
         # Resizing Widgets --------------------------------------------------------------------------------------
         self.window_resize = True  # initial state of resizing
         self.window_resize_direction = None  # initial direction of resizing
-        self.widget_resize_toggle = True
+        self.widget_resize_toggle = True  # toggles resizing functionality
+
+        self.window_resize_allowed = True  # only allows resizing once the timer is over
+        self.window_resize_timer = QTimer(self)  # timer for resizing
+        self.window_resize_timer.setSingleShot(True)  # timer triggers once before its cooldown
+        self.window_resize_timer.timeout.connect(self.window_resize_enable)  # enables the timer after its cooldown
 
         # top
         self.widget_resize_top = QWidget(self)
@@ -264,11 +269,9 @@ class MainWindow(QMainWindow):
         self.accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
         self.accepted_other = ['(']
 
-        # Create a QLineEdit with initial position (150, 50)
+        # create a QLineEdit with initial position (150, 50)
         self.box_text = QPlainTextEdit(self)
         self.box_text.textChanged.connect(self.text_update)
-
-        # old: rgb(56, 58, 64),
         self.box_text.setStyleSheet(
             '''
             QPlainTextEdit {
@@ -300,9 +303,6 @@ class MainWindow(QMainWindow):
                 border-radius: 6px;
                 color: white;
                 font-size: 15px;
-            }
-            QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
-                background: red;
             }
             QScrollBar:vertical {
                 border: none;
@@ -357,6 +357,12 @@ class MainWindow(QMainWindow):
 
         print(self.variables)
 
+    def window_resize_enable(self):
+        """
+        Re-enables resizing after the timer expires.
+        """
+
+        self.window_resize_allowed = True
 
     def paintEvent(self, event) -> None:
         """
@@ -832,110 +838,119 @@ class MainWindow(QMainWindow):
         # Resizing Widgets
         elif self.window_resize:
 
-            # top (needs work)
-            if self.window_resize_direction == 0:
-                temp_event_y = event.position().toPoint().y()
+            # top
+            if self.window_resize_direction == 0 and self.window_resize_allowed:
 
-                window_resize_move_y = self.height() - temp_event_y
-                if window_resize_move_y >= self.window_size_min_y:
-                    self.move(self.x(), self.y() + temp_event_y)
-                    self.resize(self.width(), window_resize_move_y)
-                    self.window_update()
+                self.window_resize_allowed = False  # prevents further resizing until the timer expires
+                self.window_resize_timer.start(1)  # starts the timer
+
+                temp_event_y = event.position().toPoint().y()  # gets the mouse y position
+                new_height = self.height() - temp_event_y
+
+                if new_height >= self.window_size_min_y:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x(), self.y() + temp_event_y, self.width(), new_height)
 
             # bottom
             elif self.window_resize_direction == 1:
-                window_resize_move_y = event.position().toPoint().y()
-                if window_resize_move_y >= self.window_size_min_y:
-                    self.resize(self.width(), window_resize_move_y)
-                    self.window_update()
+                new_height = event.position().toPoint().y()
+                if new_height >= self.window_size_min_y:
+                    self.resize(self.width(), new_height)
 
-            # left (needs work)
-            elif self.window_resize_direction == 2:
-                temp_event_x = event.position().toPoint().x()
+            # left
+            if self.window_resize_direction == 2 and self.window_resize_allowed:  # Check if resizing is allowed
 
-                window_resize_move_x = self.width() - temp_event_x
-                if window_resize_move_x >= self.window_size_min_x:
-                    self.move(self.x() + temp_event_x, self.y())
-                    self.resize(window_resize_move_x, self.height())
-                    self.window_update()
+                self.window_resize_allowed = False  # prevents further resizing until the timer expires
+                self.window_resize_timer.start(1)  # starts the timer
+
+                temp_event_x = event.position().toPoint().x()  # gets the mouse x position
+                new_width = self.width() - temp_event_x
+
+                if new_width >= self.window_size_min_x:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x() + temp_event_x, self.y(), new_width, self.height())
 
             # right
             elif self.window_resize_direction == 3:
-                window_resize_move_x = event.position().toPoint().x()
-                if window_resize_move_x >= self.window_size_min_x:
-                    self.resize(window_resize_move_x, self.height())
-                    self.window_update()
+                new_width = event.position().toPoint().x()
+                if new_width >= self.window_size_min_x:
+                    self.resize(new_width, self.height())
 
-            # top left (needs major work)
-            elif self.window_resize_direction == 4:
-                temp_event_x = event.position().toPoint().x()
-                temp_event_y = event.position().toPoint().y()
-                temp_self_x = self.x()
-                temp_self_y = self.y()
-                temp_height = self.height()
-                temp_width = self.width()
+            # top left
+            elif self.window_resize_direction == 4 and self.window_resize_allowed:
 
-                window_resize_move_x = temp_width - temp_event_x
-                window_resize_move_y = temp_height - temp_event_y
-                if window_resize_move_x >= self.window_size_min_x and window_resize_move_y >= self.window_size_min_y:
-                    self.resize(window_resize_move_x, window_resize_move_y)
-                    self.move(temp_self_x + temp_event_x, temp_self_y + temp_event_y)
-                    self.window_update()
-                elif window_resize_move_x >= self.window_size_min_x:
-                    self.resize(window_resize_move_x, temp_height)
-                    self.move(temp_self_x + temp_event_x, temp_self_y)
-                    self.window_update()
-                elif window_resize_move_y >= self.window_size_min_y:
-                    self.resize(temp_width, window_resize_move_y)
-                    self.move(temp_self_x, temp_self_y + temp_event_y)
-                    self.window_update()
+                self.window_resize_allowed = False  # prevents further resizing until the timer expires
+                self.window_resize_timer.start(1)  # starts the timer
 
-            # top right (needs work)
-            elif self.window_resize_direction == 5:
-                temp_event_y = event.position().toPoint().y()
-                temp_height = self.height()
+                temp_event_x = event.position().toPoint().x()  # gets the mouse x position
+                new_width = self.width() - temp_event_x
+                temp_event_y = event.position().toPoint().y()  # gets the mouse y position
+                new_height = self.height() - temp_event_y
 
-                window_resize_move_x = event.position().toPoint().x()
-                window_resize_move_y = temp_height - temp_event_y
-                if window_resize_move_x >= self.window_size_min_x and window_resize_move_y >= self.window_size_min_y:
-                    self.move(self.x(), self.y() + temp_event_y)
-                    self.resize(window_resize_move_x, window_resize_move_y)
-                    self.window_update()
-                elif window_resize_move_x >= self.window_size_min_x:
-                    self.resize(window_resize_move_x, temp_height)
-                    self.window_update()
-                elif window_resize_move_y >= self.window_size_min_y:
-                    self.move(self.x(), self.y() + temp_event_y)
-                    self.resize(self.width(), window_resize_move_y)
-                    self.window_update()
+                if new_width >= self.window_size_min_x and new_height >= self.window_size_min_y:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x() + temp_event_x, self.y() + temp_event_y, new_width, new_height)
 
-            # bottom left (needs work)
-            elif self.window_resize_direction == 6:
-                temp_event_x = event.position().toPoint().x()
-                temp_width = self.width()
+                elif new_width >= self.window_size_min_x:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x() + temp_event_x, self.y(), new_width, self.height())
 
-                window_resize_move_x = temp_width - temp_event_x
-                window_resize_move_y = event.position().toPoint().y()
-                if window_resize_move_x >= self.window_size_min_x and window_resize_move_y >= self.window_size_min_y:
-                    self.move(self.x() + temp_event_x, self.y())
-                    self.resize(window_resize_move_x, window_resize_move_y)
-                    self.window_update()
-                elif window_resize_move_x >= self.window_size_min_x:
-                    self.move(self.x() + temp_event_x, self.y())
-                    self.resize(window_resize_move_x, self.height())
-                    self.window_update()
-                elif window_resize_move_y >= self.window_size_min_y:
-                    self.resize(self.width(), window_resize_move_y)
-                    self.window_update()
+                elif new_height >= self.window_size_min_y:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x(), self.y() + temp_event_y, self.width(), new_height)
+
+            # top right
+            elif self.window_resize_direction == 5 and self.window_resize_allowed:
+
+                self.window_resize_allowed = False  # prevents further resizing until the timer expires
+                self.window_resize_timer.start(1)  # starts the timer
+
+                new_width = event.position().toPoint().x()
+                temp_event_y = event.position().toPoint().y()  # gets the mouse y position
+                new_height = self.height() - temp_event_y
+
+                if new_width >= self.window_size_min_x and new_height >= self.window_size_min_y:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x(), self.y() + temp_event_y, new_width, new_height)
+
+                elif new_width >= self.window_size_min_x:
+                    # resizes the window to the new size
+                    self.resize(new_width, self.height())
+
+                elif new_height >= self.window_size_min_y:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x(), self.y() + temp_event_y, self.width(), new_height)
+
+            # bottom left
+            elif self.window_resize_direction == 6 and self.window_resize_allowed:
+
+                self.window_resize_allowed = False  # prevents further resizing until the timer expires
+                self.window_resize_timer.start(1)  # starts the timer
+
+                temp_event_x = event.position().toPoint().x()  # gets the mouse x position
+                new_width = self.width() - temp_event_x
+                new_height = event.position().toPoint().y()
+
+                if new_width >= self.window_size_min_x and new_height >= self.window_size_min_y:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x() + temp_event_x, self.y(), new_width, new_height)
+
+                elif new_width >= self.window_size_min_x:
+                    # resizes the window to the new size
+                    self.setGeometry(self.x() + temp_event_x, self.y(), new_width, self.height())
+
+                elif new_height >= self.window_size_min_y:
+                    # moves window to new position and changes its shape
+                    self.resize(self.width(), new_height)
 
             # bottom right
             elif self.window_resize_direction == 7:
 
-                window_resize_move_x = max(self.window_size_min_x, event.position().toPoint().x())
-                window_resize_move_y = max(self.window_size_min_y, event.position().toPoint().y())
-                self.resize(window_resize_move_x, window_resize_move_y)
+                new_width = max(self.window_size_min_x, event.position().toPoint().x())
+                new_height = max(self.window_size_min_y, event.position().toPoint().y())
+                self.resize(new_width, new_height)
 
-                self.window_update()
+            self.window_update()  # updates the window
 
     def window_update(self) -> None:
         """
