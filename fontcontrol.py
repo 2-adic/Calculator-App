@@ -2,7 +2,6 @@
 Used to control the font of the window.
 """
 
-import os
 from PyQt6.QtGui import QFontDatabase
 import files
 
@@ -23,7 +22,7 @@ font_size = 8
 
 font_files = [
     'RobotoMono-VariableFont_wght.ttf',  # Roboto Mono (l could be mistaken for a 1, might change later)
-    'RobotoMono-Italic-VariableFont_wght'  # Roboto Mono italicized
+    'RobotoMono-Italic-VariableFont_wght.ttf'  # Roboto Mono italicized
 ]
 
 # Within the window file, run the following code to use the font:
