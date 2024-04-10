@@ -2,7 +2,7 @@ import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, \
     QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout
 from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QFontDatabase
-from PyQt6.QtCore import Qt, QPoint, QTimer
+from PyQt6.QtCore import Qt, QPoint, QTimer, QSize
 import sympy as sy
 import pyperclip
 from sortedcontainers import SortedDict
@@ -99,6 +99,8 @@ class MainWindow(QMainWindow):
         self.title_bar_height = 22  # Height of the title bar
         self.window_size_min_x = 650  # minimum width of the window
         self.window_size_min_y = 450  # minimum height of the window
+
+        self.setMinimumSize(self.window_size_min_x, self.window_size_min_y)  # need to check if this works on Windows too
         # -------------------------------------------------------------------------------------------------------
 
         # Title Bar ---------------------------------------------------------------------------------------------
@@ -162,7 +164,6 @@ class MainWindow(QMainWindow):
         self.test_counter += 1
         '''
 
-        '''
         # update button
         self.button_update = QPushButton('Update', self)
         self.button_update.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
@@ -170,7 +171,6 @@ class MainWindow(QMainWindow):
         self.button_update.clicked.connect(self.get_update)
         self.button_update.setCursor(Qt.CursorShape.PointingHandCursor)
         self.test_counter += 1
-        '''
 
         # answer button
         self.answer_default = 'Answer'
@@ -353,6 +353,10 @@ class MainWindow(QMainWindow):
         # initializes all widgets in their positions
         self.window_update()
 
+    # test if this messes with Windows resizing
+    def resizeEvent(self, event):
+        self.window_update()  # Custom method to update the sizes of widgets
+
     def test(self) -> None:
         """
         Used for testing anything using a button in the window.
@@ -530,6 +534,8 @@ class MainWindow(QMainWindow):
 
         self.answer_temp = self.answer_formatting_after(self.answer)  # reformats the answer
         self.box_answer.setText(self.answer_temp)  # displays the answer
+        self.box_answer.setText('')
+        self.box_answer.setIcon(QIcon("/Users/matthew/PycharmProjects/Calculator-App/latex_answer.png"))  # Replace with your image path
 
         self.box_answer_format_label.setText('=')  # answer defaults in exact mode
 
@@ -1040,6 +1046,8 @@ class MainWindow(QMainWindow):
         # answer box
         self.box_answer.move(self.box_padding, self.height() - self.box_padding - 80)
         self.box_answer.resize(int((self.width() * (2 / 5)) - (self.box_padding * 1.5)), self.box_answer_height)
+
+        self.box_answer.setIconSize(QSize(int((self.width() * (2 / 5)) - (self.box_padding * 1.5)) - 24, self.height() - self.box_padding - 80))  # Adjust the size as needed
 
         # answer format label
         self.box_answer_format_label.move(self.box_padding + 12, self.height() - self.box_padding - 80)

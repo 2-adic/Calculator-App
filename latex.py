@@ -33,8 +33,9 @@ def convert_render_latex(string: str) -> str:
     for x in range(constant_counter):
         string = string.replace('C' + str_format.to_subscript(str(x)), f'C_{x}')
 
-    string = sy.sympify(string)
-    latex = sy.latex(string)
+    sy_string = sy.sympify(string)
+    latex = sy.latex(sy_string, fold_short_frac=False)
 
     render_latex(latex)
-    return latex
+
+    return string
