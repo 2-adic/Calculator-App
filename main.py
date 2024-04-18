@@ -9,6 +9,9 @@ from sortedcontainers import SortedDict
 import fontcontrol
 import files
 from str_format import contains_substring
+from PIL import Image
+from latex import convert_render_latex
+
 
 '''
 General:
@@ -149,63 +152,36 @@ class MainWindow(QMainWindow):
         self.test_between_spacing = 10
         self.test_horizontal_offset = 90
         self.test_button_width = 50
-
-        # don't change
-        self.test_between_spacing = self.test_between_spacing + self.test_button_width
-        self.test_counter = 0
+        self.button_hook = []  # holds all testing buttons
 
         '''
         # size button
-        self.button_size = QPushButton('Size', self)
-        self.button_size.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
-        self.button_size.setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
-        self.button_size.clicked.connect(self.get_info)
-        self.button_size.setCursor(Qt.PointingHandCursor)
-        self.test_counter += 1
+        self.button_hook.append(QPushButton('Size', self))
+        self.button_hook[-1].clicked.connect(self.get_info)
         '''
 
         # update button
-        self.button_update = QPushButton('Update', self)
-        self.button_update.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
-        self.button_update.setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
-        self.button_update.clicked.connect(self.get_update)
-        self.button_update.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.test_counter += 1
+        self.button_hook.append(QPushButton('Update', self))
+        self.button_hook[-1].clicked.connect(self.get_update)
 
         # answer button
         self.answer_default = 'Answer'
-        self.button_answer = QPushButton(self.answer_default, self)
-        self.button_answer.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing),
-                                       self.test_padding, self.test_button_width - (2 * self.test_padding),
-                                       self.title_bar_height - (2 * self.test_padding))
-        self.button_answer.setStyleSheet(
-            'background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
-        self.button_answer.clicked.connect(self.get_answer)
-        self.button_answer.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.test_counter += 1
+        self.button_hook.append(QPushButton(self.answer_default, self))
+        self.button_hook[-1].clicked.connect(self.get_answer)
 
         # flip button
-        self.button_flip = QPushButton('Flip', self)
-        self.button_flip.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing),
-                                     self.test_padding, self.test_button_width - (2 * self.test_padding),
-                                     self.title_bar_height - (2 * self.test_padding))
-        self.button_flip.setStyleSheet(
-            'background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
-        self.button_flip.clicked.connect(self.flip_type)
-        self.button_flip.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.test_counter += 1
+        self.button_hook.append(QPushButton('Flip', self))
+        self.button_hook[-1].clicked.connect(self.flip_type)
 
         # test button
         self.button_test_toggle = False
-        self.button_test = QPushButton('Test', self)
-        self.button_test.setGeometry(self.test_horizontal_offset + (self.test_counter * self.test_between_spacing),
-                                     self.test_padding, self.test_button_width - (2 * self.test_padding),
-                                     self.title_bar_height - (2 * self.test_padding))
-        self.button_test.setStyleSheet(
-            'background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
-        self.button_test.clicked.connect(self.test)
-        self.button_test.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.test_counter += 1
+        self.button_hook.append(QPushButton('Test', self))
+        self.button_hook[-1].clicked.connect(self.test)
+
+        for i in range(len(self.button_hook)):  # sets the button hook parameters
+            self.button_hook[i].setGeometry(self.test_horizontal_offset + (i * (self.test_between_spacing + self.test_button_width)), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
+            self.button_hook[i].setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
+            self.button_hook[i].setCursor(Qt.CursorShape.PointingHandCursor)
         # -------------------------------------------------------------------------------------------------------
 
         # Resizing Widgets --------------------------------------------------------------------------------------
@@ -217,38 +193,22 @@ class MainWindow(QMainWindow):
         self.window_resize_timer = QTimer(self)  # timer for resizing
         self.window_resize_timer.setSingleShot(True)  # timer triggers once before its cooldown
         self.window_resize_timer.timeout.connect(self.window_resize_enable)  # enables the timer after its cooldown
+        self.widget_resize = []
 
-        # top
-        self.widget_resize_top = QWidget(self)
-        self.widget_resize_top.setCursor(Qt.CursorShape.SizeVerCursor)
+        for x in range(8):  # order: right, top right, top, top left, left, bottom left, bottom, bottom right
+            self.widget_resize.append(QWidget(self))
 
-        # bottom
-        self.widget_resize_bottom = QWidget(self)
-        self.widget_resize_bottom.setCursor(Qt.CursorShape.SizeVerCursor)
+        self.widget_resize[0].setCursor(Qt.CursorShape.SizeHorCursor)  # right
+        self.widget_resize[4].setCursor(Qt.CursorShape.SizeHorCursor)  # left
 
-        # left
-        self.widget_resize_left = QWidget(self)
-        self.widget_resize_left.setCursor(Qt.CursorShape.SizeHorCursor)
+        self.widget_resize[1].setCursor(Qt.CursorShape.SizeBDiagCursor)  # top right
+        self.widget_resize[5].setCursor(Qt.CursorShape.SizeBDiagCursor)  # bottom left
 
-        # right
-        self.widget_resize_right = QWidget(self)
-        self.widget_resize_right.setCursor(Qt.CursorShape.SizeHorCursor)
+        self.widget_resize[2].setCursor(Qt.CursorShape.SizeVerCursor)  # top
+        self.widget_resize[6].setCursor(Qt.CursorShape.SizeVerCursor)  # bottom
 
-        # top left
-        self.widget_resize_top_left = QWidget(self)
-        self.widget_resize_top_left.setCursor(Qt.CursorShape.SizeFDiagCursor)
-
-        # top right
-        self.widget_resize_top_right = QWidget(self)
-        self.widget_resize_top_right.setCursor(Qt.CursorShape.SizeBDiagCursor)
-
-        # bottom left
-        self.widget_resize_bottom_left = QWidget(self)
-        self.widget_resize_bottom_left.setCursor(Qt.CursorShape.SizeBDiagCursor)
-
-        # bottom right
-        self.widget_resize_bottom_right = QWidget(self)
-        self.widget_resize_bottom_right.setCursor(Qt.CursorShape.SizeFDiagCursor)
+        self.widget_resize[3].setCursor(Qt.CursorShape.SizeFDiagCursor)  # top left
+        self.widget_resize[7].setCursor(Qt.CursorShape.SizeFDiagCursor)  # bottom right
         # -------------------------------------------------------------------------------------------------------
 
         # answer box
@@ -256,8 +216,11 @@ class MainWindow(QMainWindow):
         self.answer_final = self.answer_default
         self.answer_temp = self.answer_final
         self.flip_type_toggle = False
+        self.image = None
+        self.icon_aspect_ratio_inverse = None
 
         self.box_answer_height = 80
+        self.box_answer_padding = 12
         self.box_answer = QPushButton(self.answer_default, self)
         self.box_answer.setStyleSheet(
             'border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;')
@@ -338,12 +301,10 @@ class MainWindow(QMainWindow):
         )
 
         self.scroll_content.setStyleSheet(
-            ''
-            '   border: transparent;'
-            '   background-color: transparent;'
-            '   color: white;'
-            '   font-size: 15px;'
-            ''
+            'border: transparent;'
+            'background-color: transparent;'
+            'color: white;'
+            'font-size: 15px;'
         )
 
         self.test_margin = 50
@@ -390,8 +351,7 @@ class MainWindow(QMainWindow):
         painter.fillRect(0, 0, self.width(), self.title_bar_height, QColor(30, 31, 34))
 
         # center window
-        painter.fillRect(0, self.title_bar_height, self.width(), self.height() - self.title_bar_height,
-                         QColor(49, 51, 56))
+        painter.fillRect(0, self.title_bar_height, self.width(), self.height() - self.title_bar_height, QColor(49, 51, 56))
 
     def get_info(self) -> None:
         """
@@ -533,16 +493,28 @@ class MainWindow(QMainWindow):
             print(f'Error: {e}')
 
         self.answer_temp = self.answer_formatting_after(self.answer)  # reformats the answer
-        self.box_answer.setText(self.answer_temp)  # displays the answer
+
+        # use this for option that lets the user set the non latex image as the answer
+        # self.box_answer.setText(self.answer_temp)  # displays the answer
+
+        convert_render_latex(self.answer_temp)
+
         self.box_answer.setText('')
-        self.box_answer.setIcon(QIcon("/Users/matthew/PycharmProjects/Calculator-App/latex_answer.png"))  # Replace with your image path
+        self.box_answer.setIcon(QIcon(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png"))
+        self.image = Image.open(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png")
+        self.icon_aspect_ratio_inverse = self.image.size[1] / self.image.size[0]
 
         self.box_answer_format_label.setText('=')  # answer defaults in exact mode
+
+        self.window_update()  # updates to resize the new image
 
     def flip_type(self) -> None:
         """
         Flips the answer format between decimal and exact.
         """
+
+        if self.answer == self.answer_default:
+            return
 
         self.flip_type_toggle = not self.flip_type_toggle  # keeps track of which format is being displayed
 
@@ -555,7 +527,16 @@ class MainWindow(QMainWindow):
             self.box_answer_format_label.setText('=')
 
         self.answer_temp = self.answer_formatting_after(self.answer_temp)  # reformats the answer
-        self.box_answer.setText(self.answer_temp)  # displays the answer
+
+        convert_render_latex(self.answer_temp)
+
+        self.box_answer.setIcon(QIcon(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png"))
+        self.image = Image.open(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png")
+        self.icon_aspect_ratio_inverse = self.image.size[1] / self.image.size[0]
+
+        self.window_update()
+
+        # self.box_answer.setText(self.answer_temp)  # displays the answer
 
     def copy(self) -> None:
         """
@@ -563,10 +544,8 @@ class MainWindow(QMainWindow):
         """
 
         # adds flashing blue visual when button is clicked
-        self.box_answer.setStyleSheet(
-            'border: 3px solid rgb(35, 36, 40); background-color: rgb(81, 100, 117); border-radius: 6px; color: white; font-size: 15px;')
-        QTimer.singleShot(150, lambda: self.box_answer.setStyleSheet(
-            'border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;'))
+        self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(81, 100, 117); border-radius: 6px; color: white; font-size: 15px;')
+        QTimer.singleShot(150, lambda: self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;'))
 
         pyperclip.copy(str(self.answer_temp))  # copies answer to clipboard
 
@@ -626,6 +605,8 @@ class MainWindow(QMainWindow):
 
         # clears the answer box to prevent user from thinking the answer is for what was just typed in the text box
         self.answer = self.answer_default  # sets answer to default answer so if the user flips the format, the default answer still displays
+        self.box_answer.setIcon(QIcon())
+
         self.box_answer.setText(f'{str(self.answer)}')  # displays the answer
 
         self.box_answer_format_label.setText('')
@@ -730,32 +711,18 @@ class MainWindow(QMainWindow):
         if self.isMaximized():
             # return to state before maximized
             self.showNormal()
-
             self.widget_resize_toggle = True
 
-            self.widget_resize_top.setEnabled(True)
-            self.widget_resize_bottom.setEnabled(True)
-            self.widget_resize_left.setEnabled(True)
-            self.widget_resize_right.setEnabled(True)
-            self.widget_resize_top_left.setEnabled(True)
-            self.widget_resize_top_right.setEnabled(True)
-            self.widget_resize_bottom_left.setEnabled(True)
-            self.widget_resize_bottom_right.setEnabled(True)
+            for widget in self.widget_resize:  # enables all resizing widgets
+                widget.setEnabled(True)
 
         else:
             # maximize window
             self.showMaximized()
-
             self.widget_resize_toggle = False
 
-            self.widget_resize_top.setEnabled(False)
-            self.widget_resize_bottom.setEnabled(False)
-            self.widget_resize_left.setEnabled(False)
-            self.widget_resize_right.setEnabled(False)
-            self.widget_resize_top_left.setEnabled(False)
-            self.widget_resize_top_right.setEnabled(False)
-            self.widget_resize_bottom_left.setEnabled(False)
-            self.widget_resize_bottom_right.setEnabled(False)
+            for widget in self.widget_resize:  # disables all resizing widgets
+                widget.setEnabled(False)
 
         QTimer.singleShot(0, self.window_update)
 
@@ -785,46 +752,17 @@ class MainWindow(QMainWindow):
             if self.widget_move.rect().contains(self.widget_move.mapFrom(self, self.offset)):
                 self.window_moving = True
                 self.offset = event.globalPosition().toPoint() - self.pos()
-
                 return
-
-            # not sure why this is here, will review later
-            # if self.widget_resize_size < event.y() < self.title_bar_height and self.widget_resize_size < event.x() < self.width() - self.widget_resize_size:
-            #     self.window_moving = True
-            #     self.offset = event.globalPosition().toPoint() - self.pos()
-            #     return
 
             # Resizing Widgets
             self.window_resize = False
             if self.widget_resize_toggle:
-                if self.widget_resize_top.rect().contains(self.widget_resize_top.mapFrom(self, self.offset)):
-                    self.window_resize_direction = 0  # top
-                    self.window_resize = True
-                elif self.widget_resize_bottom.rect().contains(self.widget_resize_bottom.mapFrom(self, self.offset)):
-                    self.window_resize_direction = 1  # bottom
-                    self.window_resize = True
-                elif self.widget_resize_left.rect().contains(self.widget_resize_left.mapFrom(self, self.offset)):
-                    self.window_resize_direction = 2  # left
-                    self.window_resize = True
-                elif self.widget_resize_right.rect().contains(self.widget_resize_right.mapFrom(self, self.offset)):
-                    self.window_resize_direction = 3  # right
-                    self.window_resize = True
-                elif self.widget_resize_top_left.rect().contains(
-                        self.widget_resize_top_left.mapFrom(self, self.offset)):
-                    self.window_resize_direction = 4  # top left
-                    self.window_resize = True
-                elif self.widget_resize_top_right.rect().contains(
-                        self.widget_resize_top_right.mapFrom(self, self.offset)):
-                    self.window_resize_direction = 5  # top right
-                    self.window_resize = True
-                elif self.widget_resize_bottom_left.rect().contains(
-                        self.widget_resize_bottom_left.mapFrom(self, self.offset)):
-                    self.window_resize_direction = 6  # bottom left
-                    self.window_resize = True
-                elif self.widget_resize_bottom_right.rect().contains(
-                        self.widget_resize_bottom_right.mapFrom(self, self.offset)):
-                    self.window_resize_direction = 7  # bottom right
-                    self.window_resize = True
+
+                for i in range(len(self.widget_resize)):  # checks if cursor is in any of the resizing widgets
+                    if self.widget_resize[i].rect().contains(self.widget_resize[i].mapFrom(self, self.offset)):
+                        self.window_resize_direction = i
+                        self.window_resize = True
+                        break
 
     def mouseMoveEvent(self, event: QMouseEvent | None) -> None:
         """
@@ -850,8 +788,7 @@ class MainWindow(QMainWindow):
             # exits the maximized setting
             if self.isMaximized():
 
-                offset_x = min(int(self.normalGeometry().width() * (self.offset.x() / self.width())),
-                               self.normalGeometry().width() - (3 * self.button_width))
+                offset_x = min(int(self.normalGeometry().width() * (self.offset.x() / self.width())), self.normalGeometry().width() - (3 * self.button_width))
                 self.offset = QPoint(offset_x, self.offset.y())
 
                 self.button_maximize_logic()
@@ -866,69 +803,20 @@ class MainWindow(QMainWindow):
         # Resizing Widgets
         elif self.window_resize:
 
-            # top
-            if self.window_resize_direction == 0 and self.window_resize_allowed:
-
-                self.window_resize_allowed = False  # prevents further resizing until the timer expires
-                self.window_resize_timer.start(1)  # starts the timer
-
-                temp_event_y = event.position().toPoint().y()  # gets the mouse y position
-                new_height = self.height() - temp_event_y
-
-                if new_height >= self.window_size_min_y:
-                    # moves window to new position and changes its shape
-                    self.setGeometry(self.x(), self.y() + temp_event_y, self.width(), new_height)
-
-            # bottom
-            elif self.window_resize_direction == 1:
-                new_height = event.position().toPoint().y()
-                if new_height >= self.window_size_min_y:
-                    self.resize(self.width(), new_height)
-
-            # left
-            if self.window_resize_direction == 2 and self.window_resize_allowed:  # Check if resizing is allowed
-
-                self.window_resize_allowed = False  # prevents further resizing until the timer expires
-                self.window_resize_timer.start(1)  # starts the timer
-
-                temp_event_x = event.position().toPoint().x()  # gets the mouse x position
-                new_width = self.width() - temp_event_x
-
-                if new_width >= self.window_size_min_x:
-                    # moves window to new position and changes its shape
-                    self.setGeometry(self.x() + temp_event_x, self.y(), new_width, self.height())
-
             # right
-            elif self.window_resize_direction == 3:
+            if self.window_resize_direction == 0:
                 new_width = event.position().toPoint().x()
                 if new_width >= self.window_size_min_x:
                     self.resize(new_width, self.height())
 
-            # top left
-            elif self.window_resize_direction == 4 and self.window_resize_allowed:
-
-                self.window_resize_allowed = False  # prevents further resizing until the timer expires
-                self.window_resize_timer.start(1)  # starts the timer
-
-                temp_event_x = event.position().toPoint().x()  # gets the mouse x position
-                new_width = self.width() - temp_event_x
-                temp_event_y = event.position().toPoint().y()  # gets the mouse y position
-                new_height = self.height() - temp_event_y
-
-                if new_width >= self.window_size_min_x and new_height >= self.window_size_min_y:
-                    # moves window to new position and changes its shape
-                    self.setGeometry(self.x() + temp_event_x, self.y() + temp_event_y, new_width, new_height)
-
-                elif new_width >= self.window_size_min_x:
-                    # moves window to new position and changes its shape
-                    self.setGeometry(self.x() + temp_event_x, self.y(), new_width, self.height())
-
-                elif new_height >= self.window_size_min_y:
-                    # moves window to new position and changes its shape
-                    self.setGeometry(self.x(), self.y() + temp_event_y, self.width(), new_height)
+            # bottom
+            elif self.window_resize_direction == 6:
+                new_height = event.position().toPoint().y()
+                if new_height >= self.window_size_min_y:
+                    self.resize(self.width(), new_height)
 
             # top right
-            elif self.window_resize_direction == 5 and self.window_resize_allowed:
+            elif self.window_resize_direction == 1 and self.window_resize_allowed:
 
                 self.window_resize_allowed = False  # prevents further resizing until the timer expires
                 self.window_resize_timer.start(1)  # starts the timer
@@ -950,7 +838,7 @@ class MainWindow(QMainWindow):
                     self.setGeometry(self.x(), self.y() + temp_event_y, self.width(), new_height)
 
             # bottom left
-            elif self.window_resize_direction == 6 and self.window_resize_allowed:
+            elif self.window_resize_direction == 5 and self.window_resize_allowed:
 
                 self.window_resize_allowed = False  # prevents further resizing until the timer expires
                 self.window_resize_timer.start(1)  # starts the timer
@@ -971,6 +859,55 @@ class MainWindow(QMainWindow):
                     # moves window to new position and changes its shape
                     self.resize(self.width(), new_height)
 
+            # top
+            elif self.window_resize_direction == 2 and self.window_resize_allowed:
+
+                self.window_resize_allowed = False  # prevents further resizing until the timer expires
+                self.window_resize_timer.start(1)  # starts the timer
+
+                temp_event_y = event.position().toPoint().y()  # gets the mouse y position
+                new_height = self.height() - temp_event_y
+
+                if new_height >= self.window_size_min_y:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x(), self.y() + temp_event_y, self.width(), new_height)
+
+            # left
+            if self.window_resize_direction == 4 and self.window_resize_allowed:  # Check if resizing is allowed
+
+                self.window_resize_allowed = False  # prevents further resizing until the timer expires
+                self.window_resize_timer.start(1)  # starts the timer
+
+                temp_event_x = event.position().toPoint().x()  # gets the mouse x position
+                new_width = self.width() - temp_event_x
+
+                if new_width >= self.window_size_min_x:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x() + temp_event_x, self.y(), new_width, self.height())
+
+            # top left
+            elif self.window_resize_direction == 3 and self.window_resize_allowed:
+
+                self.window_resize_allowed = False  # prevents further resizing until the timer expires
+                self.window_resize_timer.start(1)  # starts the timer
+
+                temp_event_x = event.position().toPoint().x()  # gets the mouse x position
+                new_width = self.width() - temp_event_x
+                temp_event_y = event.position().toPoint().y()  # gets the mouse y position
+                new_height = self.height() - temp_event_y
+
+                if new_width >= self.window_size_min_x and new_height >= self.window_size_min_y:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x() + temp_event_x, self.y() + temp_event_y, new_width, new_height)
+
+                elif new_width >= self.window_size_min_x:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x() + temp_event_x, self.y(), new_width, self.height())
+
+                elif new_height >= self.window_size_min_y:
+                    # moves window to new position and changes its shape
+                    self.setGeometry(self.x(), self.y() + temp_event_y, self.width(), new_height)
+
             # bottom right
             elif self.window_resize_direction == 7:
 
@@ -989,8 +926,7 @@ class MainWindow(QMainWindow):
 
         # move widget
         self.widget_move.move(self.widget_resize_size, self.widget_resize_size)
-        self.widget_move.resize(self.width() - self.widget_resize_size - (3 * self.title_bar_height),
-                                self.title_bar_height - self.widget_resize_size)
+        self.widget_move.resize(self.width() - self.widget_resize_size - (3 * self.title_bar_height), self.title_bar_height - self.widget_resize_size)
 
         # close button
         self.button_close.move(self.width() - self.button_width, 0)
@@ -1004,59 +940,48 @@ class MainWindow(QMainWindow):
         self.button_minimize.move(self.width() - (3 * self.button_width), 0)
         self.button_minimize.resize(self.button_width, self.title_bar_height)
 
-        # top
-        self.widget_resize_top.move(self.widget_resize_size, 0)
-        self.widget_resize_top.resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
-
-        # bottom
-        self.widget_resize_bottom.move(self.widget_resize_size, self.height() - self.widget_resize_size)
-        self.widget_resize_bottom.resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
-
-        # left
-        self.widget_resize_left.move(0, self.widget_resize_size)
-        self.widget_resize_left.resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
-
-        # right
-        self.widget_resize_right.move(self.width() - self.widget_resize_size, self.widget_resize_size)
-        self.widget_resize_right.resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
-
-        # top left
-        self.widget_resize_top_left.move(0, 0)
-        self.widget_resize_top_left.resize(self.widget_resize_size, self.widget_resize_size)
-
-        # top right
-        self.widget_resize_top_right.move(self.width() - self.widget_resize_size, 0)
-        self.widget_resize_top_right.resize(self.widget_resize_size, self.widget_resize_size)
-
-        # bottom left
-        self.widget_resize_bottom_left.move(0, self.height() - self.widget_resize_size)
-        self.widget_resize_bottom_left.resize(self.widget_resize_size, self.widget_resize_size)
-
-        # bottom right
-        self.widget_resize_bottom_right.move(self.width() - self.widget_resize_size,
-                                             self.height() - self.widget_resize_size)
-        self.widget_resize_bottom_right.resize(self.widget_resize_size, self.widget_resize_size)
+        # Resize Widgets, Order: right, top right, top, top left, left, bottom left, bottom, bottom right
+        self.widget_resize[0].move(self.width() - self.widget_resize_size, self.widget_resize_size)
+        self.widget_resize[0].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
+        self.widget_resize[1].move(self.width() - self.widget_resize_size, 0)
+        self.widget_resize[1].resize(self.widget_resize_size, self.widget_resize_size)
+        self.widget_resize[2].move(self.widget_resize_size, 0)
+        self.widget_resize[2].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
+        self.widget_resize[3].move(0, 0)
+        self.widget_resize[3].resize(self.widget_resize_size, self.widget_resize_size)
+        self.widget_resize[4].move(0, self.widget_resize_size)
+        self.widget_resize[4].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
+        self.widget_resize[5].move(0, self.height() - self.widget_resize_size)
+        self.widget_resize[5].resize(self.widget_resize_size, self.widget_resize_size)
+        self.widget_resize[6].move(self.widget_resize_size, self.height() - self.widget_resize_size)
+        self.widget_resize[6].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
+        self.widget_resize[7].move(self.width() - self.widget_resize_size, self.height() - self.widget_resize_size)
+        self.widget_resize[7].resize(self.widget_resize_size, self.widget_resize_size)
 
         # text box
         self.box_text.move(self.box_padding, self.box_padding + self.title_bar_height)
-        self.box_text.resize(int((self.width() * (2 / 5)) - (self.box_padding * 1.5)),
-                             self.height() - self.box_answer_height - (
-                                     self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
+        self.box_text.resize(int((self.width() * (2 / 5)) - (self.box_padding * 1.5)), self.height() - self.box_answer_height - (self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
 
         # answer box
-        self.box_answer.move(self.box_padding, self.height() - self.box_padding - 80)
+        self.box_answer.move(self.box_padding, self.height() - self.box_padding - self.box_answer_height)
         self.box_answer.resize(int((self.width() * (2 / 5)) - (self.box_padding * 1.5)), self.box_answer_height)
 
-        self.box_answer.setIconSize(QSize(int((self.width() * (2 / 5)) - (self.box_padding * 1.5)) - 24, self.height() - self.box_padding - 80))  # Adjust the size as needed
+        # answer box icon
+        icon_new_width = int((self.width() * (2 / 5)) - (self.box_padding * 1.5) - (self.box_answer_padding * 4))
+        if self.icon_aspect_ratio_inverse is not None:
+            if self.icon_aspect_ratio_inverse * icon_new_width < self.box_answer_height - (self.box_answer_padding * 2):
+                self.box_answer.setIconSize(QSize(icon_new_width, self.height() - self.box_padding - self.box_answer_height - (self.box_answer_padding * 2)))
+            else:
+                icon_aspect_ratio = self.icon_aspect_ratio_inverse ** -1
+                icon_new_width = int(icon_aspect_ratio * self.box_answer_height - (self.box_answer_padding * 2))
+                self.box_answer.setIconSize(QSize(icon_new_width, self.box_answer_height - (self.box_answer_padding * 2)))
 
         # answer format label
-        self.box_answer_format_label.move(self.box_padding + 12, self.height() - self.box_padding - 80)
+        self.box_answer_format_label.move(self.box_padding + self.box_answer_padding, self.height() - self.box_padding - self.box_answer_height)
 
         # definition box
-        self.scroll_area.move((self.box_padding * 2) + int((self.width() * (2 / 5)) - (self.box_padding * 1.5)),
-                              self.box_padding + self.title_bar_height)
-        self.scroll_area.resize(int((self.width() * (3 / 5)) - (self.box_padding * 1.5)),
-                                self.height() - (self.box_padding * 2) - self.title_bar_height)
+        self.scroll_area.move((self.box_padding * 2) + int((self.width() * (2 / 5)) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height)
+        self.scroll_area.resize(int((self.width() * (3 / 5)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height)
 
 
 def main():
@@ -1073,14 +998,10 @@ def main():
     # default settings
     # could not change inactive highlight color with style sheet a style sheet; a style sheet overrides the inactive highlight color
     palette = app.palette()
-    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight,
-                     QColor('#46739c'))  # active highlight color
-    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText,
-                     QColor('#ffffff'))  # active highlight text color
-    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight,
-                     QColor('#b0b0b0'))  # inactive highlight color
-    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText,
-                     QColor('#ffffff'))  # inactive highlight text color
+    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor('#46739c'))  # active highlight color
+    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor('#ffffff'))  # active highlight text color
+    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor('#b0b0b0'))  # inactive highlight color
+    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor('#ffffff'))  # inactive highlight text color
     app.setPalette(palette)
 
     # starts the window
