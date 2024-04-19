@@ -17,16 +17,17 @@ def render_latex(latex_str, filename='latex_answer.png', dpi=300, text_color='wh
     plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
     # saves the figure as an image
-    plt.savefig(filename, dpi=dpi, bbox_inches='tight', pad_inches=0.0, transparent=True)
+    plt.savefig(filename, dpi=dpi, bbox_inches='tight', pad_inches=0.015, transparent=True)
     plt.close()
 
 
-def convert_render_latex(string: str) -> str:
+def convert_render_latex(string: str, dpi=300) -> str:
     """
     Takes a math expression as a string, and converts it into the LaTeX format.
     Also renders the image of the LaTeX string as a png named "latex_answer.png".
 
     :param string: String to be converted into LaTeX format
+    :param dpi: Sets the resolution of the image.
     :return: The formatted LaTeX string.
     """
 
@@ -36,6 +37,6 @@ def convert_render_latex(string: str) -> str:
     sy_string = sy.sympify(string)
     latex = sy.latex(sy_string, fold_short_frac=False)
 
-    render_latex(latex)
+    render_latex(latex, dpi=dpi)
 
-    return string
+    return latex

@@ -1,7 +1,6 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, \
-    QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout
-from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QFontDatabase
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout
+from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent
 from PyQt6.QtCore import Qt, QPoint, QTimer, QSize
 import sympy as sy
 import pyperclip
@@ -43,6 +42,9 @@ Bugs:
     - Long answers clip outside of the answer box
 
     - If the user in a variable box while their mouse is on top of a variable text box,the mouse flashes between two shapes
+    
+    - Need allow for image icon path to be found on any device
+        - Use the os module
 
 Future Features:
     - Need shadowing for the sides of the window
@@ -52,11 +54,12 @@ Future Features:
         - Option to toggle between radians and degrees
 
     - Add window's snap functionality
-        - Updated to PyQt6 for this (the feature might be accessible in PyQt6)
+        - Find a way to do it
 
     - App Icon for taskbar (also one for when you hover on the window where it shows on the top left)
 
     - Minimizing functionality for when the user clicks the app icon
+        - Works, but maybe give animation like other windows
 
     - Plus minus (±)
         - Ex, x = 2:
@@ -84,8 +87,11 @@ Future Features:
     - Integral functionality
         - ∫_d_
     
-    - Implement option to get answers in LaTeX format
-        - Find a way to change the font of the LaTeX image
+    - Find a way to change the font of the LaTeX image
+    
+    - Maybe increase the size of the format symbol
+    
+    - Maybe add a background to the scroll bar in the scroll area
 '''
 
 
@@ -124,8 +130,6 @@ class SettingsWindow:
         # General
         self.box_width_left = 1/2  # percentage of screen width
 
-        self.test1234 = 1.5
-
         # Text box
         self.box_padding = 20
 
@@ -133,17 +137,21 @@ class SettingsWindow:
         self.answer_default = 'Answer'
         self.box_answer_height_percent = 2/5  # percentage of screen height
         self.box_answer_padding = 12  # distance from the image to the border of the answer box
+        self.latex_image_dpi = 800
+
+        # Definitions box
+        self.content_margin = 30  # distance between the scroll content, and the border
 
         # -------------------------------------------------------------------------------------------------------
 
 
 class ControlWindow(QMainWindow, SettingsWindow):
-    def __init__(self, window):
+    def __init__(self, main_window):
         QMainWindow.__init__(self)
         QWidget.__init__(self)
         SettingsWindow.__init__(self)
 
-        self.window = window
+        self.main_window = main_window
 
         # Window ------------------------------------------------------------------------------------------------
 
@@ -224,9 +232,6 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
         # -------------------------------------------------------------------------------------------------------
 
-        # Testing Buttons----------------------------------------------------------------------------------------
-
-
     def paintEvent(self, event) -> None:
         """
         Gives the background and titlebar their colors.
@@ -240,9 +245,6 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
         # center window
         painter.fillRect(0, self.title_bar_height, self.width(), self.height() - self.title_bar_height, QColor(49, 51, 56))
-
-    # test if this messes with Windows resizing
-
 
     def window_resize_enable(self):
         """
@@ -475,7 +477,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
     def resizeEvent(self, event):
         self.control_update()  # Custom method to update the sizes of widgets
-        self.window.update()
+        self.main_window.update()
 
     def control_update(self) -> None:
         """
@@ -485,75 +487,43 @@ class ControlWindow(QMainWindow, SettingsWindow):
         """
 
         # move widget
-        self.window.widget_move.move(self.widget_resize_size, self.widget_resize_size)
-        self.window.widget_move.resize(self.width() - self.widget_resize_size - (3 * self.title_bar_height), self.title_bar_height - self.widget_resize_size)
+        self.main_window.widget_move.move(self.widget_resize_size, self.widget_resize_size)
+        self.main_window.widget_move.resize(self.width() - self.widget_resize_size - (3 * self.title_bar_height), self.title_bar_height - self.widget_resize_size)
 
         # close button
-        self.window.button_close.move(self.width() - self.button_width, 0)
-        self.window.button_close.resize(self.button_width, self.title_bar_height)
+        self.main_window.button_close.move(self.width() - self.button_width, 0)
+        self.main_window.button_close.resize(self.button_width, self.title_bar_height)
 
         # maximize button
-        self.window.button_maximize.move(self.width() - (2 * self.button_width), 0)
-        self.window.button_maximize.resize(self.button_width, self.title_bar_height)
+        self.main_window.button_maximize.move(self.width() - (2 * self.button_width), 0)
+        self.main_window.button_maximize.resize(self.button_width, self.title_bar_height)
 
         # minimize button
-        self.window.button_minimize.move(self.width() - (3 * self.button_width), 0)
-        self.window.button_minimize.resize(self.button_width, self.title_bar_height)
+        self.main_window.button_minimize.move(self.width() - (3 * self.button_width), 0)
+        self.main_window.button_minimize.resize(self.button_width, self.title_bar_height)
 
         # Resize Widgets, Order: right, top right, top, top left, left, bottom left, bottom, bottom right
-        self.window.widget_resize[0].move(self.width() - self.widget_resize_size, self.widget_resize_size)
-        self.window.widget_resize[0].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
-        self.window.widget_resize[1].move(self.width() - self.widget_resize_size, 0)
-        self.window.widget_resize[1].resize(self.widget_resize_size, self.widget_resize_size)
-        self.window.widget_resize[2].move(self.widget_resize_size, 0)
-        self.window.widget_resize[2].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
-        self.window.widget_resize[3].move(0, 0)
-        self.window.widget_resize[3].resize(self.widget_resize_size, self.widget_resize_size)
-        self.window.widget_resize[4].move(0, self.widget_resize_size)
-        self.window.widget_resize[4].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
-        self.window.widget_resize[5].move(0, self.height() - self.widget_resize_size)
-        self.window.widget_resize[5].resize(self.widget_resize_size, self.widget_resize_size)
-        self.window.widget_resize[6].move(self.widget_resize_size, self.height() - self.widget_resize_size)
-        self.window.widget_resize[6].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
-        self.window.widget_resize[7].move(self.width() - self.widget_resize_size, self.height() - self.widget_resize_size)
-        self.window.widget_resize[7].resize(self.widget_resize_size, self.widget_resize_size)
+        self.main_window.widget_resize[0].move(self.width() - self.widget_resize_size, self.widget_resize_size)
+        self.main_window.widget_resize[0].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
+        self.main_window.widget_resize[1].move(self.width() - self.widget_resize_size, 0)
+        self.main_window.widget_resize[1].resize(self.widget_resize_size, self.widget_resize_size)
+        self.main_window.widget_resize[2].move(self.widget_resize_size, 0)
+        self.main_window.widget_resize[2].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
+        self.main_window.widget_resize[3].move(0, 0)
+        self.main_window.widget_resize[3].resize(self.widget_resize_size, self.widget_resize_size)
+        self.main_window.widget_resize[4].move(0, self.widget_resize_size)
+        self.main_window.widget_resize[4].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
+        self.main_window.widget_resize[5].move(0, self.height() - self.widget_resize_size)
+        self.main_window.widget_resize[5].resize(self.widget_resize_size, self.widget_resize_size)
+        self.main_window.widget_resize[6].move(self.widget_resize_size, self.height() - self.widget_resize_size)
+        self.main_window.widget_resize[6].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
+        self.main_window.widget_resize[7].move(self.width() - self.widget_resize_size, self.height() - self.widget_resize_size)
+        self.main_window.widget_resize[7].resize(self.widget_resize_size, self.widget_resize_size)
 
 
-class Window(ControlWindow):
+class MainWindow(ControlWindow):
     def __init__(self):
         super().__init__(self)
-
-        self.button_hook = []  # holds all testing buttons
-
-        '''
-        # size button
-        self.button_hook.append(QPushButton('Size', self))
-        self.button_hook[-1].clicked.connect(self.get_info)
-        '''
-
-        # update button
-        self.button_hook.append(QPushButton('Update', self))
-        self.button_hook[-1].clicked.connect(self.get_update)
-
-        # answer button
-        self.button_hook.append(QPushButton(self.answer_default, self))
-        self.button_hook[-1].clicked.connect(self.get_answer)
-
-        # flip button
-        self.button_hook.append(QPushButton('Flip', self))
-        self.button_hook[-1].clicked.connect(self.flip_type)
-
-        # test button
-        self.button_test_toggle = False
-        self.button_hook.append(QPushButton('Test', self))
-        self.button_hook[-1].clicked.connect(self.test)
-
-        for i in range(len(self.button_hook)):  # sets the button hook parameters
-            self.button_hook[i].setGeometry(self.test_horizontal_offset + (i * (self.test_between_spacing + self.test_button_width)), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
-            self.button_hook[i].setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
-            self.button_hook[i].setCursor(Qt.CursorShape.PointingHandCursor)
-
-        # -------------------------------------------------------------------------------------------------------
 
         # answer box
         self.answer = 'Error'  # user shouldn't be able to access this string yet
@@ -564,8 +534,7 @@ class Window(ControlWindow):
         self.icon_aspect_ratio_inverse = None
 
         self.box_answer = QPushButton(self.answer_default, self)
-        self.box_answer.setStyleSheet(
-            'border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;')
+        self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;')
         self.box_answer.clicked.connect(self.copy)
 
         # answer format label
@@ -647,38 +616,8 @@ class Window(ControlWindow):
             'font-size: 15px;'
         )
 
-        self.test_margin = 50
-        self.scroll_layout.setContentsMargins(self.test_margin, self.test_margin, self.test_margin, self.test_margin)
+        self.scroll_layout.setContentsMargins(self.content_margin, self.content_margin, self.content_margin, self.content_margin)
         self.scroll_area.setWidget(self.scroll_content)
-
-    def test(self) -> None:
-        """
-        Used for testing anything using a button in the window.
-        """
-
-        self.button_test_toggle = not self.button_test_toggle
-
-        if self.button_test_toggle:
-            self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
-        else:
-            self.scroll_area.setCursor(Qt.CursorShape.ArrowCursor)
-
-        print(self.variables)
-
-    def get_info(self) -> None:
-        """
-        Prints the current width and height of the window with the use of a button.
-        """
-
-        print(f'Width: {self.width()}, Height: {self.height()}')
-
-    def get_update(self) -> None:
-        """
-        For manually updating the window with a button.
-        """
-
-        self.resizeEvent(self)
-        print('Manually Updated')
 
     def answer_formatting_before(self, string: str) -> str:
         """
@@ -809,7 +748,7 @@ class Window(ControlWindow):
         # use this for option that lets the user set the non latex image as the answer
         # self.box_answer.setText(self.answer_temp)  # displays the answer
 
-        convert_render_latex(self.answer_temp)
+        convert_render_latex(self.answer_temp, self.latex_image_dpi)
 
         self.box_answer.setText('')
         self.box_answer.setIcon(QIcon(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png"))
@@ -840,7 +779,7 @@ class Window(ControlWindow):
 
         self.answer_temp = self.answer_formatting_after(self.answer_temp)  # reformats the answer
 
-        convert_render_latex(self.answer_temp)
+        convert_render_latex(self.answer_temp, self.latex_image_dpi)
 
         self.box_answer.setIcon(QIcon(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png"))
         self.image = Image.open(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png")
@@ -1016,14 +955,14 @@ class Window(ControlWindow):
 
         # text box
         self.box_text.move(self.box_padding, self.box_padding + self.title_bar_height)
-        self.box_text.resize(int((self.width() * self.box_width_left) - (self.box_padding * self.test1234)), self.height() - box_answer_height - (self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
+        self.box_text.resize(int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.height() - box_answer_height - (self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
 
         # answer box
         self.box_answer.move(self.box_padding, self.height() - self.box_padding - box_answer_height)
-        self.box_answer.resize(int((self.width() * self.box_width_left) - (self.box_padding * self.test1234)), box_answer_height)
+        self.box_answer.resize(int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), box_answer_height)
 
         # answer box icon
-        icon_new_width = int((self.width() * self.box_width_left) - (self.box_padding * self.test1234) - (self.box_answer_padding * 4))
+        icon_new_width = int((self.width() * self.box_width_left) - (self.box_padding * 1.5) - (self.box_answer_padding * 4))
         if self.icon_aspect_ratio_inverse is not None:
             if self.icon_aspect_ratio_inverse * icon_new_width < box_answer_height - (self.box_answer_padding * 2):
                 self.box_answer.setIconSize(QSize(icon_new_width, self.height() - self.box_padding - box_answer_height - (self.box_answer_padding * 2)))
@@ -1036,13 +975,89 @@ class Window(ControlWindow):
         self.box_answer_format_label.move(self.box_padding + self.box_answer_padding, self.height() - self.box_padding - box_answer_height)
 
         # definition box
-        self.scroll_area.move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * self.test1234)), self.box_padding + self.title_bar_height)
-        self.scroll_area.resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * self.test1234)), self.height() - (self.box_padding * 2) - self.title_bar_height)
+        self.scroll_area.move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height)
+        self.scroll_area.resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height)
 
 
-class TestWindow:
+class TestWindow(MainWindow):  # buttons, and functions for testing purposes
     def __init__(self):
-        print()
+        super().__init__()
+
+        self.button_hook = []  # holds all testing buttons
+
+        '''
+        # size button
+        self.button_hook.append(QPushButton('Size', self))
+        self.button_hook[-1].clicked.connect(self.get_info)
+        '''
+
+        # update button
+        self.button_hook.append(QPushButton('Update', self))
+        self.button_hook[-1].clicked.connect(self.get_update)
+
+        # answer button
+        self.button_hook.append(QPushButton(self.answer_default, self))
+        self.button_hook[-1].clicked.connect(self.get_answer)
+
+        # flip button
+        self.button_hook.append(QPushButton('Flip', self))
+        self.button_hook[-1].clicked.connect(self.flip_type)
+
+        # test button
+        self.button_test_toggle = False
+        self.button_hook.append(QPushButton('Test', self))
+        self.button_hook[-1].clicked.connect(self.test)
+
+        for i in range(len(self.button_hook)):  # sets the button hook parameters
+            self.button_hook[i].setGeometry(self.test_horizontal_offset + (i * (self.test_between_spacing + self.test_button_width)), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
+            self.button_hook[i].setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
+            self.button_hook[i].setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def test(self) -> None:
+        """
+        Used for testing anything using a button in the window.
+        """
+
+        self.button_test_toggle = not self.button_test_toggle
+
+        if self.button_test_toggle:
+            self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
+        else:
+            self.scroll_area.setCursor(Qt.CursorShape.ArrowCursor)
+
+        print(self.variables)
+
+    def get_info(self) -> None:
+        """
+        Prints the current width and height of the window with the use of a button.
+        """
+
+        print(f'Width: {self.width()}, Height: {self.height()}')
+
+    def get_update(self) -> None:
+        """
+        For manually updating the window with a button.
+        """
+
+        self.resizeEvent(self)
+        print('Manually Updated')
+
+
+class Test(MainWindow):
+    def __init__(self):
+        super().__init__()
+        self.test_init()
+
+    def test_init(self):
+        # self.label_test = QLabel('Test', self)
+        test_class_variable = None
+
+
+# currently this works with the test class, but if it cannot work in the future, a chain of parents and children might need to be constructed.
+class RunWindow(TestWindow, Test):  # include all children of the MainWindow class here
+    def __init__(self):  # initialize all children here
+        TestWindow.__init__(self)
+        Test.test_init(self)
 
 
 def main():
@@ -1066,7 +1081,7 @@ def main():
     app.setPalette(palette)
 
     # starts the window
-    window = Window()
+    window = RunWindow()
     window.show()
     sys.exit(app.exec())
 
