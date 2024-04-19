@@ -89,35 +89,83 @@ Future Features:
 '''
 
 
-class MainWindow(QMainWindow):
+class SettingsWindow:
     def __init__(self):
-        super().__init__()
 
         # Window ------------------------------------------------------------------------------------------------
-        self.setGeometry(100, 100, 800, 600)  # initial window size / position
-        self.setWindowTitle("Calculator")  # window title
-        self.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)  # removes default title bar
+
+        self.window_title = 'Calculator'
+        self.window_title_position = (
+            5,  # x position
+            -5  # y position
+        )
+        self.window_start = (
+            100,  # initial x position
+            100,  # initial y position
+            800,  # initial x size
+            600   # initial y size
+        )
 
         self.widget_resize_size = 5
         self.title_bar_height = 22  # Height of the title bar
+        self.title_bar_button_width = 1.5  # as a percentage of the title bar height
         self.window_size_min_x = 650  # minimum width of the window
         self.window_size_min_y = 450  # minimum height of the window
 
-        self.setMinimumSize(self.window_size_min_x, self.window_size_min_y)  # need to check if this works on Windows too
+        # Testing Buttons ---------------------------------------------------------------------------------------
+
+        self.test_padding = 2
+        self.test_between_spacing = 10
+        self.test_horizontal_offset = 90
+        self.test_button_width = 50
+
+        # Boxes -------------------------------------------------------------------------------------------------
+
+        # General
+        self.box_width_left = 1/2  # percentage of screen width
+
+        self.test1234 = 1.5
+
+        # Text box
+        self.box_padding = 20
+
+        # Answer box
+        self.answer_default = 'Answer'
+        self.box_answer_height_percent = 2/5  # percentage of screen height
+        self.box_answer_padding = 12  # distance from the image to the border of the answer box
+
         # -------------------------------------------------------------------------------------------------------
 
+
+class ControlWindow(QMainWindow, SettingsWindow):
+    def __init__(self, window):
+        QMainWindow.__init__(self)
+        QWidget.__init__(self)
+        SettingsWindow.__init__(self)
+
+        self.window = window
+
+        # Window ------------------------------------------------------------------------------------------------
+
+        self.setGeometry(self.window_start[0], self.window_start[1], self.window_start[2], self.window_start[3])  # initial window size / position
+        self.setWindowTitle(self.window_title)  # window title
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)  # removes default title bar
+
+        self.setMinimumSize(self.window_size_min_x, self.window_size_min_y)  # need to check if this works on Windows too
+
         # Title Bar ---------------------------------------------------------------------------------------------
+
         self.window_moving = False  # initial state of the window moving
         self.offset = None  # initial state of the window offset
-        self.button_width = int(1.3 * self.title_bar_height)
+        self.button_width = int(self.title_bar_button_width * self.title_bar_height)
 
         # window move widget
         self.widget_move = QWidget(self)
 
         # displayed title
-        self.title_label = QLabel('Calculator', self)
+        self.title_label = QLabel(self.window_title, self)
         self.title_label.setStyleSheet('color: rgb(148, 155, 164); font-weight: bold; font-size: 11px;')
-        self.title_label.move(5, -5)
+        self.title_label.move(self.window_title_position[0], self.window_title_position[1])
 
         # close button
         self.button_close = QPushButton('', self)
@@ -147,44 +195,8 @@ class MainWindow(QMainWindow):
         )
         self.button_minimize.clicked.connect(self.showMinimized)
 
-        # test button parameters
-        self.test_padding = 2
-        self.test_between_spacing = 10
-        self.test_horizontal_offset = 90
-        self.test_button_width = 50
-        self.button_hook = []  # holds all testing buttons
-
-        '''
-        # size button
-        self.button_hook.append(QPushButton('Size', self))
-        self.button_hook[-1].clicked.connect(self.get_info)
-        '''
-
-        # update button
-        self.button_hook.append(QPushButton('Update', self))
-        self.button_hook[-1].clicked.connect(self.get_update)
-
-        # answer button
-        self.answer_default = 'Answer'
-        self.button_hook.append(QPushButton(self.answer_default, self))
-        self.button_hook[-1].clicked.connect(self.get_answer)
-
-        # flip button
-        self.button_hook.append(QPushButton('Flip', self))
-        self.button_hook[-1].clicked.connect(self.flip_type)
-
-        # test button
-        self.button_test_toggle = False
-        self.button_hook.append(QPushButton('Test', self))
-        self.button_hook[-1].clicked.connect(self.test)
-
-        for i in range(len(self.button_hook)):  # sets the button hook parameters
-            self.button_hook[i].setGeometry(self.test_horizontal_offset + (i * (self.test_between_spacing + self.test_button_width)), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
-            self.button_hook[i].setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
-            self.button_hook[i].setCursor(Qt.CursorShape.PointingHandCursor)
-        # -------------------------------------------------------------------------------------------------------
-
         # Resizing Widgets --------------------------------------------------------------------------------------
+
         self.window_resize = True  # initial state of resizing
         self.window_resize_direction = None  # initial direction of resizing
         self.widget_resize_toggle = True  # toggles resizing functionality
@@ -209,135 +221,11 @@ class MainWindow(QMainWindow):
 
         self.widget_resize[3].setCursor(Qt.CursorShape.SizeFDiagCursor)  # top left
         self.widget_resize[7].setCursor(Qt.CursorShape.SizeFDiagCursor)  # bottom right
+
         # -------------------------------------------------------------------------------------------------------
 
-        # answer box
-        self.answer = 'Error'  # user shouldn't be able to access this string yet
-        self.answer_final = self.answer_default
-        self.answer_temp = self.answer_final
-        self.flip_type_toggle = False
-        self.image = None
-        self.icon_aspect_ratio_inverse = None
+        # Testing Buttons----------------------------------------------------------------------------------------
 
-        self.box_answer_height = 80
-        self.box_answer_padding = 12
-        self.box_answer = QPushButton(self.answer_default, self)
-        self.box_answer.setStyleSheet(
-            'border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;')
-        self.box_answer.clicked.connect(self.copy)
-
-        # answer format label
-        self.box_answer_format_label = QLabel('', self)
-        self.box_answer_format_label.setStyleSheet('font-size: 18px; color: white')
-
-        # text box
-        self.user_select = None
-        self.box_padding = 20
-
-        self.user_mouse_set = False
-        self.variables = SortedDict()  # stores variables in a sorted dictionary, so it shows in alphabetical order
-
-        self.accepted_variables = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
-                                   'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-        self.accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-        self.accepted_other = ['(']
-
-        # create a QLineEdit with initial position (150, 50)
-        self.box_text = QPlainTextEdit(self)
-        self.box_text.textChanged.connect(self.text_update)
-        self.box_text.setStyleSheet(
-            '''
-            QPlainTextEdit {
-                border: 3px solid rgb(35, 36, 40);
-                background-color: rgb(85, 88, 97);
-                border-radius: 6px;
-                color: white;
-                font-size: 15px;
-            }
-            '''
-        )
-
-        # scroll area
-        self.scroll_layout = QVBoxLayout()
-        self.scroll_content = QWidget()
-        self.scroll_content.setLayout(self.scroll_layout)
-
-        self.scroll_area = QScrollArea(self)
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setWidget(self.scroll_content)
-
-        # --------------------------------------------------------------------------------------------------------
-
-        self.scroll_area.setStyleSheet(
-            '''
-            QScrollArea {
-                border: 3px solid #232428;
-                background-color: #555861;
-                border-radius: 6px;
-                color: white;
-                font-size: 15px;
-            }
-            QScrollBar:vertical {
-                border: none;
-                background-color: rgba(0, 0, 0, 0);
-                width: 12px;
-                margin: 4px 4px 4px 0px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #232428;
-                border-radius: 4px;
-                min-height: 20px;
-            }
-            QScrollBar::add-line:vertical {
-                width: 0px;
-            }
-            QScrollBar::sub-line:vertical {
-                width: 0px;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                background: none;
-            }
-            '''
-        )
-
-        self.scroll_content.setStyleSheet(
-            'border: transparent;'
-            'background-color: transparent;'
-            'color: white;'
-            'font-size: 15px;'
-        )
-
-        self.test_margin = 50
-        self.scroll_layout.setContentsMargins(self.test_margin, self.test_margin, self.test_margin, self.test_margin)
-        self.scroll_area.setWidget(self.scroll_content)
-
-        # initializes all widgets in their positions
-        self.window_update()
-
-    # test if this messes with Windows resizing
-    def resizeEvent(self, event):
-        self.window_update()  # Custom method to update the sizes of widgets
-
-    def test(self) -> None:
-        """
-        Used for testing anything using a button in the window.
-        """
-
-        self.button_test_toggle = not self.button_test_toggle
-
-        if self.button_test_toggle:
-            self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
-        else:
-            self.scroll_area.setCursor(Qt.CursorShape.ArrowCursor)
-
-        print(self.variables)
-
-    def window_resize_enable(self):
-        """
-        Re-enables resizing after the timer expires.
-        """
-
-        self.window_resize_allowed = True
 
     def paintEvent(self, event) -> None:
         """
@@ -353,345 +241,15 @@ class MainWindow(QMainWindow):
         # center window
         painter.fillRect(0, self.title_bar_height, self.width(), self.height() - self.title_bar_height, QColor(49, 51, 56))
 
-    def get_info(self) -> None:
-        """
-        Prints the current width and height of the window with the use of a button.
-        """
+    # test if this messes with Windows resizing
 
-        print(f'Width: {self.width()}, Height: {self.height()}')
 
-    def get_update(self) -> None:
+    def window_resize_enable(self):
         """
-        For manually updating the window with a button.
+        Re-enables resizing after the timer expires.
         """
 
-        self.window_update()
-        print('Manually Updated')
-
-    def answer_formatting_before(self, string: str) -> str:
-        """
-        Reformats the string before the answer is calculated.
-
-        Gives the user more freedom to type expressions different ways.
-
-        :param string: The user input.
-        """
-
-        # removes white spaces
-        string = string.replace(' ', '')
-        string = string.replace('\n', '')
-        string = string.replace('\t', '')
-
-        # adds multiplication symbol for implicit multiplication
-        x = 0
-        while x < len(string) - 1:
-            if string[x] in self.accepted_variables or string[x] in self.accepted_numbers or string[x] == ')' or string[x] == '.':
-                if string[x + 1] in self.accepted_variables or string[x + 1] == '(':
-                    # inserts in front of x
-                    string = string[:x + 1] + '*' + string[x + 1:]
-                    x -= 1
-            x += 1
-
-        # turns all decimals into rationals
-        temp = string + ' '  # character added to end of string to recognize final number
-        num = ''
-        for x in temp:
-            if x in self.accepted_numbers or x == '.':
-                num += x
-            else:
-                if num == '.':  # user error; displays 'error' in answer box
-                    print('Not yet fixed, do later')
-
-                elif num != '' and '.' in num:  # num is not blank, and is a decimal
-                    # replaces the first instance of each number
-                    string = string.replace(num, f'({sy.Rational(num)})', 1)
-
-                num = ''  # resets num
-
-        return string
-
-    def answer_formatting_after(self, answer: sy) -> str:
-        """
-        Reformats the string after the answer is calculated.
-
-        Makes it easier for the user to read the answer.
-        """
-
-        string = str(answer)
-
-        string = string.replace('**', '^')
-        return string
-
-    def variable_formatting(self, variables: SortedDict) -> dict:
-        temp1 = variables.copy()
-
-        for x in temp1:
-            temp1[x] = temp1[x][1].text()
-
-            if temp1[x] == '':
-                temp1[x] = x
-
-        # starts here
-        for x in temp1:
-
-            if temp1[x] == x or not contains_substring(temp1[x], list(self.variables.keys())):
-                continue
-
-            temp2 = temp1.copy()
-            for y in temp2:
-                for z in temp2:
-
-                    if temp2[z] == z or not contains_substring(temp2[z], list(self.variables.keys())):
-                        continue
-
-                    temp1[z] = temp1[z].replace(y, f'({temp2[y]})')
-
-            print(temp1)
-
-        for x in temp1:
-            if x in temp1[x] and f'({x})' != temp1[x] and x != temp1[x]:
-                print('Error: A variable is circularly defined.')
-                # add logic here to return an answer of 'Error'
-
-                break
-
-        return temp1
-
-    def get_answer(self) -> None:
-        """
-        Calculates the answer from the user input.
-
-        Displays the answer in the answer box.
-        """
-
-        self.flip_type_toggle = False  # resets the format type
-
-        text = self.box_text.toPlainText()  # gets the string from the text box
-
-        # scans the text for any variables
-        temp = self.variable_formatting(self.variables)
-
-        for x in text:
-            if x in temp:
-                test_variable = temp[x]
-
-                text = text.replace(f'{x}', f'({test_variable})')
-
-        text = self.answer_formatting_before(text)  # reformats the string
-
-        # tests if the user did something wrong and outputs 'error' if so
-        try:
-            self.answer = sy.sympify(text)
-
-            # sometimes sy.sympify doesn't simplify completely, but removing spaces and looping fixes some problems
-            while str(self.answer).replace(' ', '') != str(sy.sympify(str(self.answer).replace(' ', ''))).replace(' ', ''):
-                self.answer = sy.sympify(str(self.answer).replace(' ', ''))
-
-            print(f'Answer: {text} = {self.answer}')
-        except Exception as e:
-            self.answer = 'Error'
-            print(f'Error: {e}')
-
-        self.answer_temp = self.answer_formatting_after(self.answer)  # reformats the answer
-
-        # use this for option that lets the user set the non latex image as the answer
-        # self.box_answer.setText(self.answer_temp)  # displays the answer
-
-        convert_render_latex(self.answer_temp)
-
-        self.box_answer.setText('')
-        self.box_answer.setIcon(QIcon(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png"))
-        self.image = Image.open(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png")
-        self.icon_aspect_ratio_inverse = self.image.size[1] / self.image.size[0]
-
-        self.box_answer_format_label.setText('=')  # answer defaults in exact mode
-
-        self.window_update()  # updates to resize the new image
-
-    def flip_type(self) -> None:
-        """
-        Flips the answer format between decimal and exact.
-        """
-
-        if self.answer == self.answer_default:
-            return
-
-        self.flip_type_toggle = not self.flip_type_toggle  # keeps track of which format is being displayed
-
-        # uses self.answer_temp to save the actual answer
-        if self.flip_type_toggle:
-            self.answer_temp = sy.N(self.answer)  # turns the answer into its decimal format
-            self.box_answer_format_label.setText('≈')
-        else:
-            self.answer_temp = self.answer  # returns the original answer
-            self.box_answer_format_label.setText('=')
-
-        self.answer_temp = self.answer_formatting_after(self.answer_temp)  # reformats the answer
-
-        convert_render_latex(self.answer_temp)
-
-        self.box_answer.setIcon(QIcon(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png"))
-        self.image = Image.open(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png")
-        self.icon_aspect_ratio_inverse = self.image.size[1] / self.image.size[0]
-
-        self.window_update()
-
-        # self.box_answer.setText(self.answer_temp)  # displays the answer
-
-    def copy(self) -> None:
-        """
-        Lets the user copy the answer by clicking the answer box.
-        """
-
-        # adds flashing blue visual when button is clicked
-        self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(81, 100, 117); border-radius: 6px; color: white; font-size: 15px;')
-        QTimer.singleShot(150, lambda: self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;'))
-
-        pyperclip.copy(str(self.answer_temp))  # copies answer to clipboard
-
-    def text_update(self) -> None:
-        """
-        Activates each time a user changes their input in the text box.
-
-        Adds and removes variables in the variables box based on the new user input.
-        Removes the answer from the answer box.
-        """
-
-        self.user_select = self.sender()  # saves which text box the user was typing in
-
-        text = self.box_text.toPlainText()
-
-        temp = set()  # used later for deleting variables in self.variables which are not in the text box
-
-        # adds all variables from the text box to a dictionary
-        for x in text:
-            if x in self.accepted_variables:
-                temp.add(x)
-                if x not in self.variables:
-                    label = QLabel(f'{x} =', self)
-
-                    text_box = QLineEdit(self)
-                    text_box.setPlaceholderText(f'{x}')
-
-                    self.variables[x] = (label, text_box)
-
-        for y in self.variables:
-            for x in self.variables[y][1].text():
-                if x in self.accepted_variables:
-                    temp.add(x)
-                    if x not in self.variables:
-                        label = QLabel(f'{x} =', self)
-
-                        text_box = QLineEdit(self)
-                        text_box.setPlaceholderText(f'{x}')
-
-                        self.variables[x] = (label, text_box)
-
-        # deletes all variables not in the text box
-        for x in self.variables:
-            if x not in temp:
-                del self.variables[x]
-
-        '''
-        # fix - cursor_flash: may delete
-        for x in self.variables:
-            if self.variables[x][1].underMouse():
-                self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
-        self.user_mouse_set = True
-        '''
-
-        self.scroll_area_clear()  # deletes the all variables in the variable box
-        self.scroll_area_fill()  # adds all variables found in the variable box
-
-        # clears the answer box to prevent user from thinking the answer is for what was just typed in the text box
-        self.answer = self.answer_default  # sets answer to default answer so if the user flips the format, the default answer still displays
-        self.box_answer.setIcon(QIcon())
-
-        self.box_answer.setText(f'{str(self.answer)}')  # displays the answer
-
-        self.box_answer_format_label.setText('')
-
-    def scroll_area_fill(self) -> None:
-        """
-        Displays widgets to the variable box.
-
-        Adds: labels and text boxes for each variable, lines to separate each variable, and a stretch to push all widgets to the top.
-        """
-
-        for x in self.variables:
-            layout = QHBoxLayout()
-            layout.addWidget(self.variables[x][0])
-
-            self.variables[x][1].textChanged.connect(self.text_update)
-            layout.addWidget(self.variables[x][1])
-
-            self.scroll_layout.addLayout(layout)
-
-            line = QFrame()
-            line.setFrameShape(QFrame.Shape.HLine)
-            line.setFrameShadow(QFrame.Shadow.Sunken)
-            line.setStyleSheet(f"background-color: #313338; border-radius: 1px")
-
-            self.scroll_layout.addWidget(line)
-
-        self.scroll_layout.addStretch()
-
-        if self.user_select != self.box_text:
-            self.user_select.setFocus()
-
-    def scroll_area_clear(self) -> None:
-        """
-        Removes all widgets from the variable box.
-        """
-        for i in reversed(range(self.scroll_layout.count())):
-            layout_item = self.scroll_layout.itemAt(i)
-
-            if layout_item.widget():
-                widget_to_remove = layout_item.widget()
-                # Check if the widget is a QLineEdit and disconnect the textChanged signal
-                if isinstance(widget_to_remove, QLineEdit):
-                    try:
-                        widget_to_remove.textChanged.disconnect(self.text_update)
-                    except TypeError:
-                        # No connections to disconnect
-                        pass
-                self.scroll_layout.removeWidget(widget_to_remove)
-                widget_to_remove.setParent(None)
-            elif layout_item.layout():
-                self.clear_inner_layout(layout_item.layout())
-            elif layout_item.spacerItem():
-                # If the item is a spacer, remove it from the layout
-                self.scroll_layout.removeItem(layout_item)
-
-    def clear_inner_layout(self, layout: QLayout) -> None:
-        """
-        Removes layouts.
-
-        May only work for layouts in the format: (QLabel, QLineEdit). Need to test later.
-        """
-        for i in reversed(range(layout.count())):
-            item = layout.itemAt(i)
-            widget = item.widget()
-            if widget:
-                # Check if the widget is a QLineEdit and should be kept
-                if isinstance(widget, QLineEdit):
-                    try:
-                        widget.textChanged.disconnect(self.text_update)
-                    except TypeError:
-                        # No connections to disconnect
-                        pass
-                    # Remove the QLineEdit widget from its parent layout
-                    layout.removeWidget(widget)
-                    widget.setParent(None)
-                elif isinstance(widget, QLabel):
-                    # Handle QLabel widgets if necessary
-                    layout.removeWidget(widget)
-                    widget.setParent(None)
-                else:
-                    widget.deleteLater()
-            elif item.layout():
-                # Recursively clear nested layouts
-                self.clear_inner_layout(item.layout())
+        self.window_resize_allowed = True
 
     def button_close_logic(self) -> None:
         """
@@ -724,7 +282,7 @@ class MainWindow(QMainWindow):
             for widget in self.widget_resize:  # disables all resizing widgets
                 widget.setEnabled(False)
 
-        QTimer.singleShot(0, self.window_update)
+        QTimer.singleShot(0, self.control_update)
 
     def mouseReleaseEvent(self, event: QMouseEvent | None) -> None:
         """
@@ -915,9 +473,11 @@ class MainWindow(QMainWindow):
                 new_height = max(self.window_size_min_y, event.position().toPoint().y())
                 self.resize(new_width, new_height)
 
-            self.window_update()  # updates the window
+    def resizeEvent(self, event):
+        self.control_update()  # Custom method to update the sizes of widgets
+        self.window.update()
 
-    def window_update(self) -> None:
+    def control_update(self) -> None:
         """
         Updates the positions of all widgets that need their positions updated.
 
@@ -925,63 +485,564 @@ class MainWindow(QMainWindow):
         """
 
         # move widget
-        self.widget_move.move(self.widget_resize_size, self.widget_resize_size)
-        self.widget_move.resize(self.width() - self.widget_resize_size - (3 * self.title_bar_height), self.title_bar_height - self.widget_resize_size)
+        self.window.widget_move.move(self.widget_resize_size, self.widget_resize_size)
+        self.window.widget_move.resize(self.width() - self.widget_resize_size - (3 * self.title_bar_height), self.title_bar_height - self.widget_resize_size)
 
         # close button
-        self.button_close.move(self.width() - self.button_width, 0)
-        self.button_close.resize(self.button_width, self.title_bar_height)
+        self.window.button_close.move(self.width() - self.button_width, 0)
+        self.window.button_close.resize(self.button_width, self.title_bar_height)
 
         # maximize button
-        self.button_maximize.move(self.width() - (2 * self.button_width), 0)
-        self.button_maximize.resize(self.button_width, self.title_bar_height)
+        self.window.button_maximize.move(self.width() - (2 * self.button_width), 0)
+        self.window.button_maximize.resize(self.button_width, self.title_bar_height)
 
         # minimize button
-        self.button_minimize.move(self.width() - (3 * self.button_width), 0)
-        self.button_minimize.resize(self.button_width, self.title_bar_height)
+        self.window.button_minimize.move(self.width() - (3 * self.button_width), 0)
+        self.window.button_minimize.resize(self.button_width, self.title_bar_height)
 
         # Resize Widgets, Order: right, top right, top, top left, left, bottom left, bottom, bottom right
-        self.widget_resize[0].move(self.width() - self.widget_resize_size, self.widget_resize_size)
-        self.widget_resize[0].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
-        self.widget_resize[1].move(self.width() - self.widget_resize_size, 0)
-        self.widget_resize[1].resize(self.widget_resize_size, self.widget_resize_size)
-        self.widget_resize[2].move(self.widget_resize_size, 0)
-        self.widget_resize[2].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
-        self.widget_resize[3].move(0, 0)
-        self.widget_resize[3].resize(self.widget_resize_size, self.widget_resize_size)
-        self.widget_resize[4].move(0, self.widget_resize_size)
-        self.widget_resize[4].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
-        self.widget_resize[5].move(0, self.height() - self.widget_resize_size)
-        self.widget_resize[5].resize(self.widget_resize_size, self.widget_resize_size)
-        self.widget_resize[6].move(self.widget_resize_size, self.height() - self.widget_resize_size)
-        self.widget_resize[6].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
-        self.widget_resize[7].move(self.width() - self.widget_resize_size, self.height() - self.widget_resize_size)
-        self.widget_resize[7].resize(self.widget_resize_size, self.widget_resize_size)
+        self.window.widget_resize[0].move(self.width() - self.widget_resize_size, self.widget_resize_size)
+        self.window.widget_resize[0].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
+        self.window.widget_resize[1].move(self.width() - self.widget_resize_size, 0)
+        self.window.widget_resize[1].resize(self.widget_resize_size, self.widget_resize_size)
+        self.window.widget_resize[2].move(self.widget_resize_size, 0)
+        self.window.widget_resize[2].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
+        self.window.widget_resize[3].move(0, 0)
+        self.window.widget_resize[3].resize(self.widget_resize_size, self.widget_resize_size)
+        self.window.widget_resize[4].move(0, self.widget_resize_size)
+        self.window.widget_resize[4].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
+        self.window.widget_resize[5].move(0, self.height() - self.widget_resize_size)
+        self.window.widget_resize[5].resize(self.widget_resize_size, self.widget_resize_size)
+        self.window.widget_resize[6].move(self.widget_resize_size, self.height() - self.widget_resize_size)
+        self.window.widget_resize[6].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
+        self.window.widget_resize[7].move(self.width() - self.widget_resize_size, self.height() - self.widget_resize_size)
+        self.window.widget_resize[7].resize(self.widget_resize_size, self.widget_resize_size)
+
+
+class Window(ControlWindow):
+    def __init__(self):
+        super().__init__(self)
+
+        self.button_hook = []  # holds all testing buttons
+
+        '''
+        # size button
+        self.button_hook.append(QPushButton('Size', self))
+        self.button_hook[-1].clicked.connect(self.get_info)
+        '''
+
+        # update button
+        self.button_hook.append(QPushButton('Update', self))
+        self.button_hook[-1].clicked.connect(self.get_update)
+
+        # answer button
+        self.button_hook.append(QPushButton(self.answer_default, self))
+        self.button_hook[-1].clicked.connect(self.get_answer)
+
+        # flip button
+        self.button_hook.append(QPushButton('Flip', self))
+        self.button_hook[-1].clicked.connect(self.flip_type)
+
+        # test button
+        self.button_test_toggle = False
+        self.button_hook.append(QPushButton('Test', self))
+        self.button_hook[-1].clicked.connect(self.test)
+
+        for i in range(len(self.button_hook)):  # sets the button hook parameters
+            self.button_hook[i].setGeometry(self.test_horizontal_offset + (i * (self.test_between_spacing + self.test_button_width)), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
+            self.button_hook[i].setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
+            self.button_hook[i].setCursor(Qt.CursorShape.PointingHandCursor)
+
+        # -------------------------------------------------------------------------------------------------------
+
+        # answer box
+        self.answer = 'Error'  # user shouldn't be able to access this string yet
+        self.answer_final = self.answer_default
+        self.answer_temp = self.answer_final
+        self.flip_type_toggle = False
+        self.image = None
+        self.icon_aspect_ratio_inverse = None
+
+        self.box_answer = QPushButton(self.answer_default, self)
+        self.box_answer.setStyleSheet(
+            'border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;')
+        self.box_answer.clicked.connect(self.copy)
+
+        # answer format label
+        self.box_answer_format_label = QLabel('', self)
+        self.box_answer_format_label.setStyleSheet('font-size: 18px; color: white')
+
+        # text box
+        self.user_select = None
+
+        self.user_mouse_set = False
+        self.variables = SortedDict()  # stores variables in a sorted dictionary, so it shows in alphabetical order
+
+        self.accepted_variables = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+        self.accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        self.accepted_other = ['(']
+
+        # create a QLineEdit with initial position (150, 50)
+        self.box_text = QPlainTextEdit(self)
+        self.box_text.textChanged.connect(self.text_update)
+        self.box_text.setStyleSheet(
+            '''
+            QPlainTextEdit {
+                border: 3px solid rgb(35, 36, 40);
+                background-color: rgb(85, 88, 97);
+                border-radius: 6px;
+                color: white;
+                font-size: 15px;
+            }
+            '''
+        )
+
+        # scroll area
+        self.scroll_layout = QVBoxLayout()
+        self.scroll_content = QWidget()
+        self.scroll_content.setLayout(self.scroll_layout)
+
+        self.scroll_area = QScrollArea(self)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setWidget(self.scroll_content)
+
+        # --------------------------------------------------------------------------------------------------------
+
+        self.scroll_area.setStyleSheet(
+            '''
+            QScrollArea {
+                border: 3px solid #232428;
+                background-color: #555861;
+                border-radius: 6px;
+                color: white;
+                font-size: 15px;
+            }
+            QScrollBar:vertical {
+                border: none;
+                background-color: rgba(0, 0, 0, 0);
+                width: 12px;
+                margin: 4px 4px 4px 0px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #232428;
+                border-radius: 4px;
+                min-height: 20px;
+            }
+            QScrollBar::add-line:vertical {
+                width: 0px;
+            }
+            QScrollBar::sub-line:vertical {
+                width: 0px;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
+            '''
+        )
+
+        self.scroll_content.setStyleSheet(
+            'border: transparent;'
+            'background-color: transparent;'
+            'color: white;'
+            'font-size: 15px;'
+        )
+
+        self.test_margin = 50
+        self.scroll_layout.setContentsMargins(self.test_margin, self.test_margin, self.test_margin, self.test_margin)
+        self.scroll_area.setWidget(self.scroll_content)
+
+    def test(self) -> None:
+        """
+        Used for testing anything using a button in the window.
+        """
+
+        self.button_test_toggle = not self.button_test_toggle
+
+        if self.button_test_toggle:
+            self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
+        else:
+            self.scroll_area.setCursor(Qt.CursorShape.ArrowCursor)
+
+        print(self.variables)
+
+    def get_info(self) -> None:
+        """
+        Prints the current width and height of the window with the use of a button.
+        """
+
+        print(f'Width: {self.width()}, Height: {self.height()}')
+
+    def get_update(self) -> None:
+        """
+        For manually updating the window with a button.
+        """
+
+        self.resizeEvent(self)
+        print('Manually Updated')
+
+    def answer_formatting_before(self, string: str) -> str:
+        """
+        Reformats the string before the answer is calculated.
+
+        Gives the user more freedom to type expressions different ways.
+
+        :param string: The user input.
+        """
+
+        # removes white spaces
+        string = string.replace(' ', '')
+        string = string.replace('\n', '')
+        string = string.replace('\t', '')
+
+        # adds multiplication symbol for implicit multiplication
+        x = 0
+        while x < len(string) - 1:
+            if string[x] in self.accepted_variables or string[x] in self.accepted_numbers or string[x] == ')' or string[x] == '.':
+                if string[x + 1] in self.accepted_variables or string[x + 1] == '(':
+                    # inserts in front of x
+                    string = string[:x + 1] + '*' + string[x + 1:]
+                    x -= 1
+            x += 1
+
+        # turns all decimals into rationals
+        temp = string + ' '  # character added to end of string to recognize final number
+        num = ''
+        for x in temp:
+            if x in self.accepted_numbers or x == '.':
+                num += x
+            else:
+                if num == '.':  # user error; displays 'error' in answer box
+                    print('Not yet fixed, do later')
+
+                elif num != '' and '.' in num:  # num is not blank, and is a decimal
+                    # replaces the first instance of each number
+                    string = string.replace(num, f'({sy.Rational(num)})', 1)
+
+                num = ''  # resets num
+
+        return string
+
+    def answer_formatting_after(self, answer: sy) -> str:
+        """
+        Reformats the string after the answer is calculated.
+
+        Makes it easier for the user to read the answer.
+        """
+
+        string = str(answer)
+
+        string = string.replace('**', '^')
+        return string
+
+    def variable_formatting(self, variables: SortedDict) -> dict:
+        temp1 = variables.copy()
+
+        for x in temp1:
+            temp1[x] = temp1[x][1].text()
+
+            if temp1[x] == '':
+                temp1[x] = x
+
+        # starts here
+        for x in temp1:
+
+            if temp1[x] == x or not contains_substring(temp1[x], list(self.variables.keys())):
+                continue
+
+            temp2 = temp1.copy()
+            for y in temp2:
+                for z in temp2:
+
+                    if temp2[z] == z or not contains_substring(temp2[z], list(self.variables.keys())):
+                        continue
+
+                    temp1[z] = temp1[z].replace(y, f'({temp2[y]})')
+
+            print(temp1)
+
+        for x in temp1:
+            if x in temp1[x] and f'({x})' != temp1[x] and x != temp1[x]:
+                print('Error: A variable is circularly defined.')
+                # add logic here to return an answer of 'Error'
+
+                break
+
+        return temp1
+
+    def get_answer(self) -> None:
+        """
+        Calculates the answer from the user input.
+
+        Displays the answer in the answer box.
+        """
+
+        self.flip_type_toggle = False  # resets the format type
+
+        text = self.box_text.toPlainText()  # gets the string from the text box
+
+        # scans the text for any variables
+        temp = self.variable_formatting(self.variables)
+
+        for x in text:
+            if x in temp:
+                test_variable = temp[x]
+
+                text = text.replace(f'{x}', f'({test_variable})')
+
+        text = self.answer_formatting_before(text)  # reformats the string
+
+        # tests if the user did something wrong and outputs 'error' if so
+        try:
+            self.answer = sy.sympify(text)
+
+            # sometimes sy.sympify doesn't simplify completely, but removing spaces and looping fixes some problems
+            while str(self.answer).replace(' ', '') != str(sy.sympify(str(self.answer).replace(' ', ''))).replace(' ', ''):
+                self.answer = sy.sympify(str(self.answer).replace(' ', ''))
+
+            print(f'Answer: {text} = {self.answer}')
+        except Exception as e:
+            self.answer = 'Error'
+            print(f'Error: {e}')
+
+        self.answer_temp = self.answer_formatting_after(self.answer)  # reformats the answer
+
+        # use this for option that lets the user set the non latex image as the answer
+        # self.box_answer.setText(self.answer_temp)  # displays the answer
+
+        convert_render_latex(self.answer_temp)
+
+        self.box_answer.setText('')
+        self.box_answer.setIcon(QIcon(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png"))
+        self.image = Image.open(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png")
+        self.icon_aspect_ratio_inverse = self.image.size[1] / self.image.size[0]
+
+        self.box_answer_format_label.setText('=')  # answer defaults in exact mode
+
+        self.resizeEvent(self)  # updates to resize the new image
+
+    def flip_type(self) -> None:
+        """
+        Flips the answer format between decimal and exact.
+        """
+
+        if self.answer == self.answer_default:
+            return
+
+        self.flip_type_toggle = not self.flip_type_toggle  # keeps track of which format is being displayed
+
+        # uses self.answer_temp to save the actual answer
+        if self.flip_type_toggle:
+            self.answer_temp = sy.N(self.answer)  # turns the answer into its decimal format
+            self.box_answer_format_label.setText('≈')
+        else:
+            self.answer_temp = self.answer  # returns the original answer
+            self.box_answer_format_label.setText('=')
+
+        self.answer_temp = self.answer_formatting_after(self.answer_temp)  # reformats the answer
+
+        convert_render_latex(self.answer_temp)
+
+        self.box_answer.setIcon(QIcon(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png"))
+        self.image = Image.open(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png")
+        self.icon_aspect_ratio_inverse = self.image.size[1] / self.image.size[0]
+
+        self.resizeEvent(self)
+
+        # self.box_answer.setText(self.answer_temp)  # displays the answer
+
+    def copy(self) -> None:
+        """
+        Lets the user copy the answer by clicking the answer box.
+        """
+
+        # adds flashing blue visual when button is clicked
+        self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(81, 100, 117); border-radius: 6px; color: white; font-size: 15px;')
+        QTimer.singleShot(150, lambda: self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;'))
+
+        pyperclip.copy(str(self.answer_temp))  # copies answer to clipboard
+
+    def text_update(self) -> None:
+        """
+        Activates each time a user changes their input in the text box.
+
+        Adds and removes variables in the variables box based on the new user input.
+        Removes the answer from the answer box.
+        """
+
+        self.user_select = self.sender()  # saves which text box the user was typing in
+
+        text = self.box_text.toPlainText()
+
+        temp = set()  # used later for deleting variables in self.variables which are not in the text box
+
+        # adds all variables from the text box to a dictionary
+        for x in text:
+            if x in self.accepted_variables:
+                temp.add(x)
+                if x not in self.variables:
+                    label = QLabel(f'{x} =', self)
+
+                    text_box = QLineEdit(self)
+                    text_box.setPlaceholderText(f'{x}')
+
+                    self.variables[x] = (label, text_box)
+
+        for y in self.variables:
+            for x in self.variables[y][1].text():
+                if x in self.accepted_variables:
+                    temp.add(x)
+                    if x not in self.variables:
+                        label = QLabel(f'{x} =', self)
+
+                        text_box = QLineEdit(self)
+                        text_box.setPlaceholderText(f'{x}')
+
+                        self.variables[x] = (label, text_box)
+
+        # deletes all variables not in the text box
+        for x in self.variables:
+            if x not in temp:
+                del self.variables[x]
+
+        '''
+        # fix - cursor_flash: may delete
+        for x in self.variables:
+            if self.variables[x][1].underMouse():
+                self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
+        self.user_mouse_set = True
+        '''
+
+        self.scroll_area_clear()  # deletes the all variables in the variable box
+        self.scroll_area_fill()  # adds all variables found in the variable box
+
+        # clears the answer box to prevent user from thinking the answer is for what was just typed in the text box
+        self.answer = self.answer_default  # sets answer to default answer so if the user flips the format, the default answer still displays
+        self.box_answer.setIcon(QIcon())
+
+        self.box_answer.setText(f'{str(self.answer)}')  # displays the answer
+
+        self.box_answer_format_label.setText('')
+
+    def scroll_area_fill(self) -> None:
+        """
+        Displays widgets to the variable box.
+
+        Adds: labels and text boxes for each variable, lines to separate each variable, and a stretch to push all widgets to the top.
+        """
+
+        for x in self.variables:
+            layout = QHBoxLayout()
+            layout.addWidget(self.variables[x][0])
+
+            self.variables[x][1].textChanged.connect(self.text_update)
+            layout.addWidget(self.variables[x][1])
+
+            self.scroll_layout.addLayout(layout)
+
+            line = QFrame()
+            line.setFrameShape(QFrame.Shape.HLine)
+            line.setFrameShadow(QFrame.Shadow.Sunken)
+            line.setStyleSheet(f"background-color: #313338; border-radius: 1px")
+
+            self.scroll_layout.addWidget(line)
+
+        self.scroll_layout.addStretch()
+
+        if self.user_select != self.box_text:
+            self.user_select.setFocus()
+
+    def scroll_area_clear(self) -> None:
+        """
+        Removes all widgets from the variable box.
+        """
+        for i in reversed(range(self.scroll_layout.count())):
+            layout_item = self.scroll_layout.itemAt(i)
+
+            if layout_item.widget():
+                widget_to_remove = layout_item.widget()
+                # Check if the widget is a QLineEdit and disconnect the textChanged signal
+                if isinstance(widget_to_remove, QLineEdit):
+                    try:
+                        widget_to_remove.textChanged.disconnect(self.text_update)
+                    except TypeError:
+                        # No connections to disconnect
+                        pass
+                self.scroll_layout.removeWidget(widget_to_remove)
+                widget_to_remove.setParent(None)
+            elif layout_item.layout():
+                self.clear_inner_layout(layout_item.layout())
+            elif layout_item.spacerItem():
+                # If the item is a spacer, remove it from the layout
+                self.scroll_layout.removeItem(layout_item)
+
+    def clear_inner_layout(self, layout: QLayout) -> None:
+        """
+        Removes layouts.
+
+        May only work for layouts in the format: (QLabel, QLineEdit). Need to test later.
+        """
+        for i in reversed(range(layout.count())):
+            item = layout.itemAt(i)
+            widget = item.widget()
+            if widget:
+                # Check if the widget is a QLineEdit and should be kept
+                if isinstance(widget, QLineEdit):
+                    try:
+                        widget.textChanged.disconnect(self.text_update)
+                    except TypeError:
+                        # No connections to disconnect
+                        pass
+                    # Remove the QLineEdit widget from its parent layout
+                    layout.removeWidget(widget)
+                    widget.setParent(None)
+                elif isinstance(widget, QLabel):
+                    # Handle QLabel widgets if necessary
+                    layout.removeWidget(widget)
+                    widget.setParent(None)
+                else:
+                    widget.deleteLater()
+            elif item.layout():
+                # Recursively clear nested layouts
+                self.clear_inner_layout(item.layout())
+
+    def update(self) -> None:
+        """
+        Updates the positions of all widgets that need their positions updated.
+
+        May also be used to update other stuff in the future.
+        """
+
+        box_answer_height = int(self.box_answer_height_percent * (self.height() - self.title_bar_height - (3 * self.box_padding)))
 
         # text box
         self.box_text.move(self.box_padding, self.box_padding + self.title_bar_height)
-        self.box_text.resize(int((self.width() * (2 / 5)) - (self.box_padding * 1.5)), self.height() - self.box_answer_height - (self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
+        self.box_text.resize(int((self.width() * self.box_width_left) - (self.box_padding * self.test1234)), self.height() - box_answer_height - (self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
 
         # answer box
-        self.box_answer.move(self.box_padding, self.height() - self.box_padding - self.box_answer_height)
-        self.box_answer.resize(int((self.width() * (2 / 5)) - (self.box_padding * 1.5)), self.box_answer_height)
+        self.box_answer.move(self.box_padding, self.height() - self.box_padding - box_answer_height)
+        self.box_answer.resize(int((self.width() * self.box_width_left) - (self.box_padding * self.test1234)), box_answer_height)
 
         # answer box icon
-        icon_new_width = int((self.width() * (2 / 5)) - (self.box_padding * 1.5) - (self.box_answer_padding * 4))
+        icon_new_width = int((self.width() * self.box_width_left) - (self.box_padding * self.test1234) - (self.box_answer_padding * 4))
         if self.icon_aspect_ratio_inverse is not None:
-            if self.icon_aspect_ratio_inverse * icon_new_width < self.box_answer_height - (self.box_answer_padding * 2):
-                self.box_answer.setIconSize(QSize(icon_new_width, self.height() - self.box_padding - self.box_answer_height - (self.box_answer_padding * 2)))
+            if self.icon_aspect_ratio_inverse * icon_new_width < box_answer_height - (self.box_answer_padding * 2):
+                self.box_answer.setIconSize(QSize(icon_new_width, self.height() - self.box_padding - box_answer_height - (self.box_answer_padding * 2)))
             else:
                 icon_aspect_ratio = self.icon_aspect_ratio_inverse ** -1
-                icon_new_width = int(icon_aspect_ratio * self.box_answer_height - (self.box_answer_padding * 2))
-                self.box_answer.setIconSize(QSize(icon_new_width, self.box_answer_height - (self.box_answer_padding * 2)))
+                icon_new_width = int(icon_aspect_ratio * box_answer_height - (self.box_answer_padding * 2))
+                self.box_answer.setIconSize(QSize(icon_new_width, box_answer_height - (self.box_answer_padding * 2)))
 
         # answer format label
-        self.box_answer_format_label.move(self.box_padding + self.box_answer_padding, self.height() - self.box_padding - self.box_answer_height)
+        self.box_answer_format_label.move(self.box_padding + self.box_answer_padding, self.height() - self.box_padding - box_answer_height)
 
         # definition box
-        self.scroll_area.move((self.box_padding * 2) + int((self.width() * (2 / 5)) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height)
-        self.scroll_area.resize(int((self.width() * (3 / 5)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height)
+        self.scroll_area.move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * self.test1234)), self.box_padding + self.title_bar_height)
+        self.scroll_area.resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * self.test1234)), self.height() - (self.box_padding * 2) - self.title_bar_height)
+
+
+class TestWindow:
+    def __init__(self):
+        print()
 
 
 def main():
@@ -1005,7 +1066,7 @@ def main():
     app.setPalette(palette)
 
     # starts the window
-    window = MainWindow()
+    window = Window()
     window.show()
     sys.exit(app.exec())
 
