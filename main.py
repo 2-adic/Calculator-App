@@ -129,9 +129,7 @@ class SettingsWindow:
 
         # General
         self.box_width_left = 1/2  # percentage of screen width
-
-        # Text box
-        self.box_padding = 20
+        self.box_padding = 20  # amount of spacing between the boxes
 
         # Answer box
         self.answer_default = 'Answer'
@@ -563,6 +561,26 @@ class MainWindow(ControlWindow):
                 color: white;
                 font-size: 15px;
             }
+            QScrollBar:vertical {
+                border: none;
+                background-color: transparent;
+                width: 12px;
+                margin: 4px 4px 4px 0px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #232428;
+                border-radius: 4px;
+                min-height: 20px;
+            }
+            QScrollBar::add-line:vertical {
+                width: 0px;
+            }
+            QScrollBar::sub-line:vertical {
+                width: 0px;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
             '''
         )
 
@@ -588,7 +606,7 @@ class MainWindow(ControlWindow):
             }
             QScrollBar:vertical {
                 border: none;
-                background-color: rgba(0, 0, 0, 0);
+                background-color: transparent;
                 width: 12px;
                 margin: 4px 4px 4px 0px;
             }
