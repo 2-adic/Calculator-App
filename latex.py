@@ -5,20 +5,34 @@ from functions import constant_counter
 
 
 def render_latex(latex_str, filename='latex_answer.png', dpi=300, text_color='white'):
-    """Renders a LaTeX string as an image."""
+    """Renders a LaTex string into an image without clipping issues."""
 
-    # sets up a plot without axes or frames
-    fig = plt.figure(figsize=(0.01, 0.01))
-    fig.text(0, 0, f'${latex_str}$', fontsize=12, color=text_color)  # Surround the LaTeX string with $...$ to enter math mode
+    # create a figure
+    fig = plt.figure()
 
-    # removes all axes and white space around the LaTeX string
+    # dynamically adjust the figsize based on text content
+    text = fig.text(0, 0, f'${latex_str}$', fontsize=12, color=text_color)
+    renderer = fig.canvas.get_renderer()
+    bbox = text.get_window_extent(renderer=renderer)
+
+    # convert pixel bbox to inches
+    bbox_inches = bbox.transformed(fig.dpi_scale_trans.inverted())
+
+    # add padding to avoid clipping
+    padding = 0  # adjust as needed
+    figsize = (bbox_inches.width + padding, bbox_inches.height + padding)
+
+    # set the new figsize based on calculated dimensions
+    fig.set_size_inches(figsize)
+
+    # remove axes and other plot elements
     plt.axis('off')
-    plt.gca().xaxis.set_major_locator(plt.NullLocator())
-    plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
-    # saves the figure as an image
-    plt.savefig(filename, dpi=dpi, bbox_inches='tight', pad_inches=0.015, transparent=True)
-    plt.close()
+    # save the plot with tight bounding box
+    plt.savefig(filename, dpi=dpi, bbox_inches='tight', pad_inches=padding, transparent=True)
+
+    # close the figure
+    plt.close(fig)
 
 
 def convert_render_latex(string: str, dpi=300) -> str:
