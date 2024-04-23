@@ -17,37 +17,25 @@ General:
     - "Cannot find reference 'connect' in 'pyqtSignal | pyqtSignal | function'" is a benign warning
 
 Bugs: 
-    - When answer format is flipped to decimal, it doesn't give an exact answer
-        - Ex: 1.1 -> 11/10 -> *User clicks format flip button* -> 1.10000000000000
-        - There might not be a solution for this bug
-        - May not consider it a bug, since the decimal format is not meant to be exact in the first place
-
-    - When deleting multiple variables at once, some variables in the definition area are still showing up
+    - When deleting multiple variables at once, some variables in the multi area are still showing up
 
     - Implicit multiplication before a decimal is not working
         - Ex:
-            x.1 -> x(1/10): should be x*(1/10)
+            - x.1 -> x(1/10): should be x*(1/10)
+        - Not sure if this functionality is wanted anymore
+        - x.1 seems as an incorrect way to write this out, check how other calculators handle this case
+            
 
     - When using tab to go to the next variable, it sometimes skips to the textbox
         - How it should work (in each step the user presses tab), it should loop as shown: text box -> variable 1 -> variable 2 -> variable -> n -> text box
         - give the user a way to still type a tab in the text box (maybe mac: option + tab, Windows: 'not sure yet' + tab)
 
-    - Resizing doesn't work on macOS
-        - Used to work before updating to PyQt6
-        - Not sure why, needs testing
-        - The window resizes, but the widgets don't resize
-
     - App crashes when user inputs ".." and clicks the answer button
 
-    - Long answers clip outside of the answer box
-
-    - If the user in a variable box while their mouse is on top of a variable text box,the mouse flashes between two shapes
-    
-    - Need allow for image icon path to be found on any device
-        - Use the os module
+    - If the user in a variable box while their mouse is on top of a variable text box, the mouse flashes between two different cursor shapes
 
 Future Features:
-    - Need shadowing for the sides of the window
+    - Need shadowing for the sides of the window (for Windows)
 
     - Add a settings section
         - Option to toggle commas; 1,000,000 <-> 1000000
@@ -58,19 +46,16 @@ Future Features:
 
     - App Icon for taskbar (also one for when you hover on the window where it shows on the top left)
 
-    - Minimizing functionality for when the user clicks the app icon
-        - Works, but maybe give animation like other windows
+    - Animation for minimizing functionality (for Windows)
 
     - Plus minus (±)
         - Ex, x = 2:
             - When in exact form: 5x ± 1 -> (5*2) ± 1 -> 10 ± 1
-            - When in decimal form:  5x ± 1 -> 5x + 1 -> (5*2) + 1 -> 10 + 1 -> 11  (Displays both answers somehow)
+            - When in approximate form:  5x ± 1 -> 5x + 1 -> (5*2) + 1 -> 10 + 1 -> 11  (Displays both answers somehow)
                                             -> 5x - 1 -> (5*2) - 1 -> 10 - 1 -> 9
 
-    - Approximation (≈) symbol in the top left of the answer box if the decimal value is longer than a certain amount of digits / find another way to see if the value displayed isn't the exact value\
-        - A equals (=) symbol for when the format is exact
-
     - Represent functions like cos() with italics
+        - Might solve this problem another way without the use of color (not sure yet)
         - Make the "cos" highlight if the program detects it may be a function
             - If the user does an input (click + control, not sure), cos turns into italics and is considered a function instead of c*o*s
         - May want a font where the italics are the same width as the normal characters
@@ -92,8 +77,6 @@ Future Features:
     - Maybe increase the size of the format symbol
     
     - Maybe add a background to the scroll bar in the scroll area
-    
-    - Move the definition box code to a seperate class and check if it runs within the RunWindow class
 '''
 
 
@@ -139,7 +122,7 @@ class SettingsWindow:
         self.box_answer_padding = 12  # distance from the image to the border of the answer box
         self.latex_image_dpi = 800
 
-        # Definitions box
+        # Multi box
         self.content_margin = 30  # distance between the scroll content, and the border
 
         # -------------------------------------------------------------------------------------------------------
@@ -490,6 +473,8 @@ class MainWindow(ControlWindow):
         self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;')
         self.box_answer.clicked.connect(self.copy)
 
+        self.answer_image_path = files.file_path('latex_answer.png', None)  # gets the path of the latex image
+
         # answer format label
         self.box_answer_format_label = QLabel('', self)
         self.box_answer_format_label.setStyleSheet('font-size: 18px; color: white')
@@ -671,8 +656,8 @@ class MainWindow(ControlWindow):
         convert_render_latex(self.answer_temp, self.latex_image_dpi)
 
         self.box_answer.setText('')
-        self.box_answer.setIcon(QIcon(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png"))
-        self.image = Image.open(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png")
+        self.box_answer.setIcon(QIcon(self.answer_image_path))
+        self.image = Image.open(self.answer_image_path)
         self.icon_aspect_ratio_inverse = self.image.size[1] / self.image.size[0]
 
         self.box_answer_format_label.setText('=')  # answer defaults in exact mode
@@ -701,8 +686,8 @@ class MainWindow(ControlWindow):
 
         convert_render_latex(self.answer_temp, self.latex_image_dpi)
 
-        self.box_answer.setIcon(QIcon(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png"))
-        self.image = Image.open(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png")
+        self.box_answer.setIcon(QIcon(self.answer_image_path))
+        self.image = Image.open(self.answer_image_path)
         self.icon_aspect_ratio_inverse = self.image.size[1] / self.image.size[0]
 
         self.resizeEvent(None)
@@ -995,27 +980,50 @@ class TestWindow(MainWindow):  # buttons, and functions for testing purposes
         print('Manually Updated')
 
 
-class BaseWindow(MainWindow):
-    def __init__(self):
-        super().__init__()
-
-
-# currently this works with the test class, but if it cannot work in the future, a chain of parents and children might need to be constructed.
-class RunWindow(TestWindow, MultiWindow, BaseWindow):  # include all children of the MainWindow class here
+class RunWindow(TestWindow, MultiWindow, MainWindow):  # include all children of the MainWindow class here
     def __init__(self):  # initialize all children here
-        BaseWindow.__init__(self)
+        MainWindow.__init__(self)
         TestWindow.setup_test(self)
         MultiWindow.setup_multi(self)
 
     def resizeEvent(self, event):
-        self.control_update()  # Custom method to update the sizes of widgets
         self.update()
+        self.update_control()
+        self.update_multi()
 
-    def control_update(self) -> None:
+    def update(self) -> None:
         """
         Updates the positions of all widgets that need their positions updated.
 
         May also be used to update other stuff in the future.
+        """
+
+        box_answer_height = int(self.box_answer_height_percent * (self.height() - self.title_bar_height - (3 * self.box_padding)))
+
+        # text box
+        self.box_text.move(self.box_padding, self.box_padding + self.title_bar_height)
+        self.box_text.resize(int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.height() - box_answer_height - (self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
+
+        # answer box
+        self.box_answer.move(self.box_padding, self.height() - self.box_padding - box_answer_height)
+        self.box_answer.resize(int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), box_answer_height)
+
+        # answer box icon
+        icon_new_width = int((self.width() * self.box_width_left) - (self.box_padding * 1.5) - (self.box_answer_padding * 4))
+        if self.icon_aspect_ratio_inverse is not None:
+            if self.icon_aspect_ratio_inverse * icon_new_width < box_answer_height - (self.box_answer_padding * 2):
+                self.box_answer.setIconSize(QSize(icon_new_width, self.height() - self.box_padding - box_answer_height - (self.box_answer_padding * 2)))
+            else:
+                icon_aspect_ratio = self.icon_aspect_ratio_inverse ** -1
+                icon_new_width = int(icon_aspect_ratio * box_answer_height - (self.box_answer_padding * 2))
+                self.box_answer.setIconSize(QSize(icon_new_width, box_answer_height - (self.box_answer_padding * 2)))
+
+        # answer format label
+        self.box_answer_format_label.move(self.box_padding + self.box_answer_padding, self.height() - self.box_padding - box_answer_height)
+
+    def update_control(self) -> None:
+        """
+        Updates the positions of all widgets in the control class.
         """
 
         # move widget
@@ -1052,37 +1060,12 @@ class RunWindow(TestWindow, MultiWindow, BaseWindow):  # include all children of
         self.widget_resize[7].move(self.width() - self.widget_resize_size, self.height() - self.widget_resize_size)
         self.widget_resize[7].resize(self.widget_resize_size, self.widget_resize_size)
 
-    def update(self) -> None:
+    def update_multi(self) -> None:
         """
-        Updates the positions of all widgets that need their positions updated.
-
-        May also be used to update other stuff in the future.
+        Updates the positions of all widgets in the multi class.
         """
 
-        box_answer_height = int(self.box_answer_height_percent * (self.height() - self.title_bar_height - (3 * self.box_padding)))
-
-        # text box
-        self.box_text.move(self.box_padding, self.box_padding + self.title_bar_height)
-        self.box_text.resize(int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.height() - box_answer_height - (self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
-
-        # answer box
-        self.box_answer.move(self.box_padding, self.height() - self.box_padding - box_answer_height)
-        self.box_answer.resize(int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), box_answer_height)
-
-        # answer box icon
-        icon_new_width = int((self.width() * self.box_width_left) - (self.box_padding * 1.5) - (self.box_answer_padding * 4))
-        if self.icon_aspect_ratio_inverse is not None:
-            if self.icon_aspect_ratio_inverse * icon_new_width < box_answer_height - (self.box_answer_padding * 2):
-                self.box_answer.setIconSize(QSize(icon_new_width, self.height() - self.box_padding - box_answer_height - (self.box_answer_padding * 2)))
-            else:
-                icon_aspect_ratio = self.icon_aspect_ratio_inverse ** -1
-                icon_new_width = int(icon_aspect_ratio * box_answer_height - (self.box_answer_padding * 2))
-                self.box_answer.setIconSize(QSize(icon_new_width, box_answer_height - (self.box_answer_padding * 2)))
-
-        # answer format label
-        self.box_answer_format_label.move(self.box_padding + self.box_answer_padding, self.height() - self.box_padding - box_answer_height)
-
-        # definition box
+        # multi box
         self.scroll_area.move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height)
         self.scroll_area.resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height)
 
