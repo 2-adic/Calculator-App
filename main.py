@@ -92,6 +92,8 @@ Future Features:
     - Maybe increase the size of the format symbol
     
     - Maybe add a background to the scroll bar in the scroll area
+    
+    - Move the definition box code to a seperate class and check if it runs within the RunWindow class
 '''
 
 
@@ -144,12 +146,10 @@ class SettingsWindow:
 
 
 class ControlWindow(QMainWindow, SettingsWindow):
-    def __init__(self, main_window):
+    def __init__(self):
         QMainWindow.__init__(self)
         QWidget.__init__(self)
         SettingsWindow.__init__(self)
-
-        self.main_window = main_window
 
         # Window ------------------------------------------------------------------------------------------------
 
@@ -282,7 +282,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
             for widget in self.widget_resize:  # disables all resizing widgets
                 widget.setEnabled(False)
 
-        QTimer.singleShot(0, self.control_update)
+        self.resizeEvent(None)  # resizes the window
 
     def mouseReleaseEvent(self, event: QMouseEvent | None) -> None:
         """
@@ -473,55 +473,10 @@ class ControlWindow(QMainWindow, SettingsWindow):
                 new_height = max(self.window_size_min_y, event.position().toPoint().y())
                 self.resize(new_width, new_height)
 
-    def resizeEvent(self, event):
-        self.control_update()  # Custom method to update the sizes of widgets
-        self.main_window.update()
-
-    def control_update(self) -> None:
-        """
-        Updates the positions of all widgets that need their positions updated.
-
-        May also be used to update other stuff in the future.
-        """
-
-        # move widget
-        self.main_window.widget_move.move(self.widget_resize_size, self.widget_resize_size)
-        self.main_window.widget_move.resize(self.width() - self.widget_resize_size - (3 * self.title_bar_height), self.title_bar_height - self.widget_resize_size)
-
-        # close button
-        self.main_window.button_close.move(self.width() - self.button_width, 0)
-        self.main_window.button_close.resize(self.button_width, self.title_bar_height)
-
-        # maximize button
-        self.main_window.button_maximize.move(self.width() - (2 * self.button_width), 0)
-        self.main_window.button_maximize.resize(self.button_width, self.title_bar_height)
-
-        # minimize button
-        self.main_window.button_minimize.move(self.width() - (3 * self.button_width), 0)
-        self.main_window.button_minimize.resize(self.button_width, self.title_bar_height)
-
-        # Resize Widgets, Order: right, top right, top, top left, left, bottom left, bottom, bottom right
-        self.main_window.widget_resize[0].move(self.width() - self.widget_resize_size, self.widget_resize_size)
-        self.main_window.widget_resize[0].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
-        self.main_window.widget_resize[1].move(self.width() - self.widget_resize_size, 0)
-        self.main_window.widget_resize[1].resize(self.widget_resize_size, self.widget_resize_size)
-        self.main_window.widget_resize[2].move(self.widget_resize_size, 0)
-        self.main_window.widget_resize[2].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
-        self.main_window.widget_resize[3].move(0, 0)
-        self.main_window.widget_resize[3].resize(self.widget_resize_size, self.widget_resize_size)
-        self.main_window.widget_resize[4].move(0, self.widget_resize_size)
-        self.main_window.widget_resize[4].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
-        self.main_window.widget_resize[5].move(0, self.height() - self.widget_resize_size)
-        self.main_window.widget_resize[5].resize(self.widget_resize_size, self.widget_resize_size)
-        self.main_window.widget_resize[6].move(self.widget_resize_size, self.height() - self.widget_resize_size)
-        self.main_window.widget_resize[6].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
-        self.main_window.widget_resize[7].move(self.width() - self.widget_resize_size, self.height() - self.widget_resize_size)
-        self.main_window.widget_resize[7].resize(self.widget_resize_size, self.widget_resize_size)
-
 
 class MainWindow(ControlWindow):
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
 
         # answer box
         self.answer = 'Error'  # user shouldn't be able to access this string yet
@@ -583,59 +538,6 @@ class MainWindow(ControlWindow):
             }
             '''
         )
-
-        # scroll area
-        self.scroll_layout = QVBoxLayout()
-        self.scroll_content = QWidget()
-        self.scroll_content.setLayout(self.scroll_layout)
-
-        self.scroll_area = QScrollArea(self)
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setWidget(self.scroll_content)
-
-        # --------------------------------------------------------------------------------------------------------
-
-        self.scroll_area.setStyleSheet(
-            '''
-            QScrollArea {
-                border: 3px solid #232428;
-                background-color: #555861;
-                border-radius: 6px;
-                color: white;
-                font-size: 15px;
-            }
-            QScrollBar:vertical {
-                border: none;
-                background-color: transparent;
-                width: 12px;
-                margin: 4px 4px 4px 0px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #232428;
-                border-radius: 4px;
-                min-height: 20px;
-            }
-            QScrollBar::add-line:vertical {
-                width: 0px;
-            }
-            QScrollBar::sub-line:vertical {
-                width: 0px;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                background: none;
-            }
-            '''
-        )
-
-        self.scroll_content.setStyleSheet(
-            'border: transparent;'
-            'background-color: transparent;'
-            'color: white;'
-            'font-size: 15px;'
-        )
-
-        self.scroll_layout.setContentsMargins(self.content_margin, self.content_margin, self.content_margin, self.content_margin)
-        self.scroll_area.setWidget(self.scroll_content)
 
     def answer_formatting_before(self, string: str) -> str:
         """
@@ -775,7 +677,7 @@ class MainWindow(ControlWindow):
 
         self.box_answer_format_label.setText('=')  # answer defaults in exact mode
 
-        self.resizeEvent(self)  # updates to resize the new image
+        self.resizeEvent(None)  # updates to resize the new image
 
     def flip_type(self) -> None:
         """
@@ -803,7 +705,7 @@ class MainWindow(ControlWindow):
         self.image = Image.open(r"C:\Users\mglin\PycharmProjects\Calculator-App\latex_answer.png")
         self.icon_aspect_ratio_inverse = self.image.size[1] / self.image.size[0]
 
-        self.resizeEvent(self)
+        self.resizeEvent(None)
 
         # self.box_answer.setText(self.answer_temp)  # displays the answer
 
@@ -879,6 +781,67 @@ class MainWindow(ControlWindow):
         self.box_answer.setText(f'{str(self.answer)}')  # displays the answer
 
         self.box_answer_format_label.setText('')
+
+
+class MultiWindow(MainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.setup_multi()
+
+    def setup_multi(self):
+        # scroll area
+        self.scroll_layout = QVBoxLayout()
+        self.scroll_content = QWidget()
+        self.scroll_content.setLayout(self.scroll_layout)
+
+        self.scroll_area = QScrollArea(self)
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setWidget(self.scroll_content)
+
+        # --------------------------------------------------------------------------------------------------------
+
+        self.scroll_area.setStyleSheet(
+            '''
+            QScrollArea {
+                border: 3px solid #232428;
+                background-color: #555861;
+                border-radius: 6px;
+                color: white;
+                font-size: 15px;
+            }
+            QScrollBar:vertical {
+                border: none;
+                background-color: transparent;
+                width: 12px;
+                margin: 4px 4px 4px 0px;
+            }
+            QScrollBar::handle:vertical {
+                background-color: #232428;
+                border-radius: 4px;
+                min-height: 20px;
+            }
+            QScrollBar::add-line:vertical {
+                width: 0px;
+            }
+            QScrollBar::sub-line:vertical {
+                width: 0px;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
+            '''
+        )
+
+        self.scroll_content.setStyleSheet(
+            'border: transparent;'
+            'background-color: transparent;'
+            'color: white;'
+            'font-size: 15px;'
+        )
+
+        self.scroll_layout.setContentsMargins(self.content_margin, self.content_margin, self.content_margin, self.content_margin)
+        self.scroll_area.setWidget(self.scroll_content)
 
     def scroll_area_fill(self) -> None:
         """
@@ -962,44 +925,13 @@ class MainWindow(ControlWindow):
                 # Recursively clear nested layouts
                 self.clear_inner_layout(item.layout())
 
-    def update(self) -> None:
-        """
-        Updates the positions of all widgets that need their positions updated.
-
-        May also be used to update other stuff in the future.
-        """
-
-        box_answer_height = int(self.box_answer_height_percent * (self.height() - self.title_bar_height - (3 * self.box_padding)))
-
-        # text box
-        self.box_text.move(self.box_padding, self.box_padding + self.title_bar_height)
-        self.box_text.resize(int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.height() - box_answer_height - (self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
-
-        # answer box
-        self.box_answer.move(self.box_padding, self.height() - self.box_padding - box_answer_height)
-        self.box_answer.resize(int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), box_answer_height)
-
-        # answer box icon
-        icon_new_width = int((self.width() * self.box_width_left) - (self.box_padding * 1.5) - (self.box_answer_padding * 4))
-        if self.icon_aspect_ratio_inverse is not None:
-            if self.icon_aspect_ratio_inverse * icon_new_width < box_answer_height - (self.box_answer_padding * 2):
-                self.box_answer.setIconSize(QSize(icon_new_width, self.height() - self.box_padding - box_answer_height - (self.box_answer_padding * 2)))
-            else:
-                icon_aspect_ratio = self.icon_aspect_ratio_inverse ** -1
-                icon_new_width = int(icon_aspect_ratio * box_answer_height - (self.box_answer_padding * 2))
-                self.box_answer.setIconSize(QSize(icon_new_width, box_answer_height - (self.box_answer_padding * 2)))
-
-        # answer format label
-        self.box_answer_format_label.move(self.box_padding + self.box_answer_padding, self.height() - self.box_padding - box_answer_height)
-
-        # definition box
-        self.scroll_area.move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height)
-        self.scroll_area.resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height)
-
 
 class TestWindow(MainWindow):  # buttons, and functions for testing purposes
     def __init__(self):
         super().__init__()
+        self.setup_test()
+
+    def setup_test(self):
 
         self.button_hook = []  # holds all testing buttons
 
@@ -1033,15 +965,17 @@ class TestWindow(MainWindow):  # buttons, and functions for testing purposes
 
     def test(self) -> None:
         """
-        Used for testing anything using a button in the window.
+        Used for testing anything in the window.
         """
 
         self.button_test_toggle = not self.button_test_toggle
 
+        '''
         if self.button_test_toggle:
             self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
         else:
             self.scroll_area.setCursor(Qt.CursorShape.ArrowCursor)
+        '''
 
         print(self.variables)
 
@@ -1057,25 +991,100 @@ class TestWindow(MainWindow):  # buttons, and functions for testing purposes
         For manually updating the window with a button.
         """
 
-        self.resizeEvent(self)
+        self.resizeEvent(None)
         print('Manually Updated')
 
 
-class Test(MainWindow):
+class BaseWindow(MainWindow):
     def __init__(self):
         super().__init__()
-        self.test_init()
-
-    def test_init(self):
-        # self.label_test = QLabel('Test', self)
-        test_class_variable = None
 
 
 # currently this works with the test class, but if it cannot work in the future, a chain of parents and children might need to be constructed.
-class RunWindow(TestWindow, Test):  # include all children of the MainWindow class here
+class RunWindow(TestWindow, MultiWindow, BaseWindow):  # include all children of the MainWindow class here
     def __init__(self):  # initialize all children here
-        TestWindow.__init__(self)
-        Test.test_init(self)
+        BaseWindow.__init__(self)
+        TestWindow.setup_test(self)
+        MultiWindow.setup_multi(self)
+
+    def resizeEvent(self, event):
+        self.control_update()  # Custom method to update the sizes of widgets
+        self.update()
+
+    def control_update(self) -> None:
+        """
+        Updates the positions of all widgets that need their positions updated.
+
+        May also be used to update other stuff in the future.
+        """
+
+        # move widget
+        self.widget_move.move(self.widget_resize_size, self.widget_resize_size)
+        self.widget_move.resize(self.width() - self.widget_resize_size - (3 * self.title_bar_height), self.title_bar_height - self.widget_resize_size)
+
+        # close button
+        self.button_close.move(self.width() - self.button_width, 0)
+        self.button_close.resize(self.button_width, self.title_bar_height)
+
+        # maximize button
+        self.button_maximize.move(self.width() - (2 * self.button_width), 0)
+        self.button_maximize.resize(self.button_width, self.title_bar_height)
+
+        # minimize button
+        self.button_minimize.move(self.width() - (3 * self.button_width), 0)
+        self.button_minimize.resize(self.button_width, self.title_bar_height)
+
+        # Resize Widgets, Order: right, top right, top, top left, left, bottom left, bottom, bottom right
+        self.widget_resize[0].move(self.width() - self.widget_resize_size, self.widget_resize_size)
+        self.widget_resize[0].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
+        self.widget_resize[1].move(self.width() - self.widget_resize_size, 0)
+        self.widget_resize[1].resize(self.widget_resize_size, self.widget_resize_size)
+        self.widget_resize[2].move(self.widget_resize_size, 0)
+        self.widget_resize[2].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
+        self.widget_resize[3].move(0, 0)
+        self.widget_resize[3].resize(self.widget_resize_size, self.widget_resize_size)
+        self.widget_resize[4].move(0, self.widget_resize_size)
+        self.widget_resize[4].resize(self.widget_resize_size, self.height() - (2 * self.widget_resize_size))
+        self.widget_resize[5].move(0, self.height() - self.widget_resize_size)
+        self.widget_resize[5].resize(self.widget_resize_size, self.widget_resize_size)
+        self.widget_resize[6].move(self.widget_resize_size, self.height() - self.widget_resize_size)
+        self.widget_resize[6].resize(self.width() - (2 * self.widget_resize_size), self.widget_resize_size)
+        self.widget_resize[7].move(self.width() - self.widget_resize_size, self.height() - self.widget_resize_size)
+        self.widget_resize[7].resize(self.widget_resize_size, self.widget_resize_size)
+
+    def update(self) -> None:
+        """
+        Updates the positions of all widgets that need their positions updated.
+
+        May also be used to update other stuff in the future.
+        """
+
+        box_answer_height = int(self.box_answer_height_percent * (self.height() - self.title_bar_height - (3 * self.box_padding)))
+
+        # text box
+        self.box_text.move(self.box_padding, self.box_padding + self.title_bar_height)
+        self.box_text.resize(int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.height() - box_answer_height - (self.box_padding * 3) - self.title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
+
+        # answer box
+        self.box_answer.move(self.box_padding, self.height() - self.box_padding - box_answer_height)
+        self.box_answer.resize(int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), box_answer_height)
+
+        # answer box icon
+        icon_new_width = int((self.width() * self.box_width_left) - (self.box_padding * 1.5) - (self.box_answer_padding * 4))
+        if self.icon_aspect_ratio_inverse is not None:
+            if self.icon_aspect_ratio_inverse * icon_new_width < box_answer_height - (self.box_answer_padding * 2):
+                self.box_answer.setIconSize(QSize(icon_new_width, self.height() - self.box_padding - box_answer_height - (self.box_answer_padding * 2)))
+            else:
+                icon_aspect_ratio = self.icon_aspect_ratio_inverse ** -1
+                icon_new_width = int(icon_aspect_ratio * box_answer_height - (self.box_answer_padding * 2))
+                self.box_answer.setIconSize(QSize(icon_new_width, box_answer_height - (self.box_answer_padding * 2)))
+
+        # answer format label
+        self.box_answer_format_label.move(self.box_padding + self.box_answer_padding, self.height() - self.box_padding - box_answer_height)
+
+        # definition box
+        self.scroll_area.move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height)
+        self.scroll_area.resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height)
 
 
 def main():
