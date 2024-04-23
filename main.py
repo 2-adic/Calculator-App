@@ -33,6 +33,9 @@ Bugs:
     - App crashes when user inputs ".." and clicks the answer button
 
     - If the user in a variable box while their mouse is on top of a variable text box, the mouse flashes between two different cursor shapes
+    
+    - LaTeX answer image still clips outside of the answer box in specific circumstances
+        - Ex: x + 7
 
 Future Features:
     - Need shadowing for the sides of the window (for Windows)
@@ -118,6 +121,8 @@ class SettingsWindow:
 
         # Answer box
         self.answer_default = 'Answer'
+        self.answer_format_size = 20  # the size of the symbol that shows the current selected answer format
+
         self.box_answer_height_percent = 2/5  # percentage of screen height
         self.box_answer_padding = 12  # distance from the image to the border of the answer box
         self.latex_image_dpi = 800
@@ -477,7 +482,7 @@ class MainWindow(ControlWindow):
 
         # answer format label
         self.box_answer_format_label = QLabel('', self)
-        self.box_answer_format_label.setStyleSheet('font-size: 18px; color: white')
+        self.box_answer_format_label.setStyleSheet(f'font-size: {self.answer_format_size}px; color: white')
 
         # text box
         self.user_select = None
