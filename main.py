@@ -35,6 +35,7 @@ Bugs:
     - If the user in a variable box while their mouse is on top of a variable text box, the mouse flashes between two different cursor shapes
     
     - LaTeX answer image still clips outside of the answer box in specific circumstances
+        - Bug does not happen on Windows, only on MacOS (not sure why)
         - Ex: x + 7
 
 Future Features:
@@ -494,7 +495,6 @@ class MainWindow(ControlWindow):
         self.accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
         self.accepted_other = ['(']
 
-        # create a QLineEdit with initial position (150, 50)
         self.box_text = QPlainTextEdit(self)
         self.box_text.textChanged.connect(self.text_update)
         self.box_text.setStyleSheet(
@@ -507,8 +507,8 @@ class MainWindow(ControlWindow):
                 font-size: 15px;
             }
             QScrollBar:vertical {
-                border: none;
-                background-color: transparent;
+                border-radius: 4px;
+                background-color: #3f4148;
                 width: 12px;
                 margin: 4px 4px 4px 0px;
             }
@@ -801,8 +801,8 @@ class MultiWindow(MainWindow):
                 font-size: 15px;
             }
             QScrollBar:vertical {
-                border: none;
-                background-color: transparent;
+                border-radius: 4px;
+                background-color: #3f4148;
                 width: 12px;
                 margin: 4px 4px 4px 0px;
             }
