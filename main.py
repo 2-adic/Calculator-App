@@ -10,6 +10,8 @@ import files
 from str_format import contains_substring
 from PIL import Image
 from latex import convert_render_latex
+import ctypes
+import platform
 
 
 '''
@@ -1076,7 +1078,24 @@ class RunWindow(TestWindow, MultiWindow, MainWindow):  # include all children of
 
 
 def main():
+
     app = QApplication(sys.argv)
+
+    system_name = platform.system()
+    if system_name == 'Windows':
+        # configures windows to show the taskbar icon
+        myappid = u'mycompany.myproduct.subproduct.version'  # arbitrary string
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        print("Operating system is Windows")
+
+    if system_name == 'Darwin':
+        print("Operating system is macOS")
+
+    elif system_name == 'Linux':
+        print("Operating system is Linux")
+
+    # sets the icon for the app
+    app.setWindowIcon(QIcon(files.file_path('taskbar_icon_16px.png', 'icons')))
 
     # sets the default font
     font_family = fontcontrol.font_load(fontcontrol.font_files[0])
