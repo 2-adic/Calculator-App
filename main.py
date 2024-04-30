@@ -1088,7 +1088,7 @@ def main():
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
         print("Operating system is Windows")
 
-    if system_name == 'Darwin':
+    elif system_name == 'Darwin':
         print("Operating system is macOS")
 
     elif system_name == 'Linux':
