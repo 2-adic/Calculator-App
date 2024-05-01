@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout
-from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent
+from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QKeySequence
 from PyQt6.QtCore import Qt, QPoint, QTimer, QSize
 import sympy as sy
 import pyperclip
@@ -10,8 +10,7 @@ import files
 from str_format import contains_substring
 from PIL import Image
 from latex import convert_render_latex
-import ctypes
-import platform
+import system_settings
 
 
 '''
@@ -142,6 +141,8 @@ class ControlWindow(QMainWindow, SettingsWindow):
         QWidget.__init__(self)
         SettingsWindow.__init__(self)
 
+        self.op = system_settings.OperatingSystem()  # initializes settings depending on the operating system
+
         # Window ------------------------------------------------------------------------------------------------
 
         self.setGeometry(self.window_start[0], self.window_start[1], self.window_start[2], self.window_start[3])  # initial window size / position
@@ -168,8 +169,8 @@ class ControlWindow(QMainWindow, SettingsWindow):
         self.button_close = QPushButton('', self)
         self.button_close.setIcon(QIcon(files.file_path('button_close_icon.png', 'icons')))
         self.button_close.setStyleSheet(
-            "QPushButton { background-color: transparent; color: rgb(181, 186, 193); border: none; font-size: 11px;}"
-            "QPushButton:hover { background-color: rgb(242, 63, 66); border: none; }"
+            'QPushButton { background-color: transparent; color: rgb(181, 186, 193); border: none; font-size: 11px;}'
+            'QPushButton:hover { background-color: rgb(242, 63, 66); border: none; }'
         )
         self.button_close.clicked.connect(self.button_close_logic)
 
@@ -177,8 +178,8 @@ class ControlWindow(QMainWindow, SettingsWindow):
         self.button_maximize = QPushButton('', self)
         self.button_maximize.setIcon(QIcon(files.file_path('button_maximize_icon.png', 'icons')))
         self.button_maximize.setStyleSheet(
-            "QPushButton { background-color: transparent; color: rgb(181, 186, 193); border: none; font-weight: bold; font-size: 11px;}"
-            "QPushButton:hover { background-color: rgb(45, 46, 51); border: none; }"
+            'QPushButton { background-color: transparent; color: rgb(181, 186, 193); border: none; font-weight: bold; font-size: 11px;}'
+            'QPushButton:hover { background-color: rgb(45, 46, 51); border: none; }'
         )
         self.button_maximize.clicked.connect(self.button_maximize_logic)
 
@@ -186,9 +187,9 @@ class ControlWindow(QMainWindow, SettingsWindow):
         self.button_minimize = QPushButton('', self)
         self.button_minimize.setIcon(QIcon(files.file_path('button_minimize_icon.png', 'icons')))
         self.button_minimize.setStyleSheet(
-            "QPushButton { background-color: transparent; border: none; }"
-            "QPushButton:hover { background-color: rgb(45, 46, 51); border: none; }"
-            "QPushButton::icon { margin-bottom: -5px; }"
+            'QPushButton { background-color: transparent; border: none; }'
+            'QPushButton:hover { background-color: rgb(45, 46, 51); border: none; }'
+            'QPushButton::icon { margin-bottom: -5px; }'
         )
         self.button_minimize.clicked.connect(self.showMinimized)
 
@@ -257,6 +258,10 @@ class ControlWindow(QMainWindow, SettingsWindow):
         Maximizes the screem using the maximize button.
         """
 
+        if self.op.system_name == 'Darwin':  # on macOS, the maximize button fullscreens the window
+            self.full_screen_logic()
+            return
+
         if self.isMaximized():
             # return to state before maximized
             self.showNormal()
@@ -274,6 +279,43 @@ class ControlWindow(QMainWindow, SettingsWindow):
                 widget.setEnabled(False)
 
         self.resizeEvent(None)  # resizes the window
+
+    def full_screen_logic(self):
+        """
+        Fullscreens the window.
+        """
+
+        if self.isFullScreen():
+            # return to state before maximized
+            self.showNormal()
+            self.widget_resize_toggle = True
+
+            for widget in self.widget_resize:  # enables all resizing widgets
+                widget.setEnabled(True)
+
+        else:
+            # maximize window
+            self.showFullScreen()
+            self.widget_resize_toggle = False
+
+            for widget in self.widget_resize:  # disables all resizing widgets
+                widget.setEnabled(False)
+
+        self.resizeEvent(None)  # resizes the window
+
+    def keyPressEvent(self, event) -> None:
+
+        # maximizes the window based on the operating system's shortcut
+        if self.op.is_maximize_shortcut(event):
+            self.full_screen_logic()
+
+            # focuses the window
+            self.activateWindow()
+            self.raise_()
+            self.setFocus()
+
+        else:
+            super().keyPressEvent(event)  # passes other key presses
 
     def mouseReleaseEvent(self, event: QMouseEvent | None) -> None:
         """
@@ -1080,19 +1122,6 @@ class RunWindow(TestWindow, MultiWindow, MainWindow):  # include all children of
 def main():
 
     app = QApplication(sys.argv)
-
-    system_name = platform.system()
-    if system_name == 'Windows':
-        # configures windows to show the taskbar icon
-        myappid = u'mycompany.myproduct.subproduct.version'  # arbitrary string
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-        print("Operating system is Windows")
-
-    elif system_name == 'Darwin':
-        print("Operating system is macOS")
-
-    elif system_name == 'Linux':
-        print("Operating system is Linux")
 
     # sets the icon for the app
     app.setWindowIcon(QIcon(files.file_path('taskbar_icon_16px.png', 'icons')))
