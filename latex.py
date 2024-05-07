@@ -4,8 +4,10 @@ import str_format
 from functions import constant_counter
 
 
-def render_latex(latex_str, filename='latex_answer.png', dpi=300, text_color='white'):
+def render_latex(latex_str, filename='latex_answer.png', dpi=300, text_color=(1, 1, 1)):
     """Renders a LaTex string into an image without clipping issues."""
+
+    text_color = text_color[0] / 255, text_color[1] / 255, text_color[2] / 255
 
     # create a figure
     fig = plt.figure()
@@ -35,12 +37,13 @@ def render_latex(latex_str, filename='latex_answer.png', dpi=300, text_color='wh
     plt.close(fig)
 
 
-def convert_render_latex(string: str, dpi=300) -> str:
+def convert_render_latex(string: str, color: tuple[int, int, int], dpi: int = 300) -> str:
     """
     Takes a math expression as a string, and converts it into the LaTeX format.
     Also renders the image of the LaTeX string as a png named "latex_answer.png".
 
     :param string: String to be converted into LaTeX format
+    :param color: Color of the text as a rgb value.
     :param dpi: Sets the resolution of the image.
     :return: The formatted LaTeX string.
     """
@@ -51,6 +54,6 @@ def convert_render_latex(string: str, dpi=300) -> str:
     sy_string = sy.sympify(string)
     latex = sy.latex(sy_string, fold_short_frac=False)
 
-    render_latex(latex, dpi=dpi)
+    render_latex(latex, text_color=color, dpi=dpi)
 
     return latex
