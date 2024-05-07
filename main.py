@@ -121,6 +121,8 @@ class SettingsWindow:
         # General
         self.box_width_left = 1/2  # percentage of screen width
         self.box_padding = 20  # amount of spacing between the boxes
+        self.box_border = 4  # the border thickness for all widgets
+        self.box_border_radius = self.box_border * 2  # the curvature of the border corners
 
         # Answer box
         self.answer_default = 'Answer'
@@ -132,6 +134,30 @@ class SettingsWindow:
 
         # Multi box
         self.content_margin = 30  # distance between the scroll content, and the border
+
+        # Colors ------------------------------------------------------------------------------------------------
+
+        # general
+        self.color_background = 49, 51, 56
+        self.color_text = 255, 255, 255
+        self.color_text_highlight_active = 70, 115, 156
+        self.color_text_highlight_inactive = 176, 176, 176
+
+        # title bar
+        self.color_title_bar = 30, 31, 34
+        self.color_title_bar_text = 148, 155, 164
+        self.color_title_bar_button_hover = 45, 46, 51
+        self.color_title_bat_button_exit = 242, 63, 66
+
+        # boxes
+        self.color_box_background = 85, 88, 97
+        self.color_box_border = 35, 36, 40
+        self.color_box_highlight = 81, 100, 117
+
+        # other
+        self.color_line = 49, 51, 56
+        self.color_scrollbar_background = 63, 65, 72
+        self.color_latex = self.color_text
 
         # -------------------------------------------------------------------------------------------------------
 
@@ -161,15 +187,15 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
         # displayed title
         self.title_label = QLabel(self.window_title, self)
-        self.title_label.setStyleSheet('color: rgb(148, 155, 164); font-weight: bold; font-size: 11px;')
+        self.title_label.setStyleSheet(f'color: rgb{self.color_title_bar_text}; font-weight: bold; font-size: 11px;')
         self.title_label.move(self.window_title_position[0], self.window_title_position[1])
 
         # close button
         self.button_close = QPushButton('', self)
         self.button_close.setIcon(QIcon(files.file_path('button_close_icon.png', 'icons')))
         self.button_close.setStyleSheet(
-            "QPushButton { background-color: transparent; color: rgb(181, 186, 193); border: none; font-size: 11px;}"
-            "QPushButton:hover { background-color: rgb(242, 63, 66); border: none; }"
+            'QPushButton { background-color: transparent;}'
+            f'QPushButton:hover {{ background-color: rgb{self.color_title_bat_button_exit}; border: none; }}'
         )
         self.button_close.clicked.connect(self.button_close_logic)
 
@@ -177,8 +203,8 @@ class ControlWindow(QMainWindow, SettingsWindow):
         self.button_maximize = QPushButton('', self)
         self.button_maximize.setIcon(QIcon(files.file_path('button_maximize_icon.png', 'icons')))
         self.button_maximize.setStyleSheet(
-            "QPushButton { background-color: transparent; color: rgb(181, 186, 193); border: none; font-weight: bold; font-size: 11px;}"
-            "QPushButton:hover { background-color: rgb(45, 46, 51); border: none; }"
+            'QPushButton { background-color: transparent;}'
+            f'QPushButton:hover {{ background-color: rgb{self.color_title_bar_button_hover}; border: none; }}'
         )
         self.button_maximize.clicked.connect(self.button_maximize_logic)
 
@@ -186,9 +212,9 @@ class ControlWindow(QMainWindow, SettingsWindow):
         self.button_minimize = QPushButton('', self)
         self.button_minimize.setIcon(QIcon(files.file_path('button_minimize_icon.png', 'icons')))
         self.button_minimize.setStyleSheet(
-            "QPushButton { background-color: transparent; border: none; }"
-            "QPushButton:hover { background-color: rgb(45, 46, 51); border: none; }"
-            "QPushButton::icon { margin-bottom: -5px; }"
+            'QPushButton { background-color: transparent;}'
+            f'QPushButton:hover {{ background-color: rgb{self.color_title_bar_button_hover}; border: none; }}'
+            'QPushButton::icon { margin-bottom: -5px; }'
         )
         self.button_minimize.clicked.connect(self.showMinimized)
 
@@ -230,10 +256,10 @@ class ControlWindow(QMainWindow, SettingsWindow):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         # title bar
-        painter.fillRect(0, 0, self.width(), self.title_bar_height, QColor(30, 31, 34))
+        painter.fillRect(0, 0, self.width(), self.title_bar_height, QColor(self.color_title_bar[0], self.color_title_bar[1], self.color_title_bar[2]))
 
         # center window
-        painter.fillRect(0, self.title_bar_height, self.width(), self.height() - self.title_bar_height, QColor(49, 51, 56))
+        painter.fillRect(0, self.title_bar_height, self.width(), self.height() - self.title_bar_height, QColor(self.color_background[0], self.color_background[1], self.color_background[2]))
 
     def window_resize_enable(self):
         """
@@ -478,14 +504,14 @@ class MainWindow(ControlWindow):
         self.icon_aspect_ratio_inverse = None
 
         self.box_answer = QPushButton(self.answer_default, self)
-        self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;')
+        self.box_answer.setStyleSheet(f'border: {self.box_border}px solid rgb{self.color_box_border}; background-color: rgb{self.color_box_background}; border-radius: {self.box_border_radius}px; color: rgb{self.color_text}; font-size: 15px;')
         self.box_answer.clicked.connect(self.copy)
 
         self.answer_image_path = files.file_path('latex_answer.png', None)  # gets the path of the latex image
 
         # answer format label
         self.box_answer_format_label = QLabel('', self)
-        self.box_answer_format_label.setStyleSheet(f'font-size: {self.answer_format_size}px; color: white')
+        self.box_answer_format_label.setStyleSheet(f'font-size: {self.answer_format_size}px; color: rgb{self.color_text}')
 
         # text box
         self.user_select = None
@@ -500,34 +526,34 @@ class MainWindow(ControlWindow):
         self.box_text = QPlainTextEdit(self)
         self.box_text.textChanged.connect(self.text_update)
         self.box_text.setStyleSheet(
-            '''
-            QPlainTextEdit {
-                border: 3px solid rgb(35, 36, 40);
-                background-color: rgb(85, 88, 97);
-                border-radius: 6px;
-                color: white;
+            f'''
+            QPlainTextEdit {{
+                border: {self.box_border}px solid rgb{self.color_box_border};
+                background-color: rgb{self.color_box_background};
+                border-radius: {self.box_border_radius}px;
+                color: rgb{self.color_text};
                 font-size: 15px;
-            }
-            QScrollBar:vertical {
+            }}
+            QScrollBar:vertical {{
                 border-radius: 4px;
-                background-color: #3f4148;
+                background-color: rgb{self.color_scrollbar_background};
                 width: 12px;
                 margin: 4px 4px 4px 0px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #232428;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: rgb{self.color_box_border};
                 border-radius: 4px;
                 min-height: 20px;
-            }
-            QScrollBar::add-line:vertical {
+            }}
+            QScrollBar::add-line:vertical {{
                 width: 0px;
-            }
-            QScrollBar::sub-line:vertical {
+            }}
+            QScrollBar::sub-line:vertical {{
                 width: 0px;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
                 background: none;
-            }
+            }}
             '''
         )
 
@@ -660,7 +686,7 @@ class MainWindow(ControlWindow):
         # use this for option that lets the user set the non latex image as the answer
         # self.box_answer.setText(self.answer_temp)  # displays the answer
 
-        convert_render_latex(self.answer_temp, self.latex_image_dpi)
+        convert_render_latex(self.answer_temp, self.color_latex, self.latex_image_dpi)
 
         self.box_answer.setText('')
         self.box_answer.setIcon(QIcon(self.answer_image_path))
@@ -691,7 +717,7 @@ class MainWindow(ControlWindow):
 
         self.answer_temp = self.answer_formatting_after(self.answer_temp)  # reformats the answer
 
-        convert_render_latex(self.answer_temp, self.latex_image_dpi)
+        convert_render_latex(self.answer_temp, self.color_latex, self.latex_image_dpi)
 
         self.box_answer.setIcon(QIcon(self.answer_image_path))
         self.image = Image.open(self.answer_image_path)
@@ -707,8 +733,8 @@ class MainWindow(ControlWindow):
         """
 
         # adds flashing blue visual when button is clicked
-        self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(81, 100, 117); border-radius: 6px; color: white; font-size: 15px;')
-        QTimer.singleShot(150, lambda: self.box_answer.setStyleSheet('border: 3px solid rgb(35, 36, 40); background-color: rgb(85, 88, 97); border-radius: 6px; color: white; font-size: 15px;'))
+        self.box_answer.setStyleSheet(f'border: {self.box_border}px solid rgb{self.color_box_border}; background-color: rgb{self.color_box_highlight}; border-radius: {self.box_border_radius}px; color: rgb{self.color_text}; font-size: 15px;')
+        QTimer.singleShot(150, lambda: self.box_answer.setStyleSheet(f'border: {self.box_border}px solid rgb{self.color_box_border}; background-color: rgb{self.color_box_background}; border-radius: {self.box_border_radius}px; color: rgb{self.color_text}; font-size: 15px;'))
 
         pyperclip.copy(str(self.answer_temp))  # copies answer to clipboard
 
@@ -775,14 +801,17 @@ class MainWindow(ControlWindow):
         self.box_answer_format_label.setText('')
 
 
-class MultiWindow(MainWindow):
+class MultiBox(MainWindow):
     def __init__(self):
         super().__init__()
 
         self.setup_multi()
 
     def setup_multi(self):
-        # scroll area
+
+        self.select_height = 50
+
+        # scroll area0
         self.scroll_layout = QVBoxLayout()
         self.scroll_content = QWidget()
         self.scroll_content.setLayout(self.scroll_layout)
@@ -794,46 +823,104 @@ class MultiWindow(MainWindow):
         # --------------------------------------------------------------------------------------------------------
 
         self.scroll_area.setStyleSheet(
-            '''
-            QScrollArea {
-                border: 3px solid #232428;
-                background-color: #555861;
-                border-radius: 6px;
-                color: white;
+            f'''
+            QScrollArea {{
+                border: {self.box_border}px solid rgb{self.color_box_border};
+                background-color: rgb{self.color_box_background};
+                border-bottom-left-radius: {self.box_border_radius}px;
+                border-bottom-right-radius: {self.box_border_radius}px;
+                color: rgb{self.color_text};
                 font-size: 15px;
-            }
-            QScrollBar:vertical {
+            }}
+            QScrollBar:vertical {{
                 border-radius: 4px;
-                background-color: #3f4148;
+                background-color: rgb{self.color_scrollbar_background};
                 width: 12px;
                 margin: 4px 4px 4px 0px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #232428;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: rgb{self.color_box_border};
                 border-radius: 4px;
                 min-height: 20px;
-            }
-            QScrollBar::add-line:vertical {
+            }}
+            QScrollBar::add-line:vertical {{
                 width: 0px;
-            }
-            QScrollBar::sub-line:vertical {
+            }}
+            QScrollBar::sub-line:vertical {{
                 width: 0px;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
                 background: none;
-            }
+            }}
             '''
         )
 
         self.scroll_content.setStyleSheet(
             'border: transparent;'
             'background-color: transparent;'
-            'color: white;'
+            f'color: rgb{self.color_text};'
             'font-size: 15px;'
         )
 
         self.scroll_layout.setContentsMargins(self.content_margin, self.content_margin, self.content_margin, self.content_margin)
         self.scroll_area.setWidget(self.scroll_content)
+
+        # Selectors ---------------------------------------------------------------------------------------------
+
+        self.button_selectors = []
+        selector_amount = 5  # amount of selector buttons, at least 2 are needed for correct formatting (due to border radius)
+        for x in range(selector_amount):
+            button = QPushButton('Test', self)
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+
+            if x == 0:
+                button.setStyleSheet(
+                    f'''
+                    QPushButton {{
+                        color: rgb{self.color_text};
+                        border: {self.box_border}px solid rgb{self.color_box_border};
+                        background-color: rgb{self.color_box_background};
+                        border-top-left-radius: {self.box_border_radius}px;
+                    }}
+                    QPushButton:hover {{
+                        padding-top: -5px;
+                        background-color: rgb{self.color_box_highlight};
+                    }}
+                    '''
+                )
+
+            elif x == selector_amount - 1:
+                button.setStyleSheet(
+                    f'''
+                    QPushButton {{
+                        color: rgb{self.color_text};
+                        border: {self.box_border}px solid rgb{self.color_box_border};
+                        background-color: rgb{self.color_box_background};
+                        border-top-right-radius: {self.box_border_radius}px;
+                    }}
+                    QPushButton:hover {{
+                        padding-top: -5px;
+                        background-color: rgb{self.color_box_highlight};
+                    }}
+                    '''
+                )
+
+            else:
+                button.setStyleSheet(
+                    f'''
+                    QPushButton {{
+                        color: rgb{self.color_text};
+                        border: {self.box_border}px solid rgb{self.color_box_border};
+                        background-color: rgb{self.color_box_background};
+                    }}
+                    QPushButton:hover {{
+                        padding-top: -5px;
+                        background-color: rgb{self.color_box_highlight};
+                    }}
+                    '''
+                )
+
+            self.button_selectors.append(button)
 
     def scroll_area_fill(self) -> None:
         """
@@ -854,7 +941,7 @@ class MultiWindow(MainWindow):
             line = QFrame()
             line.setFrameShape(QFrame.Shape.HLine)
             line.setFrameShadow(QFrame.Shadow.Sunken)
-            line.setStyleSheet(f"background-color: #313338; border-radius: 1px")
+            line.setStyleSheet(f'background-color: rgb{self.color_line}; border-radius: 1px')
 
             self.scroll_layout.addWidget(line)
 
@@ -950,10 +1037,10 @@ class TestWindow(MainWindow):  # buttons, and functions for testing purposes
         self.button_hook.append(QPushButton('Test', self))
         self.button_hook[-1].clicked.connect(self.test)
 
-        for i in range(len(self.button_hook)):  # sets the button hook parameters
-            self.button_hook[i].setGeometry(self.test_horizontal_offset + (i * (self.test_between_spacing + self.test_button_width)), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
-            self.button_hook[i].setStyleSheet('background-color: None; color: rgb(148, 155, 164); border: 1px solid rgb(148, 155, 164); border-radius: 4px;')
-            self.button_hook[i].setCursor(Qt.CursorShape.PointingHandCursor)
+        for i, hook in enumerate(self.button_hook):  # sets the button hook parameters
+            hook.setGeometry(self.test_horizontal_offset + (i * (self.test_between_spacing + self.test_button_width)), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
+            hook.setStyleSheet(f'background-color: None; color: rgb{self.color_title_bar_text}; border: 1px solid rgb{self.color_title_bar_text}; border-radius: 4px;')
+            hook.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def test(self) -> None:
         """
@@ -987,11 +1074,11 @@ class TestWindow(MainWindow):  # buttons, and functions for testing purposes
         print('Manually Updated')
 
 
-class RunWindow(TestWindow, MultiWindow, MainWindow):  # include all children of the MainWindow class here
+class RunWindow(TestWindow, MultiBox, MainWindow):  # include all children of the MainWindow class here
     def __init__(self):  # initialize all children here
         MainWindow.__init__(self)
         TestWindow.setup_test(self)
-        MultiWindow.setup_multi(self)
+        MultiBox.setup_multi(self)
 
     def resizeEvent(self, event):
         self.update()
@@ -1072,14 +1159,37 @@ class RunWindow(TestWindow, MultiWindow, MainWindow):  # include all children of
         Updates the positions of all widgets in the multi class.
         """
 
+        # selectors
+        # although this works perfectly, a lot of the math in this section is not optimized and may need to be in the future
+        selector_size = (1/len(self.button_selectors)) * (self.width() * (1 - self.box_width_left) - self.content_margin) + self.box_border - (self.box_border/len(self.button_selectors))  # width of the selector buttons
+        check = 0
+        for i, button in enumerate(self.button_selectors):
+
+            # corrects for rounding which makes the borders between the buttons change size
+            correction = 0
+            if i != len(self.button_selectors) - 1:
+                correction = (int(((selector_size - self.box_border) * (i - 1)) + (self.box_padding * 2) + (self.width() * self.box_width_left) - (self.box_padding * 1.5)) + int(selector_size) - self.box_border) - int(((selector_size - self.box_border) * i) + (self.box_padding * 2) + (self.width() * self.box_width_left) - (self.box_padding * 1.5))
+
+                if correction == 0 and (int(((selector_size - self.box_border) * i) + (self.box_padding * 2) + (self.width() * self.box_width_left) - (self.box_padding * 1.5)) + int(selector_size) - self.box_border) - int(((selector_size - self.box_border) * (i + 1)) + (self.box_padding * 2) + (self.width() * self.box_width_left) - (self.box_padding * 1.5)) == -1:
+                    correction -= 1
+
+            # makes sure the last selector and the box below line up
+            elif int(((selector_size - self.box_border) * i) + (self.box_padding * 2) + (self.width() * self.box_width_left) - (self.box_padding * 1.5)) + int(selector_size) != (self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * 1.5)) + int((self.width() * (1 - self.box_width_left)) - (self.box_padding * 1.5)):
+                correction -= 1
+
+            # move the buttons to their correct place, while keeping the borders the same size
+            button.move(int(((selector_size - self.box_border) * i) + (self.box_padding * 2) + (self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height)
+            button.resize(int(selector_size) - correction, self.select_height)
+
         # multi box
-        self.scroll_area.move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height)
-        self.scroll_area.resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height)
+        self.scroll_area.move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height + self.select_height - self.box_border)
+        self.scroll_area.resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height - self.select_height + self.box_border)
 
 
 def main():
 
     app = QApplication(sys.argv)
+    settings = SettingsWindow()
 
     system_name = platform.system()
     if system_name == 'Windows':
@@ -1108,10 +1218,9 @@ def main():
     # default settings
     # could not change inactive highlight color with style sheet a style sheet; a style sheet overrides the inactive highlight color
     palette = app.palette()
-    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor('#46739c'))  # active highlight color
-    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor('#ffffff'))  # active highlight text color
-    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor('#b0b0b0'))  # inactive highlight color
-    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor('#ffffff'))  # inactive highlight text color
+    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor(settings.color_text[0], settings.color_text[1], settings.color_text[2]))  # inactive highlight text color
+    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor(settings.color_text_highlight_active[0], settings.color_text_highlight_active[1], settings.color_text_highlight_active[2]))  # active highlight color
+    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor(settings.color_text_highlight_inactive[0], settings.color_text_highlight_inactive[1], settings.color_text_highlight_inactive[2]))  # inactive highlight color
     app.setPalette(palette)
 
     # starts the window
