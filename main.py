@@ -412,6 +412,15 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
                 mouse_position = event.globalPosition().toPoint() - self.offset
 
+            elif self.isFullScreen():
+
+                offset_x = min(int(self.normalGeometry().width() * (self.offset.x() / self.width())), self.normalGeometry().width() - (3 * self.button_width))
+                self.offset = QPoint(offset_x, self.offset.y())
+
+                self.full_screen_logic()
+
+                mouse_position = event.globalPosition().toPoint() - self.offset
+
             else:
                 mouse_position = event.globalPosition().toPoint() - self.offset
 

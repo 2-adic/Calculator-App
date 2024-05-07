@@ -27,7 +27,7 @@ class OperatingSystem:
     def is_maximize_shortcut(self, event):
 
         if self.system_name == 'Windows':  # Windows
-            return False  # functionality not added yet
+            return event.key() == Qt.Key.Key_F11
 
         elif self.system_name == 'Darwin':  # macOS
             return event.modifiers() == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier) and event.key() == Qt.Key.Key_F
