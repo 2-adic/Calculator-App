@@ -11,6 +11,7 @@ from str_format import contains_substring
 from PIL import Image
 from latex import convert_render_latex
 import system_settings
+import ctypes
 
 
 '''
@@ -135,9 +136,14 @@ class SettingsWindow:
         self.content_margin = 30  # distance between the scroll content, and the border
 
         # Colors ------------------------------------------------------------------------------------------------
+        # all int values in this section can be from 0 to 255
 
-        # general
+        # background
         self.color_background = 49, 51, 56
+        self.color_background_transperent_amount = 0  # the transparency value of the background: lower means more transparent
+        self.color_background_blurred = True  # blurs the background if it is transparent,
+
+        # text
         self.color_text = 255, 255, 255
         self.color_text_highlight_active = 70, 115, 156
         self.color_text_highlight_inactive = 176, 176, 176
@@ -248,6 +254,12 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
         # -------------------------------------------------------------------------------------------------------
 
+        # configures transparency
+        if self.op.system_name == 'Windows':
+            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        # -------------------------------------------------------------------------------------------------------
+
     def paintEvent(self, event) -> None:
         """
         Gives the background and titlebar their colors.
@@ -260,7 +272,14 @@ class ControlWindow(QMainWindow, SettingsWindow):
         painter.fillRect(0, 0, self.width(), self.title_bar_height, QColor(self.color_title_bar[0], self.color_title_bar[1], self.color_title_bar[2]))
 
         # center window
-        painter.fillRect(0, self.title_bar_height, self.width(), self.height() - self.title_bar_height, QColor(self.color_background[0], self.color_background[1], self.color_background[2]))
+        self.color_background_transperent_amount = max(1, self.color_background_transperent_amount)  # if set to 0, the background isn't there, and lets the user click things behind the window (this is prevented by making the minimum value 1)
+        painter.fillRect(0, self.title_bar_height, self.width(), self.height() - self.title_bar_height, QColor(self.color_background[0], self.color_background[1], self.color_background[2], self.color_background_transperent_amount))
+
+    def showEvent(self, event):
+        super().showEvent(event)
+
+        if self.color_background_blurred:
+            self.op.enable_blur(self)
 
     def window_resize_enable(self):
         """
@@ -1212,7 +1231,7 @@ class RunWindow(TestWindow, MultiBox, MainWindow):  # include all children of th
 
         # selectors
         # although this works perfectly, a lot of the math in this section is not optimized and may need to be in the future
-        selector_size = (1/len(self.button_selectors)) * (self.width() * (1 - self.box_width_left) - self.content_margin) + self.box_border - (self.box_border/len(self.button_selectors))  # width of the selector buttons
+        selector_size = (1/len(self.button_selectors)) * (self.width() * (1 - self.box_width_left) - (self.box_padding * 1.5)) + self.box_border - (self.box_border/len(self.button_selectors))  # width of the selector buttons
         check = 0
         for i, button in enumerate(self.button_selectors):
 
