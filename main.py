@@ -11,79 +11,6 @@ from str_format import contains_substring
 from PIL import Image
 from latex import convert_render_latex
 import system_settings
-import ctypes
-
-
-'''
-General:
-    - "Cannot find reference 'connect' in 'pyqtSignal | pyqtSignal | function'" is a benign warning
-
-Bugs: 
-    - When deleting multiple variables at once, some variables in the multi area are still showing up
-
-    - Implicit multiplication before a decimal is not working
-        - Ex:
-            - x.1 -> x(1/10): should be x*(1/10)
-        - Not sure if this functionality is wanted anymore
-        - x.1 seems as an incorrect way to write this out, check how other calculators handle this case
-            
-
-    - When using tab to go to the next variable, it sometimes skips to the textbox
-        - How it should work (in each step the user presses tab), it should loop as shown: text box -> variable 1 -> variable 2 -> variable -> n -> text box
-        - give the user a way to still type a tab in the text box (maybe mac: option + tab, Windows: 'not sure yet' + tab)
-
-    - App crashes when user inputs ".." and clicks the answer button
-
-    - If the user in a variable box while their mouse is on top of a variable text box, the mouse flashes between two different cursor shapes
-    
-    - LaTeX answer image still clips outside of the answer box in specific circumstances
-        - Bug does not happen on Windows, only on MacOS (not sure why)
-        - Ex: x + 7
-
-Future Features:
-    - Need shadowing for the sides of the window (for Windows)
-
-    - Add a settings section
-        - Option to toggle commas; 1,000,000 <-> 1000000
-        - Option to toggle between radians and degrees
-
-    - Add window's snap functionality
-        - Find a way to do it
-
-    - App Icon for taskbar (also one for when you hover on the window where it shows on the top left)
-
-    - Animation for minimizing functionality (for Windows)
-
-    - Plus minus (±)
-        - Ex, x = 2:
-            - When in exact form: 5x ± 1 -> (5*2) ± 1 -> 10 ± 1
-            - When in approximate form:  5x ± 1 -> 5x + 1 -> (5*2) + 1 -> 10 + 1 -> 11  (Displays both answers somehow)
-                                            -> 5x - 1 -> (5*2) - 1 -> 10 - 1 -> 9
-
-    - Represent functions like cos() with italics
-        - Might solve this problem another way without the use of color (not sure yet)
-        - Make the "cos" highlight if the program detects it may be a function
-            - If the user does an input (click + control, not sure), cos turns into italics and is considered a function instead of c*o*s
-        - May want a font where the italics are the same width as the normal characters
-
-    - If a variable is typed in the text box of another variable, add the new variable to the variable box
-
-    - Add a scroll bar to the answer text box to see very large answers
-
-    - Need to test if circularly defined variables are being detected every time
-        - Need to give error for all cases where this occurs (not giving an error at all atm)
-
-    - Add pin feature for variables so they don't get removed while its active
-
-    - Integral functionality
-        - ∫_d_
-    
-    - Find a way to change the font of the LaTeX image
-    
-    - Maybe increase the size of the format symbol
-    
-    - Maybe add a background to the scroll bar in the scroll area
-'''
 
 
 class SettingsWindow:
@@ -1095,7 +1022,7 @@ class MultiBox(MainWindow):
                 self.clear_inner_layout(item.layout())
 
 
-class TestWindow(MainWindow):  # buttons, and functions for testing purposes
+class TestButtons(MainWindow):  # buttons, and functions for testing purposes
     def __init__(self):
         super().__init__()
         self.setup_test()
@@ -1164,10 +1091,10 @@ class TestWindow(MainWindow):  # buttons, and functions for testing purposes
         print('Manually Updated')
 
 
-class RunWindow(TestWindow, MultiBox, MainWindow):  # include all children of the MainWindow class here
+class RunWindow(TestButtons, MultiBox, MainWindow):  # include all children of the MainWindow class here
     def __init__(self):  # initialize all children here
         MainWindow.__init__(self)
-        TestWindow.setup_test(self)
+        TestButtons.setup_test(self)
         MultiBox.setup_multi(self)
 
     def resizeEvent(self, event):
