@@ -134,13 +134,14 @@ class SettingsWindow:
 
         # Multi box
         self.content_margin = 30  # distance between the scroll content, and the border
+        self.select_height = 50  # height of the selector buttons
 
         # Colors ------------------------------------------------------------------------------------------------
         # all int values in this section can be from 0 to 255
 
         # background
         self.color_background = 49, 51, 56
-        self.color_background_transperent_amount = 0  # the transparency value of the background: lower means more transparent
+        self.color_background_transperent_amount = 150  # the transparency value of the background: lower means more transparent
         self.color_background_blurred = True  # blurs the background if it is transparent,
 
         # text
@@ -204,7 +205,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
             'QPushButton { background-color: transparent;}'
             f'QPushButton:hover {{ background-color: rgb{self.color_title_bat_button_exit}; border: none; }}'
         )
-        self.button_close.clicked.connect(self.button_close_logic)
+        self.button_close.clicked.connect(self.button_logic_close)
 
         # maximize button
         self.button_maximize = QPushButton('', self)
@@ -213,7 +214,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
             'QPushButton { background-color: transparent;}'
             f'QPushButton:hover {{ background-color: rgb{self.color_title_bar_button_hover}; border: none; }}'
         )
-        self.button_maximize.clicked.connect(self.button_maximize_logic)
+        self.button_maximize.clicked.connect(self.button_logic_maximize)
 
         # minimize button
         self.button_minimize = QPushButton('', self)
@@ -288,7 +289,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
         self.window_resize_allowed = True
 
-    def button_close_logic(self) -> None:
+    def button_logic_close(self) -> None:
         """
         Checks if work was saved, then closes the window. Uses the exit button.
         """
@@ -298,13 +299,13 @@ class ControlWindow(QMainWindow, SettingsWindow):
         # eventually may want to keep the program running after the window exits
         exit()  # instantly exits the program
 
-    def button_maximize_logic(self) -> None:
+    def button_logic_maximize(self) -> None:
         """
         Maximizes the screem using the maximize button.
         """
 
         if self.op.system_name == 'Darwin':  # on macOS, the maximize button fullscreens the window
-            self.full_screen_logic()
+            self.logic_full_screen()
             return
 
         if self.isMaximized():
@@ -325,7 +326,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
         self.resizeEvent(None)  # resizes the window
 
-    def full_screen_logic(self):
+    def logic_full_screen(self):
         """
         Fullscreens the window.
         """
@@ -352,7 +353,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
         # maximizes the window based on the operating system's shortcut
         if self.op.is_maximize_shortcut(event):
-            self.full_screen_logic()
+            self.logic_full_screen()
 
             # focuses the window
             self.activateWindow()
@@ -427,7 +428,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
                 offset_x = min(int(self.normalGeometry().width() * (self.offset.x() / self.width())), self.normalGeometry().width() - (3 * self.button_width))
                 self.offset = QPoint(offset_x, self.offset.y())
 
-                self.button_maximize_logic()
+                self.button_logic_maximize()
 
                 mouse_position = event.globalPosition().toPoint() - self.offset
 
@@ -436,7 +437,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
                 offset_x = min(int(self.normalGeometry().width() * (self.offset.x() / self.width())), self.normalGeometry().width() - (3 * self.button_width))
                 self.offset = QPoint(offset_x, self.offset.y())
 
-                self.full_screen_logic()
+                self.logic_full_screen()
 
                 mouse_position = event.globalPosition().toPoint() - self.offset
 
@@ -879,69 +880,76 @@ class MultiBox(MainWindow):
 
     def setup_multi(self):
 
-        self.select_height = 50
+        # Scroll Area Setup -------------------------------------------------------------------------------------
 
-        # scroll area0
-        self.scroll_layout = QVBoxLayout()
-        self.scroll_content = QWidget()
-        self.scroll_content.setLayout(self.scroll_layout)
+        self.selector_names = ['Variables', 'Graph', 'Functions']  # include at least 2 names (these will most likely be images in the future, for example: a simple image of a graph for the graph section)
+        self.scroll_area_amount = len(self.selector_names)  # amount of scroll areas, at least 2 are needed for correct formatting
 
-        self.scroll_area = QScrollArea(self)
-        self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setWidget(self.scroll_content)
+        # creates the scroll areas
+        self.scroll_areas = []
+        for i in range(self.scroll_area_amount):
+            layout = QVBoxLayout()
+            content = QWidget()
+            content.setLayout(layout)
 
-        # --------------------------------------------------------------------------------------------------------
+            area = QScrollArea(self)
+            area.setWidgetResizable(True)
 
-        self.scroll_area.setStyleSheet(
-            f'''
-            QScrollArea {{
-                border: {self.box_border}px solid rgb{self.color_box_border};
-                background-color: rgb{self.color_box_background};
-                border-bottom-left-radius: {self.box_border_radius}px;
-                border-bottom-right-radius: {self.box_border_radius}px;
-                color: rgb{self.color_text};
-                font-size: 15px;
-            }}
-            QScrollBar:vertical {{
-                border-radius: 4px;
-                background-color: rgb{self.color_scrollbar_background};
-                width: 12px;
-                margin: 4px 4px 4px 0px;
-            }}
-            QScrollBar::handle:vertical {{
-                background-color: rgb{self.color_box_border};
-                border-radius: 4px;
-                min-height: 20px;
-            }}
-            QScrollBar::add-line:vertical {{
-                width: 0px;
-            }}
-            QScrollBar::sub-line:vertical {{
-                width: 0px;
-            }}
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
-                background: none;
-            }}
-            '''
-        )
+            layout.setContentsMargins(self.content_margin, self.content_margin, self.content_margin, self.content_margin)
+            area.setWidget(content)
 
-        self.scroll_content.setStyleSheet(
-            'border: transparent;'
-            'background-color: transparent;'
-            f'color: rgb{self.color_text};'
-            'font-size: 15px;'
-        )
+            area.setStyleSheet(
+                f'''
+                QScrollArea {{
+                    border: {self.box_border}px solid rgb{self.color_box_border};
+                    background-color: rgb{self.color_box_background};
+                    border-bottom-left-radius: {self.box_border_radius}px;
+                    border-bottom-right-radius: {self.box_border_radius}px;
+                    color: rgb{self.color_text};
+                    font-size: 15px;
+                }}
+                QScrollBar:vertical {{
+                    border-radius: 4px;
+                    background-color: rgb{self.color_scrollbar_background};
+                    width: 12px;
+                    margin: 4px 4px 4px 0px;
+                }}
+                QScrollBar::handle:vertical {{
+                    background-color: rgb{self.color_box_border};
+                    border-radius: 4px;
+                    min-height: 20px;
+                }}
+                QScrollBar::add-line:vertical {{
+                    width: 0px;
+                }}
+                QScrollBar::sub-line:vertical {{
+                    width: 0px;
+                }}
+                QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                    background: none;
+                }}
+                '''
+            )
 
-        self.scroll_layout.setContentsMargins(self.content_margin, self.content_margin, self.content_margin, self.content_margin)
-        self.scroll_area.setWidget(self.scroll_content)
+            content.setStyleSheet(
+                'border: transparent;'
+                'background-color: transparent;'
+                f'color: rgb{self.color_text};'
+                'font-size: 15px;'
+            )
+
+            area.hide()
+            self.scroll_areas.append((area, layout))
+
+        self.scroll_areas[0][0].show()
 
         # Selectors ---------------------------------------------------------------------------------------------
 
         self.button_selectors = []
-        selector_amount = 5  # amount of selector buttons, at least 2 are needed for correct formatting (due to border radius)
-        for x in range(selector_amount):
-            button = QPushButton('Test', self)
+        for x in range(self.scroll_area_amount):
+            button = QPushButton(self.selector_names[x], self)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.clicked.connect(self.button_logic_selector)
 
             if x == 0:
                 button.setStyleSheet(
@@ -951,6 +959,7 @@ class MultiBox(MainWindow):
                         border: {self.box_border}px solid rgb{self.color_box_border};
                         background-color: rgb{self.color_box_background};
                         border-top-left-radius: {self.box_border_radius}px;
+                        font-size: 15px;
                     }}
                     QPushButton:hover {{
                         padding-top: -5px;
@@ -959,7 +968,7 @@ class MultiBox(MainWindow):
                     '''
                 )
 
-            elif x == selector_amount - 1:
+            elif x == self.scroll_area_amount - 1:
                 button.setStyleSheet(
                     f'''
                     QPushButton {{
@@ -967,6 +976,7 @@ class MultiBox(MainWindow):
                         border: {self.box_border}px solid rgb{self.color_box_border};
                         background-color: rgb{self.color_box_background};
                         border-top-right-radius: {self.box_border_radius}px;
+                        font-size: 15px;
                     }}
                     QPushButton:hover {{
                         padding-top: -5px;
@@ -982,6 +992,7 @@ class MultiBox(MainWindow):
                         color: rgb{self.color_text};
                         border: {self.box_border}px solid rgb{self.color_box_border};
                         background-color: rgb{self.color_box_background};
+                        font-size: 15px;
                     }}
                     QPushButton:hover {{
                         padding-top: -5px;
@@ -991,6 +1002,15 @@ class MultiBox(MainWindow):
                 )
 
             self.button_selectors.append(button)
+
+    def button_logic_selector(self):
+
+        for i, scroll in enumerate(self.scroll_areas):
+
+            if self.sender() == self.button_selectors[i]:
+                scroll[0].show()
+            else:
+                scroll[0].hide()
 
     def scroll_area_fill(self) -> None:
         """
@@ -1006,16 +1026,16 @@ class MultiBox(MainWindow):
             self.variables[x][1].textChanged.connect(self.text_update)
             layout.addWidget(self.variables[x][1])
 
-            self.scroll_layout.addLayout(layout)
+            self.scroll_areas[0][1].addLayout(layout)
 
             line = QFrame()
             line.setFrameShape(QFrame.Shape.HLine)
             line.setFrameShadow(QFrame.Shadow.Sunken)
             line.setStyleSheet(f'background-color: rgb{self.color_line}; border-radius: 1px')
 
-            self.scroll_layout.addWidget(line)
+            self.scroll_areas[0][1].addWidget(line)
 
-        self.scroll_layout.addStretch()
+        self.scroll_areas[0][1].addStretch()
 
         if self.user_select != self.box_text:
             self.user_select.setFocus()
@@ -1024,8 +1044,8 @@ class MultiBox(MainWindow):
         """
         Removes all widgets from the variable box.
         """
-        for i in reversed(range(self.scroll_layout.count())):
-            layout_item = self.scroll_layout.itemAt(i)
+        for i in reversed(range(self.scroll_areas[0][1].count())):
+            layout_item = self.scroll_areas[0][1].itemAt(i)
 
             if layout_item.widget():
                 widget_to_remove = layout_item.widget()
@@ -1036,13 +1056,13 @@ class MultiBox(MainWindow):
                     except TypeError:
                         # No connections to disconnect
                         pass
-                self.scroll_layout.removeWidget(widget_to_remove)
+                self.scroll_areas[0][1].removeWidget(widget_to_remove)
                 widget_to_remove.setParent(None)
             elif layout_item.layout():
                 self.clear_inner_layout(layout_item.layout())
             elif layout_item.spacerItem():
                 # If the item is a spacer, remove it from the layout
-                self.scroll_layout.removeItem(layout_item)
+                self.scroll_areas[0][1].removeItem(layout_item)
 
     def clear_inner_layout(self, layout: QLayout) -> None:
         """
@@ -1252,8 +1272,9 @@ class RunWindow(TestWindow, MultiBox, MainWindow):  # include all children of th
             button.resize(int(selector_size) - correction, self.select_height)
 
         # multi box
-        self.scroll_area.move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height + self.select_height - self.box_border)
-        self.scroll_area.resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height - self.select_height + self.box_border)
+        for scroll in self.scroll_areas:
+            scroll[0].move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height + self.select_height - self.box_border)
+            scroll[0].resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height - self.select_height + self.box_border)
 
 
 def main():
