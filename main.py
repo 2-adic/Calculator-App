@@ -1,10 +1,9 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout, QSizePolicy
 from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QKeySequence
 from PyQt6.QtCore import Qt, QPoint, QTimer, QSize
 import sympy as sy
 import pyperclip
-from sortedcontainers import SortedDict
 import fontcontrol
 import files
 from str_format import contains_substring
@@ -60,7 +59,7 @@ class SettingsWindow:
         self.latex_image_dpi = 800
 
         # Multi box
-        self.content_margin = 30  # distance between the scroll content, and the border
+        self.content_margin = 10  # distance between the scroll content, and the border
         self.select_height = 50  # height of the selector buttons
 
         # Colors ------------------------------------------------------------------------------------------------
@@ -75,6 +74,7 @@ class SettingsWindow:
         self.color_text = 255, 255, 255
         self.color_text_highlight_active = 70, 115, 156
         self.color_text_highlight_inactive = 176, 176, 176
+        self.color_text_secondary = 35, 36, 41
 
         # title bar
         self.color_title_bar = 30, 31, 34
@@ -515,9 +515,17 @@ class MainWindow(ControlWindow):
         self.user_select = None
 
         self.user_mouse_set = False
-        self.variables = SortedDict()  # stores variables in a sorted dictionary, so it shows in alphabetical order
 
-        self.accepted_variables = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+        self.symbols = ({}, {})
+        self.accepted_variables = ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+        self.accepted_constants = ['i', 'e', 'π', 'ϕ', 'γ']
+        self.accepted_constant_values = {
+            'i': 1j,
+            'e': 2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274,
+            'π': 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679,
+            'ϕ': 1.6180339887498948482045868343656381177203091798057628621354486227052604628189024497072072041893911374,
+            'γ': 0.5772156649015328606065120900824024310421593359399235988057672348848677267776646709369470632917467495
+        }
         self.accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
         self.accepted_other = ['(']
 
@@ -609,32 +617,34 @@ class MainWindow(ControlWindow):
         string = string.replace('**', '^')
         return string
 
-    def variable_formatting(self, variables: SortedDict) -> dict:
-        temp1 = variables.copy()
+    def variable_formatting(self, symbols: tuple[dict[str, tuple[QLabel, QLineEdit]], dict[str, tuple[QLabel, QLineEdit]]]) -> dict:
 
+        temp1 = {}
+        # adds all keys with their text to a new dict
+        for index in range(len(symbols)):
+            keys = list(symbols[index].keys())
+            for key in keys:
+                temp1[key] = symbols[index][key][1].text()
+
+                if temp1[key] == '':  # if the user did not define a variable, then it is equal to itself
+                    temp1[key] = key
+
+        # performs chained variable substitution: a=b and b=5 -> a=5
         for x in temp1:
-            temp1[x] = temp1[x][1].text()
 
-            if temp1[x] == '':
-                temp1[x] = x
-
-        # starts here
-        for x in temp1:
-
-            if temp1[x] == x or not contains_substring(temp1[x], list(self.variables.keys())):
+            if temp1[x] == x or not contains_substring(temp1[x], list(self.symbols[0].keys()) + list(self.symbols[1].keys())):
                 continue
 
             temp2 = temp1.copy()
             for y in temp2:
                 for z in temp2:
 
-                    if temp2[z] == z or not contains_substring(temp2[z], list(self.variables.keys())):
+                    if temp2[z] == z or not contains_substring(temp2[z], list(self.symbols[0].keys()) + list(self.symbols[1].keys())):
                         continue
 
                     temp1[z] = temp1[z].replace(y, f'({temp2[y]})')
 
-            print(temp1)
-
+        # detects if a variable is circularly defined
         for x in temp1:
             if x in temp1[x] and f'({x})' != temp1[x] and x != temp1[x]:
                 print('Error: A variable is circularly defined.')
@@ -656,7 +666,7 @@ class MainWindow(ControlWindow):
         text = self.box_text.toPlainText()  # gets the string from the text box
 
         # scans the text for any variables
-        temp = self.variable_formatting(self.variables)
+        temp = self.variable_formatting(self.symbols)
 
         for x in text:
             if x in temp:
@@ -748,47 +758,62 @@ class MainWindow(ControlWindow):
 
         text = self.box_text.toPlainText()
 
-        temp = set()  # used later for deleting variables in self.variables which are not in the text box
+        temp = set()  # used later for deleting variables in self.symbols which are not in the text box
 
         # adds all variables from the text box to a dictionary
         for x in text:
+            # checks if the character is in one of the accepted lists
             if x in self.accepted_variables:
+                index = 0
                 temp.add(x)
-                if x not in self.variables:
-                    label = QLabel(f'{x} =', self)
+            elif x in self.accepted_constants:
+                index = 1
+                temp.add(x)
+            else:
+                continue
 
-                    text_box = QLineEdit(self)
-                    text_box.setPlaceholderText(f'{x}')
+            # adds the character's label and line edit to the correct dictionary in symbols
+            if x not in self.symbols[index]:
+                label = QLabel(f'{x} =', self)
 
-                    self.variables[x] = (label, text_box)
+                text_box = QLineEdit(self)
+                text_box.setPlaceholderText(f'{x}')
+                self.symbols[index][x] = (label, text_box)
 
-        for y in self.variables:
-            for x in self.variables[y][1].text():
-                if x in self.accepted_variables:
-                    temp.add(x)
-                    if x not in self.variables:
+        # adds variables that are within other variables
+        for index_1 in range(2):
+
+            keys = list(self.symbols[index_1].keys())
+            for y in keys:
+                for x in self.symbols[index_1][y][1].text():
+                    # checks if the character is in one of the accepted lists
+                    if x in self.accepted_variables:
+                        index_2 = 0
+                        temp.add(x)
+                    elif x in self.accepted_constants:
+                        index_2 = 1
+                        temp.add(x)
+                    else:
+                        continue
+
+                    # adds the character's label and line edit to the correct dictionary in symbols
+                    if x not in self.symbols[index_2].keys():
+
                         label = QLabel(f'{x} =', self)
 
                         text_box = QLineEdit(self)
                         text_box.setPlaceholderText(f'{x}')
 
-                        self.variables[x] = (label, text_box)
+                        self.symbols[index_2][x] = (label, text_box)
 
         # deletes all variables not in the text box
-        for x in self.variables:
-            if x not in temp:
-                del self.variables[x]
+        for index in range(len(self.symbols)):
+            keys_to_delete = [x for x in self.symbols[index] if x not in temp]
+            for x in keys_to_delete:
+                del self.symbols[index][x]
 
-        '''
-        # fix - cursor_flash: may delete
-        for x in self.variables:
-            if self.variables[x][1].underMouse():
-                self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
-        self.user_mouse_set = True
-        '''
-
-        self.scroll_area_clear()  # deletes the all variables in the variable box
-        self.scroll_area_fill()  # adds all variables found in the variable box
+        self.area_clear()  # deletes the all variables in the variable box
+        self.area_fill()  # adds all variables found in the variable box
 
         # clears the answer box to prevent user from thinking the answer is for what was just typed in the text box
         self.answer = self.answer_default  # sets answer to default answer so if the user flips the format, the default answer still displays
@@ -810,75 +835,41 @@ class MultiBox(MainWindow):
         # Scroll Area Setup -------------------------------------------------------------------------------------
 
         self.selector_names = ['Variables', 'Graph', 'Functions']  # include at least 2 names (these will most likely be images in the future, for example: a simple image of a graph for the graph section)
-        self.scroll_area_amount = len(self.selector_names)  # amount of scroll areas, at least 2 are needed for correct formatting
+        self.area_amount = len(self.selector_names)  # amount of scroll areas, at least 2 are needed for correct formatting
 
         # creates the scroll areas
-        self.scroll_areas = []
-        for i in range(self.scroll_area_amount):
-            layout = QVBoxLayout()
-            content = QWidget()
-            content.setLayout(layout)
+        self.areas = []
+        for i in range(self.area_amount):
+            area = QWidget(self)
 
-            area = QScrollArea(self)
-            area.setWidgetResizable(True)
-
+            layout = QVBoxLayout(area)
             layout.setContentsMargins(self.content_margin, self.content_margin, self.content_margin, self.content_margin)
-            area.setWidget(content)
 
             area.setStyleSheet(
                 f'''
-                QScrollArea {{
-                    border: {self.box_border}px solid rgb{self.color_box_border};
-                    background-color: rgb{self.color_box_background};
-                    border-bottom-left-radius: {self.box_border_radius}px;
-                    border-bottom-right-radius: {self.box_border_radius}px;
-                    color: rgb{self.color_text};
-                    font-size: 15px;
-                }}
-                QScrollBar:vertical {{
-                    border-radius: 4px;
-                    background-color: rgb{self.color_scrollbar_background};
-                    width: 12px;
-                    margin: 4px 4px 4px 0px;
-                }}
-                QScrollBar::handle:vertical {{
-                    background-color: rgb{self.color_box_border};
-                    border-radius: 4px;
-                    min-height: 20px;
-                }}
-                QScrollBar::add-line:vertical {{
-                    width: 0px;
-                }}
-                QScrollBar::sub-line:vertical {{
-                    width: 0px;
-                }}
-                QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
-                    background: none;
-                }}
+                border: {self.box_border}px solid rgb{self.color_box_border};
+                background-color: rgb{self.color_box_background};
+                border-bottom-left-radius: {self.box_border_radius}px;
+                border-bottom-right-radius: {self.box_border_radius}px;
+                color: rgb{self.color_text};
+                font-size: 15px;
                 '''
             )
 
-            content.setStyleSheet(
-                'border: transparent;'
-                'background-color: transparent;'
-                f'color: rgb{self.color_text};'
-                'font-size: 15px;'
-            )
-
             area.hide()
-            self.scroll_areas.append((area, layout))
+            self.areas.append((area, layout))
 
-        self.scroll_areas[0][0].show()
+        self.areas[0][0].show()
 
         # Selectors ---------------------------------------------------------------------------------------------
 
         self.button_selectors = []
-        for x in range(self.scroll_area_amount):
+        for x in range(self.area_amount):
             button = QPushButton(self.selector_names[x], self)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
             button.clicked.connect(self.button_logic_selector)
 
-            if x == 0:
+            if x == 0:  # left selector has a curved left corner
                 button.setStyleSheet(
                     f'''
                     QPushButton {{
@@ -895,7 +886,7 @@ class MultiBox(MainWindow):
                     '''
                 )
 
-            elif x == self.scroll_area_amount - 1:
+            elif x == self.area_amount - 1:  # middle selectors have no curved corners
                 button.setStyleSheet(
                     f'''
                     QPushButton {{
@@ -912,7 +903,7 @@ class MultiBox(MainWindow):
                     '''
                 )
 
-            else:
+            else:  # right selector has a curved right corner
                 button.setStyleSheet(
                     f'''
                     QPushButton {{
@@ -930,171 +921,210 @@ class MultiBox(MainWindow):
 
             self.button_selectors.append(button)
 
+        # Variable Section --------------------------------------------------------------------------------------
+
+        # scroll area container alignment
+        self.areas[0][1].setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # sections of the variable page
+        self.titles = ['Variables', 'Constants', 'Arbitrary Constants']
+
+        # sets a default label for each page
+        for i, title in enumerate(self.selector_names):
+            label = QLabel(title)
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            label.setStyleSheet(
+                f'''
+                * {{
+                    border: none;
+                    color: rgb{self.color_text_secondary};
+                    font-size: 15px;
+                }}
+                '''
+            )
+            self.areas[i][1].addStretch()
+            self.areas[i][1].addWidget(label)
+            self.areas[i][1].addStretch()
+
+
     def button_logic_selector(self):
 
-        for i, scroll in enumerate(self.scroll_areas):
+        for i, scroll in enumerate(self.areas):
 
             if self.sender() == self.button_selectors[i]:
                 scroll[0].show()
             else:
                 scroll[0].hide()
 
-    def scroll_area_fill(self) -> None:
+    def area_fill(self) -> None:
         """
         Displays widgets to the variable box.
 
         Adds: labels and text boxes for each variable, lines to separate each variable, and a stretch to push all widgets to the top.
         """
 
-        for x in self.variables:
-            layout = QHBoxLayout()
-            layout.addWidget(self.variables[x][0])
+        count = 0
+        for index in range(len(self.symbols)):
+            count += len(self.symbols[index].keys())
 
-            self.variables[x][1].textChanged.connect(self.text_update)
-            layout.addWidget(self.variables[x][1])
+        if count == 0:  # if there are no variables, the default text is generated
+            label = QLabel('Variables')
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            label.setStyleSheet(
+                f'''
+                        * {{
+                            border: none;
+                            color: rgb{self.color_text_secondary};
+                            font-size: 15px;
+                        }}
+                        '''
+            )
+            self.areas[0][1].addStretch()
+            self.areas[0][1].addWidget(label)
+            self.areas[0][1].addStretch()
 
-            self.scroll_areas[0][1].addLayout(layout)
+        else:  # if there are no variables, this does not run
+            for i, title in enumerate(self.titles):
+                if i == 2:  # arbitrary constants are not implemented yet
+                    continue
 
-            line = QFrame()
-            line.setFrameShape(QFrame.Shape.HLine)
-            line.setFrameShadow(QFrame.Shadow.Sunken)
-            line.setStyleSheet(f'background-color: rgb{self.color_line}; border-radius: 1px')
+                if len(self.symbols[i]) == 0:
+                    continue
 
-            self.scroll_areas[0][1].addWidget(line)
+                if i > 0:  # adds spacing before each label
 
-        self.scroll_areas[0][1].addStretch()
+                    self.areas[0][1].addSpacing(5)
 
+                # label for each scroll area
+                label = QLabel(title)
+                label.setStyleSheet("font-weight: bold; font-size: 14px; color: white; border: none;")
+                self.areas[0][1].addWidget(label)
+
+                # scroll area setup
+                scroll_area = QScrollArea()
+                scroll_area.setWidgetResizable(True)
+                scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+                scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum))
+
+                # inside the scroll areas
+                content_widget = QWidget()
+                layout = QVBoxLayout()
+                content_widget.setLayout(layout)
+                layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+
+                for key in sorted(self.symbols[i].keys()):
+                    label, edit = self.symbols[i][key]
+
+                    # Use QHBoxLayout for each pair of label and line edit
+                    h_layout = QHBoxLayout()
+                    h_layout.addWidget(label)
+                    h_layout.addWidget(edit, 1)  # The 1 here allows the QLineEdit to expand
+
+                    edit.textChanged.connect(self.text_update)
+
+                    layout.addLayout(h_layout)
+
+                    line = QFrame()
+                    line.setFrameShape(QFrame.Shape.HLine)
+                    line.setFrameShadow(QFrame.Shadow.Sunken)
+                    line.setStyleSheet(f'background-color: rgb{self.color_line}; border-radius: 1px')
+
+                    layout.addWidget(line)
+
+                    # Set minimum height based on number of labels and their heights
+                    content_widget.setMinimumHeight(len(self.symbols[i]) * (30 + 4))  # 30 is for the line and label, 4 is for the margin
+
+                # inner content widget
+                scroll_area.setWidget(content_widget)
+
+                line = QFrame()
+                line.setFrameShape(QFrame.Shape.HLine)
+                line.setFrameShadow(QFrame.Shadow.Sunken)
+                line.setStyleSheet("background-color: #313338; border-radius: 1px")
+                self.areas[0][1].addWidget(line)
+
+                scroll_area.setStyleSheet(
+                    f'''
+                    * {{
+                        border: none;
+                    }}
+                    QScrollArea {{
+                        background-color: rgb{self.color_box_background};
+                        color: rgb{self.color_text};
+                        font-size: 15px;
+                    }}
+                    QScrollBar:vertical {{
+                        border-radius: 4px;
+                        background-color: rgb{self.color_scrollbar_background};
+                        width: 12px;
+                        margin: 4px 4px 4px 0px;
+                    }}
+                    QScrollBar::handle:vertical {{
+                        background-color: rgb{self.color_box_border};
+                        border-radius: 4px;
+                        min-height: 20px;
+                    }}
+                    QScrollBar::add-line:vertical {{
+                        width: 0px;
+                    }}
+                    QScrollBar::sub-line:vertical {{
+                        width: 0px;
+                    }}
+                    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                        background: none;
+                    }}
+                    '''
+                )
+
+                self.areas[0][1].addWidget(scroll_area)
+
+        # focuses the user to the current textbox they are typing in (currently doesn't work)
         if self.user_select != self.box_text:
             self.user_select.setFocus()
 
-    def scroll_area_clear(self) -> None:
+    def area_clear(self) -> None:
         """
-        Removes all widgets from the variable box.
+        Removes all widgets from the variable box, disconnecting signals and clearing nested layouts.
         """
-        for i in reversed(range(self.scroll_areas[0][1].count())):
-            layout_item = self.scroll_areas[0][1].itemAt(i)
 
-            if layout_item.widget():
-                widget_to_remove = layout_item.widget()
-                # Check if the widget is a QLineEdit and disconnect the textChanged signal
-                if isinstance(widget_to_remove, QLineEdit):
-                    try:
-                        widget_to_remove.textChanged.disconnect(self.text_update)
-                    except TypeError:
-                        # No connections to disconnect
-                        pass
-                self.scroll_areas[0][1].removeWidget(widget_to_remove)
-                widget_to_remove.setParent(None)
-            elif layout_item.layout():
-                self.clear_inner_layout(layout_item.layout())
-            elif layout_item.spacerItem():
-                # If the item is a spacer, remove it from the layout
-                self.scroll_areas[0][1].removeItem(layout_item)
+        # disconnects all LineEdits from their function
+        for index in range(len(self.symbols)):
+            keys = list(self.symbols[index].keys())
+            for key in keys:
+                try:
+                    self.symbols[index][key][1].textChanged.disconnect(self.text_update)
+                except:
+                    pass
 
-    def clear_inner_layout(self, layout: QLayout) -> None:
-        """
-        Removes layouts.
-
-        May only work for layouts in the format: (QLabel, QLineEdit). Need to test later.
-        """
-        for i in reversed(range(layout.count())):
-            item = layout.itemAt(i)
-            widget = item.widget()
-            if widget:
-                # Check if the widget is a QLineEdit and should be kept
-                if isinstance(widget, QLineEdit):
-                    try:
-                        widget.textChanged.disconnect(self.text_update)
-                    except TypeError:
-                        # No connections to disconnect
-                        pass
-                    # Remove the QLineEdit widget from its parent layout
-                    layout.removeWidget(widget)
-                    widget.setParent(None)
-                elif isinstance(widget, QLabel):
-                    # Handle QLabel widgets if necessary
-                    layout.removeWidget(widget)
-                    widget.setParent(None)
-                else:
-                    widget.deleteLater()
+        # deletes all elements in the layout
+        layout = self.areas[0][1]
+        while layout.count():
+            item = layout.takeAt(0)
+            if item.widget():
+                widget = item.widget()
+                widget.setParent(None)
+                widget.deleteLater()
             elif item.layout():
-                # Recursively clear nested layouts
                 self.clear_inner_layout(item.layout())
+                item.layout().deleteLater()
 
-
-class TestButtons(MainWindow):  # buttons, and functions for testing purposes
-    def __init__(self):
-        super().__init__()
-        self.setup_test()
-
-    def setup_test(self):
-
-        self.button_hook = []  # holds all testing buttons
-
-        '''
-        # size button
-        self.button_hook.append(QPushButton('Size', self))
-        self.button_hook[-1].clicked.connect(self.get_info)
-        '''
-
-        # update button
-        self.button_hook.append(QPushButton('Update', self))
-        self.button_hook[-1].clicked.connect(self.get_update)
-
-        # answer button
-        self.button_hook.append(QPushButton(self.answer_default, self))
-        self.button_hook[-1].clicked.connect(self.get_answer)
-
-        # flip button
-        self.button_hook.append(QPushButton('Flip', self))
-        self.button_hook[-1].clicked.connect(self.flip_type)
-
-        # test button
-        self.button_test_toggle = False
-        self.button_hook.append(QPushButton('Test', self))
-        self.button_hook[-1].clicked.connect(self.test)
-
-        for i, hook in enumerate(self.button_hook):  # sets the button hook parameters
-            hook.setGeometry(self.test_horizontal_offset + (i * (self.test_between_spacing + self.test_button_width)), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
-            hook.setStyleSheet(f'background-color: None; color: rgb{self.color_title_bar_text}; border: 1px solid rgb{self.color_title_bar_text}; border-radius: 4px;')
-            hook.setCursor(Qt.CursorShape.PointingHandCursor)
-
-    def test(self) -> None:
+    def clear_inner_layout(self, layout):
         """
-        Used for testing anything in the window.
+        Recursively removes all items from a given nested layout.
         """
 
-        self.button_test_toggle = not self.button_test_toggle
-
-        '''
-        if self.button_test_toggle:
-            self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
-        else:
-            self.scroll_area.setCursor(Qt.CursorShape.ArrowCursor)
-        '''
-
-        print(self.variables)
-
-    def get_info(self) -> None:
-        """
-        Prints the current width and height of the window with the use of a button.
-        """
-
-        print(f'Width: {self.width()}, Height: {self.height()}')
-
-    def get_update(self) -> None:
-        """
-        For manually updating the window with a button.
-        """
-
-        self.resizeEvent(None)
-        print('Manually Updated')
+        while layout.count():
+            item = layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+            elif item.layout():
+                self.clear_inner_layout(item.layout())
+                item.layout().deleteLater()
 
 
-class RunWindow(TestButtons, MultiBox, MainWindow):  # include all children of the MainWindow class here
+class RunWindow(MultiBox, MainWindow):  # include all children of the MainWindow class here
     def __init__(self):  # initialize all children here
         MainWindow.__init__(self)
-        TestButtons.setup_test(self)
         MultiBox.setup_multi(self)
 
     def resizeEvent(self, event):
@@ -1199,9 +1229,78 @@ class RunWindow(TestButtons, MultiBox, MainWindow):  # include all children of t
             button.resize(int(selector_size) - correction, self.select_height)
 
         # multi box
-        for scroll in self.scroll_areas:
-            scroll[0].move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height + self.select_height - self.box_border)
-            scroll[0].resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height - self.select_height + self.box_border)
+        for tup in self.areas:
+            tup[0].move((self.box_padding * 2) + int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), self.box_padding + self.title_bar_height + self.select_height - self.box_border)
+            tup[0].resize(int((self.width() * (1 - self.box_width_left)) - (self.box_padding * 1.5)), self.height() - (self.box_padding * 2) - self.title_bar_height - self.select_height + self.box_border)
+
+
+class TestButtons(RunWindow):  # buttons, and functions for testing purposes
+    def __init__(self):
+        super().__init__()
+        self.setup_test()
+
+    def setup_test(self):
+
+        self.button_hook = []  # holds all testing buttons
+
+        '''
+        # size button
+        self.button_hook.append(QPushButton('Size', self))
+        self.button_hook[-1].clicked.connect(self.get_info)
+        '''
+
+        # update button
+        self.button_hook.append(QPushButton('Update', self))
+        self.button_hook[-1].clicked.connect(self.get_update)
+
+        # answer button
+        self.button_hook.append(QPushButton(self.answer_default, self))
+        self.button_hook[-1].clicked.connect(self.get_answer)
+
+        # flip button
+        self.button_hook.append(QPushButton('Flip', self))
+        self.button_hook[-1].clicked.connect(self.flip_type)
+
+        # test button
+        self.button_test_toggle = False
+        self.button_hook.append(QPushButton('Test', self))
+        self.button_hook[-1].clicked.connect(self.test)
+
+        for i, hook in enumerate(self.button_hook):  # sets the button hook parameters
+            hook.setGeometry(self.test_horizontal_offset + (i * (self.test_between_spacing + self.test_button_width)), self.test_padding, self.test_button_width - (2 * self.test_padding), self.title_bar_height - (2 * self.test_padding))
+            hook.setStyleSheet(f'background-color: None; color: rgb{self.color_title_bar_text}; border: 1px solid rgb{self.color_title_bar_text}; border-radius: 4px;')
+            hook.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def test(self) -> None:
+        """
+        Used for testing anything in the window.
+        """
+
+        self.button_test_toggle = not self.button_test_toggle
+
+        '''
+        if self.button_test_toggle:
+            self.scroll_area.setCursor(Qt.CursorShape.IBeamCursor)
+        else:
+            self.scroll_area.setCursor(Qt.CursorShape.ArrowCursor)
+        '''
+
+        print(self.symbols)
+
+    def get_info(self) -> None:
+        """
+        Prints the current width and height of the window with the use of a button.
+        """
+
+        print(f'Width: {self.width()}, Height: {self.height()}')
+
+    def get_update(self) -> None:
+        """
+        For manually updating the window with a button.
+        """
+
+        self.resizeEvent(None)
+        print('Manually Updated')
 
 
 def main():
@@ -1229,7 +1328,7 @@ def main():
     app.setPalette(palette)
 
     # starts the window
-    window = RunWindow()
+    window = TestButtons()  # set the window equal to RunWindow() to run without the test buttons, set it to TestButtons() to run it with them
     window.show()
     sys.exit(app.exec())
 
