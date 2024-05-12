@@ -33,6 +33,10 @@ Bugs:
     - Windows flash open and close while typing in the text box (when spamming enter, or pressing multiple keys at the same time)
         - Not sure why this happens
         - Find a way to stop these windows from generating
+        - Does not happen on macOS, only Windows 10
+
+    - Variable labels become too compacted and block each other's view
+        - Only happens on macOS
 
 Future Features:
     - Need shadowing for the sides of the window (for Windows)
