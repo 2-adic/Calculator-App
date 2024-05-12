@@ -67,7 +67,7 @@ class SettingsWindow:
 
         # background
         self.color_background = 49, 51, 56
-        self.color_background_transperent_amount = 150  # the transparency value of the background: lower means more transparent
+        self.color_background_transparent_amount = 150  # the transparency value of the background: lower means more transparent
         self.color_background_blurred = True  # blurs the background if it is transparent,
 
         # text
@@ -200,8 +200,8 @@ class ControlWindow(QMainWindow, SettingsWindow):
         painter.fillRect(0, 0, self.width(), self.title_bar_height, QColor(self.color_title_bar[0], self.color_title_bar[1], self.color_title_bar[2]))
 
         # center window
-        self.color_background_transperent_amount = max(1, self.color_background_transperent_amount)  # if set to 0, the background isn't there, and lets the user click things behind the window (this is prevented by making the minimum value 1)
-        painter.fillRect(0, self.title_bar_height, self.width(), self.height() - self.title_bar_height, QColor(self.color_background[0], self.color_background[1], self.color_background[2], self.color_background_transperent_amount))
+        self.color_background_transparent_amount = max(1, self.color_background_transparent_amount)  # if set to 0, the background isn't there, and lets the user click things behind the window (this is prevented by making the minimum value 1)
+        painter.fillRect(0, self.title_bar_height, self.width(), self.height() - self.title_bar_height, QColor(self.color_background[0], self.color_background[1], self.color_background[2], self.color_background_transparent_amount))
 
     def showEvent(self, event):
         super().showEvent(event)
