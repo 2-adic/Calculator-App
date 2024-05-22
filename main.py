@@ -10,6 +10,8 @@ from str_format import contains_substring
 from PIL import Image
 from latex import convert_render_latex
 import system_settings
+from copy import deepcopy
+import misc_functions
 
 
 class SettingsWindow:
@@ -516,7 +518,9 @@ class MainWindow(ControlWindow):
 
         self.user_mouse_set = False
 
-        self.symbols = ({}, {})
+        self.symbols = ({}, {}, {})
+        self.symbols_old = ({}, {}, {})
+        self.symbols_prev_keys = []
         self.accepted_variables = ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
         self.accepted_constants = ['i', 'e', 'π', 'ϕ', 'γ']
         self.accepted_constant_values = {
@@ -760,6 +764,12 @@ class MainWindow(ControlWindow):
 
         temp = set()  # used later for deleting variables in self.symbols which are not in the text box
 
+
+        # currently does not copy correctly, you need this to tell the difference between if a variable was added before or after another variable
+        #self.symbols_old = tuple(deepcopy(item) for item in self.symbols)
+
+        self.symbols_prev_key_list = misc_functions.get_symbols_keys(self.symbols)
+
         # adds all variables from the text box to a dictionary
         for x in text:
             # checks if the character is in one of the accepted lists
@@ -812,7 +822,6 @@ class MainWindow(ControlWindow):
             for x in keys_to_delete:
                 del self.symbols[index][x]
 
-        self.area_clear()  # deletes the all variables in the variable box
         self.area_fill()  # adds all variables found in the variable box
 
         # clears the answer box to prevent user from thinking the answer is for what was just typed in the text box
@@ -836,6 +845,10 @@ class MultiBox(MainWindow):
 
         self.selector_names = ['Variables', 'Graph', 'Functions']  # include at least 2 names (these will most likely be images in the future, for example: a simple image of a graph for the graph section)
         self.area_amount = len(self.selector_names)  # amount of scroll areas, at least 2 are needed for correct formatting
+        self.variables_amount_current = [0, 0, 0]  # current amount of variables
+        self.variable_position_curr = None
+        self.current_scroll_prev = 0
+        self.current_scroll = 0
 
         # creates the scroll areas
         self.areas = []
@@ -857,7 +870,7 @@ class MultiBox(MainWindow):
             )
 
             area.hide()
-            self.areas.append((area, layout))
+            self.areas.append([area, layout, []])
 
         self.areas[0][0].show()
 
@@ -946,7 +959,6 @@ class MultiBox(MainWindow):
             self.areas[i][1].addWidget(label)
             self.areas[i][1].addStretch()
 
-
     def button_logic_selector(self):
 
         for i, scroll in enumerate(self.areas):
@@ -963,8 +975,25 @@ class MultiBox(MainWindow):
         Adds: labels and text boxes for each variable, lines to separate each variable, and a stretch to push all widgets to the top.
         """
 
+        self.user_scroll = 0
+        if self.user_select != self.box_text:
+            scroll_area = self.user_select.parent().parent().parent()
+
+            scroll_bar = scroll_area.verticalScrollBar()
+            max_scroll = scroll_bar.maximum()
+            self.user_scroll = scroll_bar.value()
+
+        # gets the previous and current amount of items in each scroll area
+        self.variables_amount_previous = self.variables_amount_current.copy()
+        for i in range(self.area_amount):  # gets the amount of variables in each section
+            self.variables_amount_current[i] = len(self.symbols[i].keys())
+
+        self.area_clear()  # deletes everything in the variable page
+
         count = 0
+        self.areas[0][2] = []
         for index in range(len(self.symbols)):
+            self.areas[0][2].append(QScrollArea())  # initializes the scroll areas
             count += len(self.symbols[index].keys())
 
         if count == 0:  # if there are no variables, the default text is generated
@@ -972,12 +1001,12 @@ class MultiBox(MainWindow):
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label.setStyleSheet(
                 f'''
-                        * {{
-                            border: none;
-                            color: rgb{self.color_text_secondary};
-                            font-size: 15px;
-                        }}
-                        '''
+                    * {{
+                        border: none;
+                        color: rgb{self.color_text_secondary};
+                        font-size: 15px;
+                    }}
+                '''
             )
             self.areas[0][1].addStretch()
             self.areas[0][1].addWidget(label)
@@ -1001,10 +1030,9 @@ class MultiBox(MainWindow):
                 self.areas[0][1].addWidget(label)
 
                 # scroll area setup
-                scroll_area = QScrollArea()
-                scroll_area.setWidgetResizable(True)
-                scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-                scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum))
+                self.areas[0][2][i].setWidgetResizable(True)
+                self.areas[0][2][i].setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+                self.areas[0][2][i].setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum))
 
                 # inside the scroll areas
                 content_widget = QWidget()
@@ -1035,7 +1063,7 @@ class MultiBox(MainWindow):
                     content_widget.setMinimumHeight(len(self.symbols[i]) * (30 + 4))  # 30 is for the line and label, 4 is for the margin
 
                 # inner content widget
-                scroll_area.setWidget(content_widget)
+                self.areas[0][2][i].setWidget(content_widget)
 
                 line = QFrame()
                 line.setFrameShape(QFrame.Shape.HLine)
@@ -1043,7 +1071,7 @@ class MultiBox(MainWindow):
                 line.setStyleSheet("background-color: #313338; border-radius: 1px")
                 self.areas[0][1].addWidget(line)
 
-                scroll_area.setStyleSheet(
+                self.areas[0][2][i].setStyleSheet(
                     f'''
                     * {{
                         border: none;
@@ -1076,11 +1104,40 @@ class MultiBox(MainWindow):
                     '''
                 )
 
-                self.areas[0][1].addWidget(scroll_area)
+                self.areas[0][1].addWidget(self.areas[0][2][i])
 
         # focuses the user to the current textbox they are typing in (currently doesn't work)
-        if self.user_select != self.box_text:
+        if self.user_select != self.box_text:  # may only need this for the variable scroll area, since constants will not be equal to another variable (keeping it general for now)
+
+            scroll_area = self.user_select.parent().parent().parent()
+
+            # finds what scroll area the line edit is in
+            scroll_area_number = None
+            for i in range(len(self.titles)):
+                if scroll_area == self.areas[0][2][i]:
+                    scroll_area_number = i
+
+            # finds the amount of variables inserted before the selected line edit
+            key = misc_functions.get_line_edit_key(self.symbols[scroll_area_number], self.user_select)
+            symbols_prev_keys = sorted(self.symbols_prev_key_list[scroll_area_number])
+            symbols_curr_keys = sorted(self.symbols[scroll_area_number].keys())
+            self.amount_inserted_before = misc_functions.get_position_change(symbols_prev_keys, symbols_curr_keys, key)
+
+            self.scroll_bar = scroll_area.verticalScrollBar()
+            QTimer.singleShot(0, self.print_scrollbar_maximum)  # QTimer is used due to the max_scroll not being correctly calculated
+
             self.user_select.setFocus()
+
+    def print_scrollbar_maximum(self):
+        max_value = self.scroll_bar.maximum()
+
+        if max_value != 0:
+            new = self.user_scroll + (self.amount_inserted_before * 34)
+
+            try:
+                self.scroll_bar.setValue(min(max_value, new))
+            except Exception as e:
+                pass
 
     def area_clear(self) -> None:
         """
@@ -1306,7 +1363,6 @@ class TestButtons(RunWindow):  # buttons, and functions for testing purposes
 def main():
 
     app = QApplication(sys.argv)
-    settings = SettingsWindow()
 
     # sets the icon for the app
     app.setWindowIcon(QIcon(files.file_path('taskbar_icon_16px.png', 'icons')))
@@ -1320,6 +1376,8 @@ def main():
         print("Error: Font didn't load, default system font will be used instead.")
 
     # default settings
+    settings = SettingsWindow()
+
     # could not change inactive highlight color with style sheet a style sheet; a style sheet overrides the inactive highlight color
     palette = app.palette()
     palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor(settings.color_text[0], settings.color_text[1], settings.color_text[2]))  # inactive highlight text color
