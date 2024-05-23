@@ -24,13 +24,3 @@ def get_line_edit_key(dictionary: dict, line_edit: QLineEdit) -> str:
     for i, key in enumerate(sorted(dictionary.keys())):
         if dictionary[key][1] == line_edit:
             return key
-
-
-def get_symbols_keys(symbols) -> list:
-
-    array = []
-
-    for dictionary in symbols:
-        array.append(list(dictionary.keys()))
-
-    return array
