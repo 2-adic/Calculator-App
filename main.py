@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout, QSizePolicy
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem
 from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QKeySequence
 from PyQt6.QtCore import Qt, QPoint, QTimer, QSize
 import sympy as sy
@@ -519,16 +519,15 @@ class MainWindow(ControlWindow):
         self.user_mouse_set = False
 
         self.symbols = ({}, {}, {})
-        self.symbols_old = ({}, {}, {})
         self.symbols_prev_keys = []
         self.accepted_variables = ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-        self.accepted_constants = ['i', 'e', 'π', 'ϕ', 'γ']
+        self.accepted_constants = ['i', 'e', 'π', 'φ', 'γ']
         self.accepted_constant_values = {
-            'i': 1j,
-            'e': 2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274,
-            'π': 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679,
-            'ϕ': 1.6180339887498948482045868343656381177203091798057628621354486227052604628189024497072072041893911374,
-            'γ': 0.5772156649015328606065120900824024310421593359399235988057672348848677267776646709369470632917467495
+            'i': 'i',
+            'e': '2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274',
+            'π': '3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679',
+            'φ': '1.6180339887498948482045868343656381177203091798057628621354486227052604628189024497072072041893911374',
+            'γ': '0.5772156649015328606065120900824024310421593359399235988057672348848677267776646709369470632917467495'
         }
         self.accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
         self.accepted_other = ['(']
@@ -621,17 +620,29 @@ class MainWindow(ControlWindow):
         string = string.replace('**', '^')
         return string
 
-    def variable_formatting(self, symbols: tuple[dict[str, tuple[QLabel, QLineEdit]], dict[str, tuple[QLabel, QLineEdit]]]) -> dict:
+    def variable_formatting(self, symbols: tuple[dict, dict, dict]) -> dict:
 
         temp1 = {}
         # adds all keys with their text to a new dict
         for index in range(len(symbols)):
             keys = list(symbols[index].keys())
             for key in keys:
-                temp1[key] = symbols[index][key][1].text()
 
-                if temp1[key] == '':  # if the user did not define a variable, then it is equal to itself
-                    temp1[key] = key
+                if index == 0:
+                    temp1[key] = symbols[index][key][1].text()
+
+                    if temp1[key] == '':  # if the user did not define a variable, then it is equal to itself
+                        temp1[key] = key
+
+                elif index == 1:
+                    if symbols[index][key][1].isChecked():
+                        if key == 'i':  # replaces 'i' with it's recognized symbols for sympy
+                            temp1[key] = 'I'
+                        else:
+                            temp1[key] = key
+
+                    elif symbols[index][key][2].isChecked():
+                        temp1[key] = self.accepted_constant_values[key]
 
         # performs chained variable substitution: a=b and b=5 -> a=5
         for x in temp1:
@@ -656,6 +667,7 @@ class MainWindow(ControlWindow):
 
                 break
 
+        print(temp1)
         return temp1
 
     def get_answer(self) -> None:
@@ -764,11 +776,7 @@ class MainWindow(ControlWindow):
 
         temp = set()  # used later for deleting variables in self.symbols which are not in the text box
 
-
-        # currently does not copy correctly, you need this to tell the difference between if a variable was added before or after another variable
-        #self.symbols_old = tuple(deepcopy(item) for item in self.symbols)
-
-        self.symbols_prev_key_list = misc_functions.get_symbols_keys(self.symbols)
+        self.symbols_prev_keys = sorted(self.symbols[0].keys())
 
         # adds all variables from the text box to a dictionary
         for x in text:
@@ -784,37 +792,87 @@ class MainWindow(ControlWindow):
 
             # adds the character's label and line edit to the correct dictionary in symbols
             if x not in self.symbols[index]:
-                label = QLabel(f'{x} =', self)
+                if index == 0:
+                    label = QLabel(f'{x} =', self)
 
-                text_box = QLineEdit(self)
-                text_box.setPlaceholderText(f'{x}')
-                self.symbols[index][x] = (label, text_box)
+                    text_box = QLineEdit(self)
+                    text_box.setPlaceholderText(f'{x}')
+                    self.symbols[0][x] = (label, text_box)
 
-        # adds variables that are within other variables
-        for index_1 in range(2):
+                elif index == 1:
+                    label = QLabel(f'{x}:', self)
 
-            keys = list(self.symbols[index_1].keys())
-            for y in keys:
-                for x in self.symbols[index_1][y][1].text():
-                    # checks if the character is in one of the accepted lists
-                    if x in self.accepted_variables:
-                        index_2 = 0
-                        temp.add(x)
-                    elif x in self.accepted_constants:
-                        index_2 = 1
-                        temp.add(x)
-                    else:
-                        continue
+                    option1 = QRadioButton(f'{x}')
+                    option2 = QRadioButton(self.accepted_constant_values[x][:4] + '...')
+                    option1.setChecked(True)
 
-                    # adds the character's label and line edit to the correct dictionary in symbols
-                    if x not in self.symbols[index_2].keys():
+                    radio_group = QButtonGroup(self)
+                    radio_group.addButton(option1)
+                    radio_group.addButton(option2)
 
+                    style = f'''
+                            QRadioButton::indicator {{
+                                border-radius: 6px;
+                                border: 2px solid rgb{self.color_box_border};
+                                background-color: rgb{self.color_box_background};
+                            }}
+                            QRadioButton::indicator:checked {{
+                                background-color: rgb{self.color_box_highlight};
+                            }}
+                            '''
+                    option1.setStyleSheet(style)
+                    option2.setStyleSheet(style)
+
+                    self.symbols[1][x] = (label, option1, option2)
+
+        keys = list(self.symbols[0].keys())
+        for y in keys:
+            for x in self.symbols[0][y][1].text():
+                # checks if the character is in one of the accepted lists
+                if x in self.accepted_variables:
+                    index_2 = 0
+                    temp.add(x)
+                elif x in self.accepted_constants:
+                    index_2 = 1
+                    temp.add(x)
+                else:
+                    continue
+
+                # adds the character's label and line edit to the correct dictionary in symbols
+                if x not in self.symbols[index_2].keys():
+
+                    if index_2 == 0:
                         label = QLabel(f'{x} =', self)
 
                         text_box = QLineEdit(self)
                         text_box.setPlaceholderText(f'{x}')
+                        self.symbols[0][x] = (label, text_box)
 
-                        self.symbols[index_2][x] = (label, text_box)
+                    elif index_2 == 1:
+                        label = QLabel(f'{x}:', self)
+
+                        option1 = QRadioButton(f'{x}')
+                        option2 = QRadioButton(self.accepted_constant_values[x][:4] + '...')
+                        option1.setChecked(True)
+
+                        radio_group = QButtonGroup(self)
+                        radio_group.addButton(option1)
+                        radio_group.addButton(option2)
+
+                        style = f'''
+                                QRadioButton::indicator {{
+                                    border-radius: 6px;
+                                    border: 2px solid rgb{self.color_box_border};
+                                    background-color: rgb{self.color_box_background};
+                                }}
+                                QRadioButton::indicator:checked {{
+                                    background-color: rgb{self.color_box_highlight};
+                                }}
+                                '''
+                        option1.setStyleSheet(style)
+                        option2.setStyleSheet(style)
+
+                        self.symbols[1][x] = (label, option1, option2)
 
         # deletes all variables not in the text box
         for index in range(len(self.symbols)):
@@ -1021,7 +1079,6 @@ class MultiBox(MainWindow):
                     continue
 
                 if i > 0:  # adds spacing before each label
-
                     self.areas[0][1].addSpacing(5)
 
                 # label for each scroll area
@@ -1041,14 +1098,26 @@ class MultiBox(MainWindow):
                 layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
                 for key in sorted(self.symbols[i].keys()):
-                    label, edit = self.symbols[i][key]
+                    if i == 0:
+                        label, edit = self.symbols[0][key]
 
-                    # Use QHBoxLayout for each pair of label and line edit
-                    h_layout = QHBoxLayout()
-                    h_layout.addWidget(label)
-                    h_layout.addWidget(edit, 1)  # The 1 here allows the QLineEdit to expand
+                        # Use QHBoxLayout for each pair of label and line edit
+                        h_layout = QHBoxLayout()
+                        h_layout.addWidget(label)
+                        h_layout.addWidget(edit, 1)  # The 1 here allows the QLineEdit to expand
 
-                    edit.textChanged.connect(self.text_update)
+                        edit.textChanged.connect(self.text_update)
+
+                    if i == 1:
+                        label, option1, option2 = self.symbols[1][key]
+
+                        h_layout = QHBoxLayout()
+                        h_layout.addWidget(label)
+
+                        h_layout.addWidget(option1)
+                        if key != 'i':  # 'i' doesn't need a second selector option
+                            h_layout.addWidget(option2)
+                        h_layout.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
 
                     layout.addLayout(h_layout)
 
@@ -1111,33 +1180,22 @@ class MultiBox(MainWindow):
 
             scroll_area = self.user_select.parent().parent().parent()
 
-            # finds what scroll area the line edit is in
-            scroll_area_number = None
-            for i in range(len(self.titles)):
-                if scroll_area == self.areas[0][2][i]:
-                    scroll_area_number = i
-
             # finds the amount of variables inserted before the selected line edit
-            key = misc_functions.get_line_edit_key(self.symbols[scroll_area_number], self.user_select)
-            symbols_prev_keys = sorted(self.symbols_prev_key_list[scroll_area_number])
-            symbols_curr_keys = sorted(self.symbols[scroll_area_number].keys())
+            key = misc_functions.get_line_edit_key(self.symbols[0], self.user_select)
+            symbols_prev_keys = self.symbols_prev_keys
+            symbols_curr_keys = sorted(self.symbols[0].keys())
             self.amount_inserted_before = misc_functions.get_position_change(symbols_prev_keys, symbols_curr_keys, key)
 
             self.scroll_bar = scroll_area.verticalScrollBar()
-            QTimer.singleShot(0, self.print_scrollbar_maximum)  # QTimer is used due to the max_scroll not being correctly calculated
+            QTimer.singleShot(0, self.set_scrollbar)  # QTimer is used due to the max_scroll not being correctly calculated
 
             self.user_select.setFocus()
 
-    def print_scrollbar_maximum(self):
+    def set_scrollbar(self):
         max_value = self.scroll_bar.maximum()
-
         if max_value != 0:
             new = self.user_scroll + (self.amount_inserted_before * 34)
-
-            try:
-                self.scroll_bar.setValue(min(max_value, new))
-            except Exception as e:
-                pass
+            self.scroll_bar.setValue(min(max_value, new))
 
     def area_clear(self) -> None:
         """
