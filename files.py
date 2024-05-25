@@ -1,7 +1,7 @@
 import os
 
 
-def file_path(file_name: str, folder: str | None) -> str:
+def file_path(file_name: str, folder: str | None = None) -> str:
     """
     Finds the file path of a file within a folder.
 
