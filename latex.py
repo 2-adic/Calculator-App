@@ -2,9 +2,11 @@ import matplotlib.pyplot as plt
 import sympy as sy
 import str_format
 from functions import constant_counter
+from PIL import Image
+from files import file_path
 
 
-def render_latex(latex_str, filename='latex_answer.png', dpi=300, text_color=(1, 1, 1)):
+def render_latex(latex_str, filename, dpi=300, text_color=(1, 1, 1)):
     """Renders a LaTex string into an image without clipping issues."""
 
     text_color = text_color[0] / 255, text_color[1] / 255, text_color[2] / 255
@@ -21,7 +23,7 @@ def render_latex(latex_str, filename='latex_answer.png', dpi=300, text_color=(1,
     bbox_inches = bbox.transformed(fig.dpi_scale_trans.inverted())
 
     # add padding to avoid clipping
-    padding = 0  # adjust as needed
+    padding = .1  # used to ensure noting gets cut off
     figsize = (bbox_inches.width + padding, bbox_inches.height + padding)
 
     # set the new figsize based on calculated dimensions
@@ -37,7 +39,34 @@ def render_latex(latex_str, filename='latex_answer.png', dpi=300, text_color=(1,
     plt.close(fig)
 
 
-def convert_render_latex(string: str, color: tuple[int, int, int], dpi: int = 300) -> str:
+def crop_image(filename):
+
+    image_path = file_path(filename)
+    with Image.open(image_path) as img:
+        # Get image data
+        img_data = img.getdata()
+
+        # Find the bounding box of the non-transparent pixels
+        left = img.width
+        top = img.height
+        right = 0
+        bottom = 0
+
+        for y in range(img.height):
+            for x in range(img.width):
+                pixel = img_data[y * img.width + x]
+                if pixel[3] != 0:  # Check the alpha channel
+                    left = min(left, x)
+                    top = min(top, y)
+                    right = max(right, x)
+                    bottom = max(bottom, y)
+
+        # Crop the image to the bounding box
+        cropped_img = img.crop((left, top, right + 1, bottom + 1))
+        cropped_img.save(image_path)
+
+
+def convert_render_latex(string: str, color: tuple[int, int, int], dpi: int = 300, filename: str = 'Untitled.png') -> str:
     """
     Takes a math expression as a string, and converts it into the LaTeX format.
     Also renders the image of the LaTeX string as a png named "latex_answer.png".
@@ -45,6 +74,7 @@ def convert_render_latex(string: str, color: tuple[int, int, int], dpi: int = 30
     :param string: String to be converted into LaTeX format
     :param color: Color of the text as a rgb value.
     :param dpi: Sets the resolution of the image.
+    :param filename: The filename of the resulting image.
     :return: The formatted LaTeX string.
     """
 
@@ -54,6 +84,7 @@ def convert_render_latex(string: str, color: tuple[int, int, int], dpi: int = 30
     sy_string = sy.sympify(string)
     latex = sy.latex(sy_string, fold_short_frac=False)
 
-    render_latex(latex, text_color=color, dpi=dpi)
+    render_latex(latex, filename, text_color=color, dpi=dpi)
+    crop_image(filename)
 
     return latex
