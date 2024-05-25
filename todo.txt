@@ -70,5 +70,3 @@ Future Features:
     - Use "solve" from functions.py to solve the user's questions from the text box
 
     - Change the font of the LaTeX image
-
-    - When a constant value is used (e = 2.71...), and exact form is active, an '*' should be used to denote that the constants used are only accurate to 100 digits
