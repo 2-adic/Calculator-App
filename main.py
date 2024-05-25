@@ -5,13 +5,13 @@ from PyQt6.QtCore import Qt, QPoint, QTimer, QSize
 import sympy as sy
 import pyperclip
 import fontcontrol
-import files
+from files import file_path
 from str_format import contains_substring
 from PIL import Image
 from latex import convert_render_latex
 import system_settings
-from copy import deepcopy
 import misc_functions
+import constants
 
 
 class SettingsWindow:
@@ -129,7 +129,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
         # close button
         self.button_close = QPushButton('', self)
-        self.button_close.setIcon(QIcon(files.file_path('button_close_icon.png', 'icons')))
+        self.button_close.setIcon(QIcon(file_path('button_close_icon.png', 'icons')))
         self.button_close.setStyleSheet(
             'QPushButton { background-color: transparent;}'
             f'QPushButton:hover {{ background-color: rgb{self.color_title_bat_button_exit}; border: none; }}'
@@ -138,7 +138,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
         # maximize button
         self.button_maximize = QPushButton('', self)
-        self.button_maximize.setIcon(QIcon(files.file_path('button_maximize_icon.png', 'icons')))
+        self.button_maximize.setIcon(QIcon(file_path('button_maximize_icon.png', 'icons')))
         self.button_maximize.setStyleSheet(
             'QPushButton { background-color: transparent;}'
             f'QPushButton:hover {{ background-color: rgb{self.color_title_bar_button_hover}; border: none; }}'
@@ -147,7 +147,7 @@ class ControlWindow(QMainWindow, SettingsWindow):
 
         # minimize button
         self.button_minimize = QPushButton('', self)
-        self.button_minimize.setIcon(QIcon(files.file_path('button_minimize_icon.png', 'icons')))
+        self.button_minimize.setIcon(QIcon(file_path('button_minimize_icon.png', 'icons')))
         self.button_minimize.setStyleSheet(
             'QPushButton { background-color: transparent;}'
             f'QPushButton:hover {{ background-color: rgb{self.color_title_bar_button_hover}; border: none; }}'
@@ -507,11 +507,19 @@ class MainWindow(ControlWindow):
         self.box_answer.setStyleSheet(f'border: {self.box_border}px solid rgb{self.color_box_border}; background-color: rgb{self.color_box_background}; border-radius: {self.box_border_radius}px; color: rgb{self.color_text}; font-size: 15px;')
         self.box_answer.clicked.connect(self.copy)
 
-        self.answer_image_path = files.file_path('latex_answer.png', None)  # gets the path of the latex image
+        self.answer_image_path = file_path('latex_answer.png')  # gets the path of the latex image
 
         # answer format label
         self.box_answer_format_label = QLabel('', self)
-        self.box_answer_format_label.setStyleSheet(f'font-size: {self.answer_format_size}px; color: rgb{self.color_text}')
+        self.box_answer_format_label.setFixedWidth(25)
+        self.box_answer_format_label.setStyleSheet(
+            f'''
+                QLabel {{
+                    font-size: {self.answer_format_size}px;
+                    color: rgb{self.color_text}
+                }}
+            '''
+        )
 
         # text box
         self.user_select = None
@@ -521,14 +529,10 @@ class MainWindow(ControlWindow):
         self.symbols = ({}, {}, {})
         self.symbols_prev_keys = []
         self.accepted_variables = ['a', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-        self.accepted_constants = ['i', 'e', 'π', 'φ', 'γ']
-        self.accepted_constant_values = {
-            'i': 'i',
-            'e': '2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274',
-            'π': '3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679',
-            'φ': '1.6180339887498948482045868343656381177203091798057628621354486227052604628189024497072072041893911374',
-            'γ': '0.5772156649015328606065120900824024310421593359399235988057672348848677267776646709369470632917467495'
-        }
+
+        self.is_constant_value_used = False
+        self.accepted_constants = constants.get_constants(constants.constants)
+        self.accepted_constant_values = constants.get_constant_values(constants.constants, 20)
         self.accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
         self.accepted_other = ['(']
 
@@ -622,6 +626,8 @@ class MainWindow(ControlWindow):
 
     def variable_formatting(self, symbols: tuple[dict, dict, dict]) -> dict:
 
+        self.is_constant_value_used = False  # resets if a constant value was used
+
         temp1 = {}
         # adds all keys with their text to a new dict
         for index in range(len(symbols)):
@@ -643,6 +649,7 @@ class MainWindow(ControlWindow):
 
                     elif symbols[index][key][2].isChecked():
                         temp1[key] = self.accepted_constant_values[key]
+                        self.is_constant_value_used = True  # keeps track if a constant value was used
 
         # performs chained variable substitution: a=b and b=5 -> a=5
         for x in temp1:
@@ -707,19 +714,7 @@ class MainWindow(ControlWindow):
 
         self.answer_temp = self.answer_formatting_after(self.answer)  # reformats the answer
 
-        # use this for option that lets the user set the non latex image as the answer
-        # self.box_answer.setText(self.answer_temp)  # displays the answer
-
-        convert_render_latex(self.answer_temp, self.color_latex, self.latex_image_dpi)
-
-        self.box_answer.setText('')
-        self.box_answer.setIcon(QIcon(self.answer_image_path))
-        self.image = Image.open(self.answer_image_path)
-        self.icon_aspect_ratio_inverse = self.image.size[1] / self.image.size[0]
-
-        self.box_answer_format_label.setText('=')  # answer defaults in exact mode
-
-        self.resizeEvent(None)  # updates to resize the new image
+        self.flip_type()
 
     def flip_type(self) -> None:
         """
@@ -729,19 +724,24 @@ class MainWindow(ControlWindow):
         if self.answer == self.answer_default:
             return
 
-        self.flip_type_toggle = not self.flip_type_toggle  # keeps track of which format is being displayed
+        self.box_answer.setText('')
 
         # uses self.answer_temp to save the actual answer
-        if self.flip_type_toggle:
+        if self.flip_type_toggle or self.is_constant_value_used:
             self.answer_temp = sy.N(self.answer)  # turns the answer into its decimal format
             self.box_answer_format_label.setText('≈')
         else:
             self.answer_temp = self.answer  # returns the original answer
             self.box_answer_format_label.setText('=')
 
+        self.flip_type_toggle = not self.flip_type_toggle  # keeps track of which format is being displayed
+
         self.answer_temp = self.answer_formatting_after(self.answer_temp)  # reformats the answer
 
-        convert_render_latex(self.answer_temp, self.color_latex, self.latex_image_dpi)
+        # use this for an option that lets the user set the non latex image as the answer
+        # self.box_answer.setText(self.answer_temp)  # displays the answer
+
+        convert_render_latex(self.answer_temp, self.color_latex, self.latex_image_dpi, self.answer_image_path)
 
         self.box_answer.setIcon(QIcon(self.answer_image_path))
         self.image = Image.open(self.answer_image_path)
@@ -1265,7 +1265,9 @@ class RunWindow(MultiBox, MainWindow):  # include all children of the MainWindow
         self.box_answer.resize(int((self.width() * self.box_width_left) - (self.box_padding * 1.5)), box_answer_height)
 
         # answer box icon
-        icon_new_width = int((self.width() * self.box_width_left) - (self.box_padding * 1.5) - (self.box_answer_padding * 4))
+        adjust = 8
+        # moves the image a bit more away from the format symbol
+        icon_new_width = int((self.width() * self.box_width_left) - (self.box_padding * 1.5) - (self.box_answer_padding * 4) - (adjust * 2))
         if self.icon_aspect_ratio_inverse is not None:
             if self.icon_aspect_ratio_inverse * icon_new_width < box_answer_height - (self.box_answer_padding * 2):
                 self.box_answer.setIconSize(QSize(icon_new_width, self.height() - self.box_padding - box_answer_height - (self.box_answer_padding * 2)))
@@ -1423,7 +1425,7 @@ def main():
     app = QApplication(sys.argv)
 
     # sets the icon for the app
-    app.setWindowIcon(QIcon(files.file_path('taskbar_icon_16px.png', 'icons')))
+    app.setWindowIcon(QIcon(file_path('taskbar_icon_16px.png', 'icons')))
 
     # sets the default font
     font_family = fontcontrol.font_load(fontcontrol.font_files[0])
