@@ -70,3 +70,5 @@ Future Features:
     - Use "solve" from functions.py to solve the user's questions from the text box
 
     - Change the font of the LaTeX image
+
+    - Add more functions
