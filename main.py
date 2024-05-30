@@ -8,7 +8,6 @@ import fontcontrol
 from files import file_path
 from str_format import contains_substring
 from PIL import Image
-from latex import convert_render_latex
 import system_settings
 import misc_functions
 import constants
@@ -501,6 +500,7 @@ class MainWindow(ControlWindow):
         self.answer = 'Error'  # user shouldn't be able to access this string yet
         self.answer_final = self.answer_default
         self.answer_temp = self.answer_final
+        self.solution = None
         self.flip_type_toggle = False
         self.image = None
         self.icon_aspect_ratio_inverse = None
@@ -509,7 +509,8 @@ class MainWindow(ControlWindow):
         self.box_answer.setStyleSheet(f'border: {self.box_border}px solid rgb{self.color_box_border}; background-color: rgb{self.color_box_background}; border-radius: {self.box_border_radius}px; color: rgb{self.color_text}; font-size: 15px;')
         self.box_answer.clicked.connect(self.copy)
 
-        self.answer_image_path = file_path('latex_answer.png')  # gets the path of the latex image
+        self.answer_image_path_exact = file_path('latex_exact.png')  # gets the path of the latex image
+        self.answer_image_path_approximate = file_path('latex_approximate.png')  # gets the path of the latex image
 
         # answer format label
         self.box_answer_format_label = QLabel('', self)
@@ -590,7 +591,7 @@ class MainWindow(ControlWindow):
         x = 0
         while x < len(string) - 1:
             if string[x] in self.accepted_variables or string[x] in self.accepted_numbers or string[x] == ')' or string[x] == ']' or string[x] == '.':
-                if string[x + 1] in self.accepted_variables or string[x + 1] == '(' or string[x + 1] == '┌':
+                if string[x + 1] in self.accepted_variables or string[x + 1] == '(' or string[x + 1] == '§':
                     # inserts in front of x
                     string = string[:x + 1] + '*' + string[x + 1:]
                     x -= 1
@@ -612,18 +613,6 @@ class MainWindow(ControlWindow):
 
                 num = ''  # resets num
 
-        return string
-
-    def answer_formatting_after(self, answer: sy) -> str:
-        """
-        Reformats the string after the answer is calculated.
-
-        Makes it easier for the user to read the answer.
-        """
-
-        string = str(answer)
-
-        string = string.replace('**', '^')
         return string
 
     def variable_formatting(self, symbols: tuple[dict, dict, dict]) -> dict:
@@ -689,7 +678,6 @@ class MainWindow(ControlWindow):
 
         text = self.box_text.toPlainText()  # gets the string from the text box
         text = str_format.function_convert(text)  # ensures functions won't be messed up
-        print(text)
 
         # scans the text for any variables
         temp = self.variable_formatting(self.symbols)
@@ -699,28 +687,9 @@ class MainWindow(ControlWindow):
                 text = text.replace(f'{x}', f'({temp[x]})')
 
         text = self.answer_formatting_before(text)  # reformats the string
-        text = str_format.function_unconvert(text)
-        print(text)
 
-        solution = Solve(text)
-
-        text = str(solution)
-        print(text)
-
-        # tests if the user did something wrong and outputs 'error' if so
-        try:
-            self.answer = sy.sympify(text)
-
-            # sometimes sy.sympify doesn't simplify completely, but removing spaces and looping fixes some problems
-            while str(self.answer).replace(' ', '') != str(sy.sympify(str(self.answer).replace(' ', ''))).replace(' ', ''):
-                self.answer = sy.sympify(str(self.answer).replace(' ', ''))
-
-            print(f'Answer: {text} = {self.answer}')
-        except Exception as e:
-            self.answer = 'Error'
-            print(f'Error: {e}')
-
-        self.answer_temp = self.answer_formatting_after(self.answer)  # reformats the answer
+        self.solution = Solve(text, self.color_latex, self.latex_image_dpi)
+        self.answer = self.solution.get_exact()
 
         self.flip_type()
 
@@ -736,23 +705,21 @@ class MainWindow(ControlWindow):
 
         # uses self.answer_temp to save the actual answer
         if self.flip_type_toggle or self.is_constant_value_used:
-            self.answer_temp = sy.N(self.answer)  # turns the answer into its decimal format
+            self.answer_temp = self.solution.get_approximate()  # turns the answer into its decimal format
+            image_path = self.answer_image_path_approximate
             self.box_answer_format_label.setText('≈')
         else:
             self.answer_temp = self.answer  # returns the original answer
+            image_path = self.answer_image_path_exact
             self.box_answer_format_label.setText('=')
 
         self.flip_type_toggle = not self.flip_type_toggle  # keeps track of which format is being displayed
 
-        self.answer_temp = self.answer_formatting_after(self.answer_temp)  # reformats the answer
-
         # use this for an option that lets the user set the non latex image as the answer
         # self.box_answer.setText(self.answer_temp)  # displays the answer
 
-        convert_render_latex(self.answer_temp, self.color_latex, self.latex_image_dpi, self.answer_image_path)
-
-        self.box_answer.setIcon(QIcon(self.answer_image_path))
-        self.image = Image.open(self.answer_image_path)
+        self.box_answer.setIcon(QIcon(image_path))
+        self.image = Image.open(image_path)
         self.icon_aspect_ratio_inverse = self.image.size[1] / self.image.size[0]
 
         self.resizeEvent(None)
@@ -1092,7 +1059,7 @@ class MultiBox(MainWindow):
 
                 # label for each scroll area
                 label = QLabel(title)
-                label.setStyleSheet("font-weight: bold; font-size: 14px; color: white; border: none;")
+                label.setStyleSheet(f'font-weight: bold; font-size: 14px; color: rgb{self.color_text}; border: none;')
                 self.areas[0][1].addWidget(label)
 
                 # scroll area setup
