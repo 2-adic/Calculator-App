@@ -78,11 +78,7 @@ def convert_render_latex(string: str, color: tuple[int, int, int] = (255, 255, 2
     :return: The formatted LaTeX string.
     """
 
-    for x in range(constant_amount):
-        string = string.replace('C' + str_format.to_subscript(str(x)), f'C_{x}')
-
-    sy_string = sy.sympify(string)
-    latex = sy.latex(sy_string, fold_short_frac=False)
+    latex = sy.latex(string, fold_short_frac=False)
 
     render_latex(latex, filename, text_color=color, dpi=dpi)
     crop_image(filename)
