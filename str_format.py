@@ -1,8 +1,5 @@
 import symbols
 
-symbol_front = '┌'
-symbol_back = '┐'
-
 
 def to_subscript(string: str) -> str:
     """
@@ -140,7 +137,7 @@ def function_convert(string: str) -> str:
     """
 
     for i in range(len(symbols.accepted_functions)):
-        string = string.replace(symbols.accepted_functions[i], f'{symbol_front}{i}{symbol_back}')
+        string = string.replace(symbols.accepted_functions[i], f'§{i}')
 
     return string
 
@@ -151,7 +148,7 @@ def function_unconvert(string: str) -> str:
     """
 
     for i in range(len(symbols.accepted_functions)):
-        string = string.replace(f'{symbol_front}{i}{symbol_back}', symbols.accepted_functions[i])
+        string = string.replace(f'§{i}', symbols.accepted_functions[i])
 
     return string
 
@@ -168,6 +165,15 @@ def remove_parentheses(string: str) -> str:
     return string
 
 
+def get_function_parameters(string: str):
+    start = string.find('§')
+    bracket = string.find('[', start)
+
+    array = get_elements_in_bracket(string, bracket)
+
+    return string[start + 1:bracket], array[0], bracket, array[1]  # returns the function number, and a list of the parameters
+
+
 def generate_function_dictionary(dictionary_name: str) -> None:
     """
     Used to replace the function dictionary when more functions are added.
@@ -176,7 +182,7 @@ def generate_function_dictionary(dictionary_name: str) -> None:
     string = f'{dictionary_name} = {{\n    '
 
     for i, function in enumerate(symbols.accepted_functions):
-        string += f'{i}: self.{function.lower()}, '
+        string += f"'{i}': self.{function.lower()}, "
 
     string = string[:-2]
     string += '\n}'
