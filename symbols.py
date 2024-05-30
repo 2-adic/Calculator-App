@@ -4,7 +4,11 @@ accepted_variables = [
 ]
 
 accepted_functions = [
-    'Integrate'
+    'Integrate',
+    'Sin',
+    'Cos',
+    'Tan',
+    'Ln'
 ]
 
 subscript = {

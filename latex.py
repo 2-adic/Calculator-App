@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import sympy as sy
 import str_format
-from functions import constant_counter
 from PIL import Image
 from files import file_path
 
@@ -66,7 +65,7 @@ def crop_image(filename):
         cropped_img.save(image_path)
 
 
-def convert_render_latex(string: str, color: tuple[int, int, int], dpi: int = 300, filename: str = 'Untitled.png') -> str:
+def convert_render_latex(string: str, color: tuple[int, int, int] = (255, 255, 255), dpi: int = 300, filename: str = 'Untitled.png', constant_amount: int = 0) -> str:
     """
     Takes a math expression as a string, and converts it into the LaTeX format.
     Also renders the image of the LaTeX string as a png named "latex_answer.png".
@@ -75,10 +74,11 @@ def convert_render_latex(string: str, color: tuple[int, int, int], dpi: int = 30
     :param color: Color of the text as a rgb value.
     :param dpi: Sets the resolution of the image.
     :param filename: The filename of the resulting image.
+    :param constant_amount: The amount of arbitrary constants
     :return: The formatted LaTeX string.
     """
 
-    for x in range(constant_counter):
+    for x in range(constant_amount):
         string = string.replace('C' + str_format.to_subscript(str(x)), f'C_{x}')
 
     sy_string = sy.sympify(string)

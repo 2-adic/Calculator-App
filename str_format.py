@@ -1,5 +1,8 @@
 import symbols
 
+symbol_front = '┌'
+symbol_back = '┐'
+
 
 def to_subscript(string: str) -> str:
     """
@@ -126,3 +129,56 @@ def contains_substring(string: str, array: list) -> bool:
             return True  # if one is found, a substring was in the string
 
     return False  # if none were found, a substring is not in the string
+
+
+# --------------------------------------------------------------------------------------------------------
+
+
+def function_convert(string: str) -> str:
+    """
+    Transforms all functions into a format that won't get messed up by the implicit multiplication converter.
+    """
+
+    for i in range(len(symbols.accepted_functions)):
+        string = string.replace(symbols.accepted_functions[i], f'{symbol_front}{i}{symbol_back}')
+
+    return string
+
+
+def function_unconvert(string: str) -> str:
+    """
+    Changes all converted function into their unconverted form.
+    """
+
+    for i in range(len(symbols.accepted_functions)):
+        string = string.replace(f'{symbol_front}{i}{symbol_back}', symbols.accepted_functions[i])
+
+    return string
+
+
+def remove_parentheses(string: str) -> str:
+    """
+    Only use if 1 variable / number is in the string.
+    ((x)) -> x
+    """
+
+    string = string.replace('(', '')
+    string = string.replace(')', '')
+
+    return string
+
+
+def generate_function_dictionary(dictionary_name: str) -> None:
+    """
+    Used to replace the function dictionary when more functions are added.
+    """
+
+    string = f'{dictionary_name} = {{\n    '
+
+    for i, function in enumerate(symbols.accepted_functions):
+        string += f'{i}: self.{function.lower()}, '
+
+    string = string[:-2]
+    string += '\n}'
+
+    print(string)

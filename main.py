@@ -12,6 +12,8 @@ from latex import convert_render_latex
 import system_settings
 import misc_functions
 import constants
+from functions import Solve
+import str_format
 
 
 class SettingsWindow:
@@ -587,8 +589,8 @@ class MainWindow(ControlWindow):
         # adds multiplication symbol for implicit multiplication
         x = 0
         while x < len(string) - 1:
-            if string[x] in self.accepted_variables or string[x] in self.accepted_numbers or string[x] == ')' or string[x] == '.':
-                if string[x + 1] in self.accepted_variables or string[x + 1] == '(':
+            if string[x] in self.accepted_variables or string[x] in self.accepted_numbers or string[x] == ')' or string[x] == ']' or string[x] == '.':
+                if string[x + 1] in self.accepted_variables or string[x + 1] == '(' or string[x + 1] == '┌':
                     # inserts in front of x
                     string = string[:x + 1] + '*' + string[x + 1:]
                     x -= 1
@@ -674,7 +676,6 @@ class MainWindow(ControlWindow):
 
                 break
 
-        print(temp1)
         return temp1
 
     def get_answer(self) -> None:
@@ -687,17 +688,24 @@ class MainWindow(ControlWindow):
         self.flip_type_toggle = False  # resets the format type
 
         text = self.box_text.toPlainText()  # gets the string from the text box
+        text = str_format.function_convert(text)  # ensures functions won't be messed up
+        print(text)
 
         # scans the text for any variables
         temp = self.variable_formatting(self.symbols)
 
         for x in text:
             if x in temp:
-                test_variable = temp[x]
-
-                text = text.replace(f'{x}', f'({test_variable})')
+                text = text.replace(f'{x}', f'({temp[x]})')
 
         text = self.answer_formatting_before(text)  # reformats the string
+        text = str_format.function_unconvert(text)
+        print(text)
+
+        solution = Solve(text)
+
+        text = str(solution)
+        print(text)
 
         # tests if the user did something wrong and outputs 'error' if so
         try:
@@ -773,6 +781,7 @@ class MainWindow(ControlWindow):
         self.user_select = self.sender()  # saves which text box the user was typing in
 
         text = self.box_text.toPlainText()
+        text = str_format.function_convert(text)
 
         temp = set()  # used later for deleting variables in self.symbols which are not in the text box
 
