@@ -590,8 +590,8 @@ class MainWindow(ControlWindow):
         # adds multiplication symbol for implicit multiplication
         x = 0
         while x < len(string) - 1:
-            if string[x] in self.accepted_variables or string[x] in self.accepted_numbers or string[x] == ')' or string[x] == ']' or string[x] == '.':
-                if string[x + 1] in self.accepted_variables or string[x + 1] == '(' or string[x + 1] == '§':
+            if string[x] in self.accepted_variables or string[x] in self.accepted_constants or string[x] in self.accepted_numbers or string[x] == ')' or string[x] == ']' or string[x] == '.':
+                if string[x + 1] in self.accepted_variables or string[x + 1] in self.accepted_constants or string[x + 1] == '(' or string[x + 1] == '§':
                     # inserts in front of x
                     string = string[:x + 1] + '*' + string[x + 1:]
                     x -= 1
@@ -626,20 +626,13 @@ class MainWindow(ControlWindow):
             for key in keys:
 
                 if index == 0:
-                    temp1[key] = symbols[index][key][1].text()
+                    temp1[key] = str_format.function_convert(symbols[index][key][1].text())
 
                     if temp1[key] == '':  # if the user did not define a variable, then it is equal to itself
                         temp1[key] = key
 
                 elif index == 1:
-                    if symbols[index][key][1].isChecked():
-                        if key == 'i':  # replaces 'i' with it's recognized symbols for sympy
-                            temp1[key] = 'I'
-                        else:
-                            temp1[key] = key
-
-                    elif symbols[index][key][2].isChecked():
-                        temp1[key] = self.accepted_constant_values[key]
+                    if symbols[index][key][2].isChecked():
                         self.is_constant_value_used = True  # keeps track if a constant value was used
 
         # performs chained variable substitution: a=b and b=5 -> a=5
@@ -667,6 +660,20 @@ class MainWindow(ControlWindow):
 
         return temp1
 
+    def generate_value_used_bool(self) -> dict[str, bool]:
+        """
+        Returns a dictionary of True or False values depending on if the constant's value was used
+        """
+
+        is_value_used = {}
+        for key in list(self.symbols[1].keys()):
+            if self.symbols[1][key][1].isChecked():  # checks if a constant value was used
+                is_value_used[key] = True
+            else:
+                is_value_used[key] = False
+
+        return is_value_used
+
     def get_answer(self) -> None:
         """
         Calculates the answer from the user input.
@@ -688,7 +695,8 @@ class MainWindow(ControlWindow):
 
         text = self.answer_formatting_before(text)  # reformats the string
 
-        self.solution = Solve(text, self.color_latex, self.latex_image_dpi)
+        self.solution = Solve(text, self.generate_value_used_bool(), self.color_latex, self.latex_image_dpi)
+        self.solution.print()  # shows the before and after expression (for testing purposes)
         self.answer = self.solution.get_exact()
 
         self.flip_type()
@@ -801,9 +809,11 @@ class MainWindow(ControlWindow):
 
                     self.symbols[1][x] = (label, option1, option2)
 
+        formatted = {}  # used to preserve functions
         keys = list(self.symbols[0].keys())
         for y in keys:
-            for x in self.symbols[0][y][1].text():
+            formatted[y] = str_format.function_convert(self.symbols[0][y][1].text())  # lets functions be inside of variables
+            for x in formatted[y]:
                 # checks if the character is in one of the accepted lists
                 if x in self.accepted_variables:
                     index_2 = 0
