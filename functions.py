@@ -3,10 +3,11 @@ import symbols
 import str_format as form
 from latex import convert_render_latex
 from files import file_path
+import constants
 
 
 class Solve:
-    def __init__(self, expression: str, render_color: tuple[int, int, int], render_dpi: int):
+    def __init__(self, expression: str, is_value_used: dict[str, bool], render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
 
         self.funct = {
             '0': self.integrate, '1': self.sin, '2': self.cos
@@ -19,12 +20,12 @@ class Solve:
         self.error = None  # saves the reason for an error
         self.answer_exact = None
         self.answer_approximate = None
-
-        self.expression_solved = self.solve(self.expression)  # solves the expression
+        format_expression = self.format_before(self.expression, is_value_used)
+        self.expression_solved = self.solve(format_expression)  # solves the expression
         self.exact()  # turns the solution into its exact form
         self.approximate()  # turns the solution into its approximate form
         self.render(render_color, render_dpi)  # renders the image of the exact and approximate solutions
-        # self.final_formatting()  # formats the exact and approximate answer forms
+        # self.format_after()  # formats the exact and approximate answer forms
 
         if self.error is not None:
             print(f'Error: {self.error}')
@@ -76,13 +77,26 @@ class Solve:
 
         return self.answer_exact
 
+    def custom_approx(self, expression):
+        if expression.is_Atom:
+            # if the expression is a number, evaluate it numerically
+            if expression.is_Number:
+                return expression.evalf()
+            # if the expression is a symbol, return it as is
+            else:
+                return expression
+        else:
+            # recursively apply self.custom_approx to all arguments of the expression
+            return expression.func(*[self.custom_approx(arg) for arg in expression.args])
+
     def approximate(self):
         """
         Turns the answer into its approximate form.
         """
 
         try:
-            self.answer_approximate = sy.N(self.expression_solved)
+            expression = sy.simplify(self.expression_solved)
+            self.answer_approximate = self.custom_approx(expression)
 
         except Exception as e:
             self.answer_approximate = 'Error'
@@ -94,7 +108,28 @@ class Solve:
         """
         return self.answer_approximate
 
-    def final_formatting(self):
+    def format_before(self, expression: str, is_value_used: dict[str, bool]) -> str:
+        """
+        Formats the expression before it is solved.
+        """
+
+        constant_values = constants.get_constant_values(constants.constants, 20)
+
+        for key in list(is_value_used.keys()):
+            if is_value_used[key]:
+                if key == 'i':
+                    expression = expression.replace('i', 'I')
+                elif key == 'e':
+                    expression = expression.replace('e', 'E')
+                elif key == 'π':
+                    expression = expression.replace('π', 'pi')
+
+            else:
+                expression = expression.replace(key, f'({constant_values[key]})')
+
+        return expression
+
+    def format_after(self):
         """
         Performs some final formatting to the answer in its exact and approximate form.
         """
@@ -153,9 +188,10 @@ class Solve:
         self.constant_counter += 1
 
         # solves the integration
-        return str(sy.integrate(sy.sympify(f), sy.symbols(x))) + ' + ' + new_constant
+        return str(sy.integrate(sy.simplify(f), sy.symbols(x))) + ' + ' + new_constant
 
     def sin(self, x: str):  # Sin[x]
+        #x = f'({x})*(180/PI)'
         return f'sin({x})'
 
     def cos(self, x: str):  # Cin[x]
