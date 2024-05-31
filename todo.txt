@@ -29,14 +29,20 @@ Bugs:
 
     - Implicit multiplication gives an error when the number comes after the variable
         - Ex: x8 should give (x)*8, but instead gives (x)8
+        - Not sure if this should be implemented, normals calculators also give errors for this case
 
     - Windows flash open and close while typing in the text box (when spamming enter, or pressing multiple keys at the same time)
         - Not sure why this happens
         - Find a way to stop these windows from generating
         - Does not happen on macOS, only Windows 10
 
-    - Variable labels become too compacted and block each other's view
+    - Variable labels become too compacted and blocks each other's view
         - Only happens on macOS
+
+    - Crashes when integration is with respect to variable A, and A is also defined as a value
+        - Ex: Integrate[x, x]   And the users sets x = 2
+        - Not sure what to do about this because this doesn't happen in mathematics to my knowledge
+        - Maybe make it if any value is entered for variable A, then an error occurs
 
 Future Features:
     - Need shadowing for the sides of the window (for Windows)
@@ -56,9 +62,9 @@ Future Features:
             - When in approximate form:  5x ± 1 -> 5x + 1 -> (5*2) + 1 -> 10 + 1 -> 11  (Displays both answers somehow)
                                                 -> 5x - 1 -> (5*2) - 1 -> 10 - 1 -> 9
 
-    - Represent functions like cos() with italics
+    - Represent functions like Cos[] with italics
         - Might solve this problem another way without the use of color (not sure yet)
-        - Make the "cos" highlight if the program detects it may be a function
+        - Make the "Cos" highlight if the program detects it may be a function
             - If the user does an input (click + control, not sure), cos turns into italics and is considered a function instead of c*o*s
         - May want a font where the italics are the same width as the normal characters
 
@@ -66,8 +72,6 @@ Future Features:
         - Need to give error for all cases where this occurs (not giving an error at all atm)
 
     - Add pin feature for variables, so they don't get removed while its active
-
-    - Use "solve" from functions.py to solve the user's questions from the text box
 
     - Change the font of the LaTeX image
 
