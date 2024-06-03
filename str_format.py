@@ -172,19 +172,3 @@ def get_function_parameters(string: str):
     array = get_elements_in_bracket(string, bracket)
 
     return string[start + 1:bracket], array[0], bracket, array[1]  # returns the function number, and a list of the parameters
-
-
-def generate_function_dictionary(dictionary_name: str) -> None:
-    """
-    Used to replace the function dictionary when more functions are added.
-    """
-
-    string = f'{dictionary_name} = {{\n    '
-
-    for i, function in enumerate(symbols.accepted_functions):
-        string += f"'{i}': self.{function.lower()}, "
-
-    string = string[:-2]
-    string += '\n}'
-
-    print(string)
