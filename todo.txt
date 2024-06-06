@@ -12,20 +12,18 @@ Bugs:
         - x.1 seems as an incorrect way to write this out, check how other calculators handle this case
 
     - When using tab to go to the next variable, it sometimes skips to the textbox
-        - How it should work (in each step the user presses tab), it should loop as shown: text box -> variable 1 -> variable 2 -> variable -> n -> text box
+        - How it should work (in each step the user presses tab), it should loop as shown: text box -> variable 1 -> variable 2 -> variable n -> text box
         - give the user a way to still type a tab in the text box (maybe mac: option + tab, Windows: 'not sure yet' + tab)
 
     - App crashes when user inputs ".." and clicks the answer button
 
-    - If the user in a variable box while their mouse is on top of a variable text box, the mouse flashes between two different cursor shapes
+    - If the user is in a variable box while their mouse is on top of a variable text box, their mouse flashes between two different cursor shapes
         - Solution: when typing is detected, hide the cursor until the user moves their mouse again
 
     - LaTeX answer image still clips outside the answer box in specific circumstances
         - Bug does not happen on Windows, only on macOS (not sure why)
         - Ex: x + 7
-
-    - LaTeX image has poor cropping
-        - Create a custom function that crops the image (make sure the original rendered image is not cropped)
+        - This should be fixed, but testing on macOS is needed
 
     - Implicit multiplication gives an error when the number comes after the variable
         - Ex: x8 should give (x)*8, but instead gives (x)8
