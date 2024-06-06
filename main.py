@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout
 from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QKeySequence
 from PyQt6.QtCore import Qt, QPoint, QTimer, QSize
 import sympy as sy
@@ -47,13 +47,13 @@ class Settings:
 
         # Boxes -------------------------------------------------------------------------------------------------
 
-        # General
+        # general
         self._box_width_left = 1/2  # percentage of screen width
         self._box_padding = 20  # amount of spacing between the boxes
         self._box_border = 4  # the border thickness for all widgets
         self._box_border_radius = self._box_border * 2  # the curvature of the border corners
 
-        # Answer box
+        # answer box
         self._answer_default = 'Answer'
         self._answer_format_size = 20  # the size of the symbol that shows the current selected answer format
 
@@ -61,9 +61,10 @@ class Settings:
         self._box_answer_padding = 12  # distance from the image to the border of the answer box
         self._latex_image_dpi = 800
 
-        # Multi box
+        # multi box
         self._content_margin = 10  # distance between the scroll content, and the border
         self._select_height = 50  # height of the selector buttons
+        self._symbols_button_size = 50  # size of the copy buttons within the symbols tab
 
         # Colors ------------------------------------------------------------------------------------------------
         # all int values in this section can be from 0 to 255
@@ -87,6 +88,7 @@ class Settings:
 
         # boxes
         self._color_box_background = 85, 88, 97
+        self._color_box_background_selected = 51, 75, 97
         self._color_box_border = 35, 36, 40
         self._color_box_highlight = 81, 100, 117
 
@@ -541,7 +543,20 @@ class MainWindow(ControlWindow):
         self._icon_aspect_ratio_inverse = None
 
         self._box_answer = QPushButton(self._settings_user._answer_default, self)
-        self._box_answer.setStyleSheet(f'border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border}; background-color: rgb{self._settings_user._color_box_background}; border-radius: {self._settings_user._box_border_radius}px; color: rgb{self._settings_user._color_text}; font-size: 15px;')
+        self._box_answer.setStyleSheet(
+            f'''
+            QPushButton {{
+                border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                border-radius: {self._settings_user._box_border_radius}px;
+                background-color: rgb{self._settings_user._color_box_background};
+                color: rgb{self._settings_user._color_text};
+                font-size: 15px;
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user._color_box_highlight};
+            }}
+            '''
+        )
         self._box_answer.clicked.connect(self.__copy)
 
         self.__answer_image_path_exact = file_path('latex_exact.png')  # gets the path of the latex image
@@ -768,10 +783,6 @@ class MainWindow(ControlWindow):
         Lets the user copy the answer by clicking the answer box.
         """
 
-        # adds flashing blue visual when button is clicked
-        self._box_answer.setStyleSheet(f'border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border}; background-color: rgb{self._settings_user._color_box_highlight}; border-radius: {self._settings_user._box_border_radius}px; color: rgb{self._settings_user._color_text}; font-size: 15px;')
-        QTimer.singleShot(150, lambda: self._box_answer.setStyleSheet(f'border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border}; background-color: rgb{self._settings_user._color_box_background}; border-radius: {self._settings_user._box_border_radius}px; color: rgb{self._settings_user._color_text}; font-size: 15px;'))
-
         pyperclip.copy(str(self.__answer_temp))  # copies answer to clipboard
 
     def _text_update(self) -> None:
@@ -895,7 +906,7 @@ class MainWindow(ControlWindow):
             for x in keys_to_delete:
                 del self._symbols[index][x]
 
-        self._area_fill()  # adds all variables found in the variable box
+        self._fill_variables()  # adds all variables found in the variable box
 
         # clears the answer box to prevent user from thinking the answer is for what was just typed in the text box
         self.__answer = self._settings_user._answer_default  # sets answer to default answer so if the user flips the format, the default answer still displays
@@ -916,7 +927,7 @@ class MultiBox(MainWindow):
 
         # Scroll Area Setup -------------------------------------------------------------------------------------
 
-        self.__selector_names = ['Variables', 'Graph', 'Functions']  # include at least 2 names (these will most likely be images in the future, for example: a simple image of a graph for the graph section)
+        self.__selector_names = ['Variables', 'Symbols', 'Graph']  # include at least 2 names (these will most likely be images in the future, for example: a simple image of a graph for the graph tab)
         self.__area_amount = len(self.__selector_names)  # amount of scroll areas, at least 2 are needed for correct formatting
 
         # creates the scroll areas
@@ -941,78 +952,26 @@ class MultiBox(MainWindow):
             area.hide()
             self.__areas.append([area, layout, []])
 
-        self.__areas[0][0].show()
+        self.__areas[0][0].show()  # defaults to the variables tab
 
         # Selectors ---------------------------------------------------------------------------------------------
 
         self.__button_selectors = []
-        for x in range(self.__area_amount):
-            button = QPushButton(self.__selector_names[x], self)
+        for i in range(self.__area_amount):
+            button = QPushButton(self.__selector_names[i], self)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
             button.clicked.connect(self.__button_logic_selector)
+            self.__button_selector_style(button, i)  # sets the button style
+            self.__button_selectors.append(button)  # adds the button to a list
 
-            if x == 0:  # left selector has a curved left corner
-                button.setStyleSheet(
-                    f'''
-                    QPushButton {{
-                        color: rgb{self._settings_user._color_text};
-                        border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
-                        background-color: rgb{self._settings_user._color_box_background};
-                        border-top-left-radius: {self._settings_user._box_border_radius}px;
-                        font-size: 15px;
-                    }}
-                    QPushButton:hover {{
-                        padding-top: -5px;
-                        background-color: rgb{self._settings_user._color_box_highlight};
-                    }}
-                    '''
-                )
-
-            elif x == self.__area_amount - 1:  # middle selectors have no curved corners
-                button.setStyleSheet(
-                    f'''
-                    QPushButton {{
-                        color: rgb{self._settings_user._color_text};
-                        border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
-                        background-color: rgb{self._settings_user._color_box_background};
-                        border-top-right-radius: {self._settings_user._box_border_radius}px;
-                        font-size: 15px;
-                    }}
-                    QPushButton:hover {{
-                        padding-top: -5px;
-                        background-color: rgb{self._settings_user._color_box_highlight};
-                    }}
-                    '''
-                )
-
-            else:  # right selector has a curved right corner
-                button.setStyleSheet(
-                    f'''
-                    QPushButton {{
-                        color: rgb{self._settings_user._color_text};
-                        border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
-                        background-color: rgb{self._settings_user._color_box_background};
-                        font-size: 15px;
-                    }}
-                    QPushButton:hover {{
-                        padding-top: -5px;
-                        background-color: rgb{self._settings_user._color_box_highlight};
-                    }}
-                    '''
-                )
-
-            self.__button_selectors.append(button)
-
-        # Variable Section --------------------------------------------------------------------------------------
-
-        # scroll area container alignment
-        self.__areas[0][1].setAlignment(Qt.AlignmentFlag.AlignTop)
-
-        # sections of the variable page
-        self.__titles = ['Variables', 'Constants', 'Arbitrary Constants']
+        # All Tabs ----------------------------------------------------------------------------------------------
 
         # sets a default label for each page
         for i, title in enumerate(self.__selector_names):
+
+            if i == 1:  # skips the symbols tab since it is never empty
+                continue
+
             label = QLabel(title)
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label.setStyleSheet(
@@ -1028,9 +987,19 @@ class MultiBox(MainWindow):
             self.__areas[i][1].addWidget(label)
             self.__areas[i][1].addStretch()
 
-    def _area_fill(self) -> None:
+        self.__fill_symbols()  # initializes the symbols tab
+
+        # Variable Tab ------------------------------------------------------------------------------------------
+
+        # scroll area container alignment
+        self.__areas[0][1].setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # sections of the variable page
+        self.__titles = ['Variables', 'Constants', 'Arbitrary Constants']
+
+    def _fill_variables(self) -> None:
         """
-        Displays widgets to the variable box.
+        Displays widgets to the variable tab.
 
         Adds: labels and text boxes for each variable, lines to separate each variable, and a stretch to push all widgets to the top.
         """
@@ -1041,7 +1010,7 @@ class MultiBox(MainWindow):
             scroll_bar = scroll_area.verticalScrollBar()
             previous_scroll_amount = scroll_bar.value()
 
-        self.__area_clear()  # deletes everything in the variable page
+        self.__clear_variables()  # deletes everything in the variable page
 
         count = 0
         self.__areas[0][2] = []
@@ -1054,11 +1023,11 @@ class MultiBox(MainWindow):
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label.setStyleSheet(
                 f'''
-                    * {{
-                        border: none;
-                        color: rgb{self._settings_user._color_text_secondary};
-                        font-size: 15px;
-                    }}
+                * {{
+                    border: none;
+                    color: rgb{self._settings_user._color_text_secondary};
+                    font-size: 15px;
+                }}
                 '''
             )
             self.__areas[0][1].addStretch()
@@ -1171,8 +1140,8 @@ class MultiBox(MainWindow):
 
                 self.__areas[0][1].addWidget(self.__areas[0][2][i])
 
-        # focuses the user to the current textbox they are typing in (currently doesn't work)
-        if self._user_select != self._box_text:  # may only need this for the variable scroll area, since constants will not be equal to another variable (keeping it general for now)
+        # focuses the user to the current textbox they are typing in
+        if self._user_select != self._box_text:
 
             scroll_area = self._user_select.parent().parent().parent()
 
@@ -1186,6 +1155,90 @@ class MultiBox(MainWindow):
 
             self._user_select.setFocus()
 
+    def __fill_symbols(self):
+        """
+        Creates all buttons of hard to get symbols within the symbols tab.
+
+        Allows for the user to easily copy symbols to use in calculations.
+        """
+
+        self.__areas[1][2] = QScrollArea()
+        self.__areas[1][2].setWidgetResizable(True)
+        self.__areas[1][2].setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        self.__areas[1][2].setStyleSheet(
+            f'''
+            * {{
+                border: none;
+            }}
+            QScrollArea {{
+                background-color: rgb{self._settings_user._color_box_background};
+                color: rgb{self._settings_user._color_text};
+                font-size: 15px;
+            }}
+            QScrollBar:vertical {{
+                border-radius: 4px;
+                background-color: rgb{self._settings_user._color_scrollbar_background};
+                width: 12px;
+                margin: 4px 4px 4px 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: rgb{self._settings_user._color_box_border};
+                border-radius: 4px;
+                min-height: 20px;
+            }}
+            QScrollBar::add-line:vertical {{
+                width: 0px;
+            }}
+            QScrollBar::sub-line:vertical {{
+                width: 0px;
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                background: none;
+            }}
+            '''
+        )
+
+        # uses a QFrame to hold the grid layout
+        grid_widget = QFrame()
+        grid_widget.setFrameShape(QFrame.Shape.NoFrame)
+
+        # uses a QGridLayout to get the desired behavior
+        self.__grid_layout = QGridLayout()
+        grid_widget.setLayout(self.__grid_layout)
+
+        # creates a wrapper widget for the scroll area
+        wrapper_widget = QWidget()
+        wrapper_layout = QVBoxLayout(wrapper_widget)
+        wrapper_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        wrapper_layout.addWidget(grid_widget)
+        self.__areas[1][2].setWidget(wrapper_widget)
+
+        # adds buttons to the grid layout
+        self.__button_symbols = []
+        for i, symbol in enumerate(symbols.copy_symbols):
+            button = QPushButton(symbol)
+            button.clicked.connect(self.__copy_button_label)
+            button.setStyleSheet(
+                f'''
+                QPushButton {{
+                    border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                    border-radius: {self._settings_user._box_border_radius}px;
+                }}
+                QPushButton:pressed {{
+                    background-color: rgb{self._settings_user._color_box_highlight};
+                }}
+                '''
+            )
+
+            button.setFixedSize(QSize(self._settings_user._symbols_button_size, self._settings_user._symbols_button_size))
+            self.__button_symbols.append(button)
+            self.__grid_layout.addWidget(button, i // 4, i % 4)
+
+        self.__previous_column_count = None  # initializes the column count
+
+        self.__areas[1][1].addWidget(self.__areas[1][2])  # adds the scroll area to the layout
+
     def _update_multi(self) -> None:
         """
         Updates the positions of all widgets in the multi class.
@@ -1196,7 +1249,7 @@ class MultiBox(MainWindow):
         selector_size = (1/len(self.__button_selectors)) * (self.width() * (1 - self._settings_user._box_width_left) - (self._settings_user._box_padding * 1.5)) + self._settings_user._box_border - (self._settings_user._box_border/len(self.__button_selectors))  # width of the selector buttons
         for i, button in enumerate(self.__button_selectors):
 
-            # corrects for rounding which makes the borders between the buttons change size
+            # corrects for rounding errors which makes the borders between the buttons change size
             correction = 0
             if i != len(self.__button_selectors) - 1:
                 correction = (int(((selector_size - self._settings_user._box_border) * (i - 1)) + (self._settings_user._box_padding * 2) + (self.width() * self._settings_user._box_width_left) - (self._settings_user._box_padding * 1.5)) + int(selector_size) - self._settings_user._box_border) - int(((selector_size - self._settings_user._box_border) * i) + (self._settings_user._box_padding * 2) + (self.width() * self._settings_user._box_width_left) - (self._settings_user._box_padding * 1.5))
@@ -1217,14 +1270,91 @@ class MultiBox(MainWindow):
             tup[0].move((self._settings_user._box_padding * 2) + int((self.width() * self._settings_user._box_width_left) - (self._settings_user._box_padding * 1.5)), self._settings_user._box_padding + self._settings_user._title_bar_height + self._settings_user._select_height - self._settings_user._box_border)
             tup[0].resize(int((self.width() * (1 - self._settings_user._box_width_left)) - (self._settings_user._box_padding * 1.5)), self.height() - (self._settings_user._box_padding * 2) - self._settings_user._title_bar_height - self._settings_user._select_height + self._settings_user._box_border)
 
+        # symbols tab
+        width = self.__areas[1][2].viewport().width()
+        column_count = max(1, width // self._settings_user._symbols_button_size + (int(self._settings_user._symbols_button_size / 10) * 2))  # takes into account the gap between the buttons
+
+        # only rearranges if the column count changes
+        if column_count != self.__previous_column_count:
+            self.__previous_column_count = column_count
+
+            # re-arranges the buttons
+            for i, button in enumerate(self.__button_symbols):
+                self.__grid_layout.addWidget(button, i // column_count, i % column_count)
+
     def __button_logic_selector(self):
 
         for i, scroll in enumerate(self.__areas):
+            button = self.__button_selectors[i]
 
-            if self.sender() == self.__button_selectors[i]:
+            if i == 1:
+                QTimer.singleShot(0, self._update_multi)  # the symbols section is not initialize correctly without this
+
+            if self.sender() == button:
+                self.__button_selector_style(button, i, True)
                 scroll[0].show()
             else:
+                self.__button_selector_style(button, i, False)  # changes all buttons to their default color
                 scroll[0].hide()
+
+    def __button_selector_style(self, button: QPushButton, i: int, selected: bool = False):
+
+        if selected:
+            background_color = self._settings_user._color_box_background_selected
+            hover_color = self._settings_user._color_box_background_selected
+        else:
+            background_color = self._settings_user._color_box_background
+            hover_color = self._settings_user._color_box_highlight
+
+        if i == 0:  # left selector has a curved left corner
+            button.setStyleSheet(
+                f'''
+                QPushButton {{
+                    color: rgb{self._settings_user._color_text};
+                    border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                    background-color: rgb{background_color};
+                    border-top-left-radius: {self._settings_user._box_border_radius}px;
+                    font-size: 15px;
+                }}
+                QPushButton:hover {{
+                    padding-top: -5px;
+                    background-color: rgb{hover_color};
+                }}
+                '''
+            )
+
+        elif i == self.__area_amount - 1:  # middle selectors have no curved corners
+            button.setStyleSheet(
+                f'''
+                QPushButton {{
+                    color: rgb{self._settings_user._color_text};
+                    border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                    background-color: rgb{background_color};
+                    border-top-right-radius: {self._settings_user._box_border_radius}px;
+                    font-size: 15px;
+                }}
+                QPushButton:hover {{
+                    padding-top: -5px;
+                    background-color: rgb{hover_color};
+                }}
+                '''
+            )
+
+        else:  # right selector has a curved right corner
+            button.setStyleSheet(
+                f'''
+                QPushButton {{
+                    color: rgb{self._settings_user._color_text};
+                    border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                    background-color: rgb{background_color};
+                    font-size: 15px;
+                }}
+                QPushButton:hover {{
+                    padding-top: -5px;
+                    background-color: rgb{hover_color};
+                }}
+                '''
+            )
 
     def __set_scrollbar(self, scroll_bar, previous_scroll_amount, new_items):
         max_value = scroll_bar.maximum()
@@ -1232,9 +1362,9 @@ class MultiBox(MainWindow):
             new = previous_scroll_amount + (new_items * 34)
             scroll_bar.setValue(min(max_value, new))
 
-    def __area_clear(self) -> None:
+    def __clear_variables(self) -> None:
         """
-        Removes all widgets from the variable box, disconnecting signals and clearing nested layouts.
+        Removes all widgets from the variable tab, disconnecting signals and clearing nested layouts.
         """
 
         # disconnects all LineEdits from their function
@@ -1270,6 +1400,10 @@ class MultiBox(MainWindow):
             elif item.layout():
                 self.__clear_inner_layout(item.layout())
                 item.layout().deleteLater()
+
+    def __copy_button_label(self):
+        button = self.sender()
+        pyperclip.copy(button.text())
 
 
 class RunWindow(MultiBox, MainWindow):  # include all children of the MainWindow class here
