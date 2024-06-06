@@ -120,6 +120,10 @@ class Solve:
                     expression = expression.replace('e', 'E')
                 elif key == 'π':
                     expression = expression.replace('π', 'pi')
+                elif key == 'φ':
+                    expression = expression.replace('φ', 'GoldenRatio')
+                elif key == 'γ':
+                    expression = expression.replace('γ', 'EulerGamma')
 
             else:
                 expression = expression.replace(key, f'({constant_values[key]})')
@@ -207,5 +211,4 @@ Made it so a default base value is not given so the user has to specify the spec
 
 def log(self, x: str, base: str):  # Log[x, base]
     return f'log({x}, {base})'
-
 '''
