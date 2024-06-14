@@ -6,7 +6,7 @@ from files import file_path
 
 
 class Solve:
-    def __init__(self, expression: str, is_value_used: dict[str, bool], render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
+    def __init__(self, expression: str, constant_symbol_used: dict[str, bool], render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
 
         self.__funct = tuple(getattr(self, f'_{self.__class__.__name__}__{name.lower()}') for name in symbols.accepted_functions)  # gets a list of all the functions
 
@@ -14,10 +14,12 @@ class Solve:
         self.__expression = expression
         self.__expression = self.__expression.replace(' ', '')  # removes spaces to fix formatting issues
 
+        self.__is_value_used = not all(constant_symbol_used.values())  # gets a bool for if a constant value was used
         self.__error = None  # saves the reason for an error
         self.__answer_exact = None
         self.__answer_approximate = None
-        format_expression = self.__format_before(self.__expression, is_value_used)
+
+        format_expression = self.__format_before(self.__expression, constant_symbol_used)
         self.__expression_solved = self.__solve(format_expression)  # solves the expression
         self.__exact()  # turns the solution into its exact form
         self.__approximate()  # turns the solution into its approximate form
@@ -39,7 +41,11 @@ class Solve:
         for key in range(len(self.__funct)):
             expression = expression.replace(f'§{key}', symbols.accepted_functions[key])
 
-        print(f'{expression} = {self.__answer_exact} ≈ {self.__answer_approximate}')
+        if self.__is_value_used:  # if a constant value was used, only the approximate answer exists
+            print(f'{expression} ≈ {self.__answer_approximate}')
+
+        else:
+            print(f'{expression} = {self.__answer_exact} ≈ {self.__answer_approximate}')
 
     def get_exact(self) -> str:
         """
@@ -65,13 +71,19 @@ class Solve:
         exact = file_path('latex_exact.png')
         approximate = file_path('latex_approximate.png')
 
-        convert_render_latex(self.__answer_exact, color, dpi, exact, self.__constant_counter)
-        convert_render_latex(self.__answer_approximate, color, dpi, approximate, self.__constant_counter)
+        if self.__answer_exact is not None:  # answer is not rendered if it is none
+            convert_render_latex(self.__answer_exact, color, dpi, exact, self.__constant_counter)
+
+        if self.__answer_approximate is not None:  # answer is not rendered if it is none
+            convert_render_latex(self.__answer_approximate, color, dpi, approximate, self.__constant_counter)
 
     def __exact(self):
         """
         Turns the answer into its exact form.
         """
+
+        if self.__is_value_used:  # does not give an approximate value if a value for a constant is used
+            return
 
         try:
             self.__answer_exact = sy.simplify(self.__expression_solved)
@@ -105,28 +117,17 @@ class Solve:
             self.__answer_approximate = 'Error'
             self.__error = e
 
-    def __format_before(self, expression: str, is_value_used: dict[str, bool]) -> str:
+    def __format_before(self, expression: str, constant_symbol_used: dict[str, bool]) -> str:
         """
         Formats the expression before it is solved.
         """
 
-        constant_values = symbols.get_constant_values(symbols.constants, 20)
-
-        for key in list(is_value_used.keys()):
-            if is_value_used[key]:
-                if key == 'i':
-                    expression = expression.replace('i', 'I')
-                elif key == 'e':
-                    expression = expression.replace('e', 'E')
-                elif key == 'π':
-                    expression = expression.replace('π', 'pi')
-                elif key == 'φ':
-                    expression = expression.replace('φ', 'GoldenRatio')
-                elif key == 'γ':
-                    expression = expression.replace('γ', 'EulerGamma')
+        for key in list(constant_symbol_used.keys()):
+            if constant_symbol_used[key]:
+                expression = expression.replace(key, symbols.constants[key][0])  # replaces the constant with it's recognized sympy symbol
 
             else:
-                expression = expression.replace(key, f'({constant_values[key]})')
+                expression = expression.replace(key, f'({symbols.constant_values[key]})')
 
         return expression
 
