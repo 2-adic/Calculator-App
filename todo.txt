@@ -74,3 +74,25 @@ Future Features:
     - Change the font of the LaTeX image
 
     - Add more functions
+
+Before Beta:
+    - Add a settings button to the right of the minimize button
+
+    - Fix the vertical spacing in the notations tab
+
+    - Move the answer button to the bottom left of the text box
+
+    - Move the flip button to the right of the answer button
+        - Make it disappear when it cannot be pressed
+
+    - Test on macOS
+
+    - Add these features:
+        - Add a settings section
+        - Add more functions
+        - Change the font of the LaTeX image (Might add if it doesn't take too long)
+
+    - Fix these bugs:
+        - Crashes when integration is with respect to variable A, and A is also defined as a value
+
+
