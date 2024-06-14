@@ -64,7 +64,8 @@ class Settings:
         # multi box
         self._content_margin = 10  # distance between the scroll content, and the border
         self._select_height = 50  # height of the selector buttons
-        self._symbols_button_size = 50  # size of the copy buttons within the symbols tab
+        self._symbols_button_width = 50, 120  # width of the copy buttons within the symbols tab, a tuple is used for the width of different sections
+        self._symbols_button_height = 50  # height of the copy buttons, all buttons have the same height
 
         # Colors ------------------------------------------------------------------------------------------------
         # all int values in this section can be from 0 to 255
@@ -93,7 +94,8 @@ class Settings:
         self._color_box_highlight = 81, 100, 117
 
         # other
-        self._color_line = 49, 51, 56
+        self._color_line_primary = 41, 42, 47
+        self._color_line_secondary = 49, 51, 56
         self._color_scrollbar_background = 63, 65, 72
         self._color_latex = self._color_text
 
@@ -709,14 +711,14 @@ class MainWindow(ControlWindow):
         Returns a dictionary of True or False values depending on if the constant's value was used
         """
 
-        is_value_used = {}
+        constant_symbol_used = {}
         for key in list(self._symbols[1].keys()):
             if self._symbols[1][key][1].isChecked():  # checks if a constant value was used
-                is_value_used[key] = True
+                constant_symbol_used[key] = True
             else:
-                is_value_used[key] = False
+                constant_symbol_used[key] = False
 
-        return is_value_used
+        return constant_symbol_used
 
     def _get_answer(self) -> None:
         """
@@ -827,7 +829,7 @@ class MainWindow(ControlWindow):
                     label = QLabel(f'{x}:', self)
 
                     option1 = QRadioButton(f'{x}')
-                    option2 = QRadioButton(symbols.constants[x][:4] + '...')
+                    option2 = QRadioButton(symbols.constant_preview[x] + '...')
                     option1.setChecked(True)
 
                     radio_group = QButtonGroup(self)
@@ -878,7 +880,7 @@ class MainWindow(ControlWindow):
                         label = QLabel(f'{x}:', self)
 
                         option1 = QRadioButton(f'{x}')
-                        option2 = QRadioButton(symbols.constants[x][:4] + '...')
+                        option2 = QRadioButton(symbols.constant_preview[x] + '...')
                         option1.setChecked(True)
 
                         radio_group = QButtonGroup(self)
@@ -927,7 +929,7 @@ class MultiBox(MainWindow):
 
         # Scroll Area Setup -------------------------------------------------------------------------------------
 
-        self.__selector_names = ['Variables', 'Symbols', 'Graph']  # include at least 2 names (these will most likely be images in the future, for example: a simple image of a graph for the graph tab)
+        self.__selector_names = ['Variables', 'Notation']  # include at least 2 names (these will most likely be images in the future, for example: a simple image of a graph for the graph tab)
         self.__area_amount = len(self.__selector_names)  # amount of scroll areas, at least 2 are needed for correct formatting
 
         # creates the scroll areas
@@ -1039,7 +1041,7 @@ class MultiBox(MainWindow):
                 if i == 2:  # arbitrary constants are not implemented yet
                     continue
 
-                if len(self._symbols[i]) == 0:
+                if len(self._symbols[i]) == 0:  # skips individual sections if they are empty
                     continue
 
                 if i > 0:  # adds spacing before each label
@@ -1089,7 +1091,7 @@ class MultiBox(MainWindow):
                     line = QFrame()
                     line.setFrameShape(QFrame.Shape.HLine)
                     line.setFrameShadow(QFrame.Shadow.Sunken)
-                    line.setStyleSheet(f'background-color: rgb{self._settings_user._color_line}; border-radius: 1px')
+                    line.setStyleSheet(f'background-color: rgb{self._settings_user._color_line_secondary}; border-radius: 1px')
 
                     layout.addWidget(line)
 
@@ -1102,7 +1104,15 @@ class MultiBox(MainWindow):
                 line = QFrame()
                 line.setFrameShape(QFrame.Shape.HLine)
                 line.setFrameShadow(QFrame.Shadow.Sunken)
-                line.setStyleSheet("background-color: #313338; border-radius: 1px")
+                line.setStyleSheet(
+                    f'''
+                    QFrame {{
+                        border: 1px solid rgb{self._settings_user._color_line_primary};
+                        background-color: rgb{self._settings_user._color_line_primary};
+                        border-radius: 1px
+                    }}
+                    '''
+                )
                 self.__areas[0][1].addWidget(line)
 
                 self.__areas[0][2][i].setStyleSheet(
@@ -1162,82 +1172,111 @@ class MultiBox(MainWindow):
         Allows for the user to easily copy symbols to use in calculations.
         """
 
-        self.__areas[1][2] = QScrollArea()
-        self.__areas[1][2].setWidgetResizable(True)
-        self.__areas[1][2].setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        label_titles = ['Symbols', 'Functions']
 
-        self.__areas[1][2].setStyleSheet(
-            f'''
-            * {{
-                border: none;
-            }}
-            QScrollArea {{
-                background-color: rgb{self._settings_user._color_box_background};
-                color: rgb{self._settings_user._color_text};
-                font-size: 15px;
-            }}
-            QScrollBar:vertical {{
-                border-radius: 4px;
-                background-color: rgb{self._settings_user._color_scrollbar_background};
-                width: 12px;
-                margin: 4px 4px 4px 0px;
-            }}
-            QScrollBar::handle:vertical {{
-                background-color: rgb{self._settings_user._color_box_border};
-                border-radius: 4px;
-                min-height: 20px;
-            }}
-            QScrollBar::add-line:vertical {{
-                width: 0px;
-            }}
-            QScrollBar::sub-line:vertical {{
-                width: 0px;
-            }}
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
-                background: none;
-            }}
-            '''
-        )
-
-        # uses a QFrame to hold the grid layout
-        grid_widget = QFrame()
-        grid_widget.setFrameShape(QFrame.Shape.NoFrame)
-
-        # uses a QGridLayout to get the desired behavior
-        self.__grid_layout = QGridLayout()
-        grid_widget.setLayout(self.__grid_layout)
-
-        # creates a wrapper widget for the scroll area
-        wrapper_widget = QWidget()
-        wrapper_layout = QVBoxLayout(wrapper_widget)
-        wrapper_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        wrapper_layout.addWidget(grid_widget)
-        self.__areas[1][2].setWidget(wrapper_widget)
-
-        # adds buttons to the grid layout
+        self.__grid_layout = []
         self.__button_symbols = []
-        for i, symbol in enumerate(symbols.copy_symbols):
-            button = QPushButton(symbol)
-            button.clicked.connect(self.__copy_button_label)
-            button.setStyleSheet(
+        self.__previous_column_count = []
+
+        for i in range(2):
+
+            # adds a title for each section
+            label = QLabel(label_titles[i])
+            label.setStyleSheet(f'font-weight: bold; font-size: 14px; color: rgb{self._settings_user._color_text}; border: none;')
+            self.__areas[1][1].addWidget(label)
+
+            # adds a line under the title
+            line = QFrame()
+            line.setFrameShape(QFrame.Shape.HLine)
+            line.setFrameShadow(QFrame.Shadow.Sunken)
+            line.setStyleSheet(
                 f'''
-                QPushButton {{
-                    border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
-                    border-radius: {self._settings_user._box_border_radius}px;
+                QFrame {{
+                    border: 1px solid rgb{self._settings_user._color_line_primary};
+                    background-color: rgb{self._settings_user._color_line_primary};
+                    border-radius: 1px
                 }}
-                QPushButton:pressed {{
-                    background-color: rgb{self._settings_user._color_box_highlight};
+                '''
+            )
+            self.__areas[1][1].addWidget(line)
+
+            # adds a scroll area
+            self.__areas[1][2].append(QScrollArea())
+            self.__areas[1][2][i].setWidgetResizable(True)
+            self.__areas[1][2][i].setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+            self.__areas[1][2][i].setStyleSheet(
+                f'''
+                * {{
+                    border: none;
+                }}
+                QScrollArea {{
+                    background-color: rgb{self._settings_user._color_box_background};
+                    color: rgb{self._settings_user._color_text};
+                    font-size: 15px;
+                }}
+                QScrollBar:vertical {{
+                    border-radius: 4px;
+                    background-color: rgb{self._settings_user._color_scrollbar_background};
+                    width: 12px;
+                    margin: 4px 4px 4px 0px;
+                }}
+                QScrollBar::handle:vertical {{
+                    background-color: rgb{self._settings_user._color_box_border};
+                    border-radius: 4px;
+                    min-height: 20px;
+                }}
+                QScrollBar::add-line:vertical {{
+                    width: 0px;
+                }}
+                QScrollBar::sub-line:vertical {{
+                    width: 0px;
+                }}
+                QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                    background: none;
                 }}
                 '''
             )
 
-            button.setFixedSize(QSize(self._settings_user._symbols_button_size, self._settings_user._symbols_button_size))
-            self.__button_symbols.append(button)
-            self.__grid_layout.addWidget(button, i // 4, i % 4)
+            # uses a QFrame to hold the grid layout
+            grid_widget = QFrame()
+            grid_widget.setFrameShape(QFrame.Shape.NoFrame)
 
-        self.__previous_column_count = None  # initializes the column count
+            # uses a QGridLayout to get the desired behavior
+            self.__grid_layout.append(QGridLayout())
+            grid_widget.setLayout(self.__grid_layout[i])
 
-        self.__areas[1][1].addWidget(self.__areas[1][2])  # adds the scroll area to the layout
+            # creates a wrapper widget for the scroll area
+            wrapper_widget = QWidget()
+            wrapper_layout = QVBoxLayout(wrapper_widget)
+            wrapper_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+            wrapper_layout.addWidget(grid_widget)
+            self.__areas[1][2][i].setWidget(wrapper_widget)
+
+            # adds buttons to the grid layout
+            self.__button_symbols.append([])
+            for x, symbol in enumerate(symbols.copy_notation[i]):
+                button = QPushButton(symbol)
+                button.clicked.connect(self.__copy_button_label)
+                button.setStyleSheet(
+                    f'''
+                    QPushButton {{
+                        border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                        border-radius: {self._settings_user._box_border_radius}px;
+                    }}
+                    QPushButton:pressed {{
+                        background-color: rgb{self._settings_user._color_box_highlight};
+                    }}
+                    '''
+                )
+
+                button.setFixedHeight(self._settings_user._symbols_button_height)
+                self.__button_symbols[i].append(button)
+                self.__grid_layout[i].addWidget(button, x // 4, x % 4)
+
+            self.__areas[1][1].addWidget(self.__areas[1][2][i])  # adds the scroll area to the layout
+
+            self.__previous_column_count.append(-1)  # initializes the column count
 
     def _update_multi(self) -> None:
         """
@@ -1271,16 +1310,17 @@ class MultiBox(MainWindow):
             tup[0].resize(int((self.width() * (1 - self._settings_user._box_width_left)) - (self._settings_user._box_padding * 1.5)), self.height() - (self._settings_user._box_padding * 2) - self._settings_user._title_bar_height - self._settings_user._select_height + self._settings_user._box_border)
 
         # symbols tab
-        width = self.__areas[1][2].viewport().width()
-        column_count = max(1, width // self._settings_user._symbols_button_size + (int(self._settings_user._symbols_button_size / 10) * 2))  # takes into account the gap between the buttons
+        for i in range(2):
+            width = self.__areas[1][2][i].viewport().width()
+            column_count = max(1, width // self._settings_user._symbols_button_width[i])  # takes into account the gap between the buttons
 
-        # only rearranges if the column count changes
-        if column_count != self.__previous_column_count:
-            self.__previous_column_count = column_count
+            # only rearranges if the column count changes
+            if column_count != self.__previous_column_count[i]:
+                self.__previous_column_count[i] = column_count
 
-            # re-arranges the buttons
-            for i, button in enumerate(self.__button_symbols):
-                self.__grid_layout.addWidget(button, i // column_count, i % column_count)
+                # re-arranges the buttons
+                for x, button in enumerate(self.__button_symbols[i]):
+                    self.__grid_layout[i].addWidget(button, x // column_count, x % column_count)
 
     def __button_logic_selector(self):
 
@@ -1403,7 +1443,12 @@ class MultiBox(MainWindow):
 
     def __copy_button_label(self):
         button = self.sender()
-        pyperclip.copy(button.text())
+        text = button.text()
+
+        if text not in symbols.copy_notation[0]:  # adds brackets to functions
+            text += '[]'
+
+        pyperclip.copy(text)
 
 
 class RunWindow(MultiBox, MainWindow):  # include all children of the MainWindow class here
