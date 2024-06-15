@@ -53,6 +53,10 @@ class Settings:
         self._box_border = 4  # the border thickness for all widgets
         self._box_border_radius = self._box_border * 2  # the curvature of the border corners
 
+        # text box
+        self._bar_button_width = 80  # width of the bar buttons under the text box
+        self._bar_button_height = 40  # height of the bar buttons under the text box
+
         # answer box
         self._answer_default = 'Answer'
         self._answer_format_size = 20  # the size of the symbol that shows the current selected answer format
@@ -545,6 +549,7 @@ class MainWindow(ControlWindow):
         self._icon_aspect_ratio_inverse = None
 
         self._box_answer = QPushButton(self._settings_user._answer_default, self)
+        self._box_answer.clicked.connect(self.__copy)
         self._box_answer.setStyleSheet(
             f'''
             QPushButton {{
@@ -559,7 +564,6 @@ class MainWindow(ControlWindow):
             }}
             '''
         )
-        self._box_answer.clicked.connect(self.__copy)
 
         self.__answer_image_path_exact = file_path('latex_exact.png')  # gets the path of the latex image
         self.__answer_image_path_approximate = file_path('latex_approximate.png')  # gets the path of the latex image
@@ -578,21 +582,17 @@ class MainWindow(ControlWindow):
 
         # text box
         self._user_select = None
-
-        # storage
-        self._symbols = ({}, {}, {})
-        self._symbols_prev_keys = []
-
-        self.__is_constant_value_used = False
-
         self._box_text = QPlainTextEdit(self)
         self._box_text.textChanged.connect(self._text_update)
         self._box_text.setStyleSheet(
             f'''
             QPlainTextEdit {{
-                border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                border-top: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                border-left: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                border-right: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
                 background-color: rgb{self._settings_user._color_box_background};
-                border-radius: {self._settings_user._box_border_radius}px;
+                border-top-left-radius: {self._settings_user._box_border_radius}px;
+                border-top-right-radius: {self._settings_user._box_border_radius}px;
                 color: rgb{self._settings_user._color_text};
                 font-size: 15px;
             }}
@@ -618,6 +618,59 @@ class MainWindow(ControlWindow):
             }}
             '''
         )
+
+        self._bar_blank = QWidget(self)  # adds a blank space to the right of the bar buttons
+        self._bar_blank.setStyleSheet(
+            f'''
+                    QWidget {{
+                        border-bottom: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                        border-right: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                        border-bottom-right-radius: {self._settings_user._box_border_radius}px;
+                        background-color: rgb{self._settings_user._color_box_background};
+                    }}
+                    '''
+        )
+
+        self._bar_answer = QPushButton('Answer', self)  # the button that lets the user compute the answer
+        self._bar_answer.clicked.connect(self._get_answer)
+        self._bar_answer.setStyleSheet(
+            f'''
+            QPushButton {{
+                border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                border-bottom-left-radius: {self._settings_user._box_border_radius}px;
+                background-color: rgb{self._settings_user._color_box_background};
+                color: rgb{self._settings_user._color_text};
+                font-size: 15px;
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user._color_box_highlight};
+            }}
+            '''
+        )
+
+        self._bar_format = QPushButton('Format', self)  # the button that changes the format of the answer
+        self._bar_format.clicked.connect(self._flip_type)
+        self.__button_format_visibility(False)
+        self._bar_format.setStyleSheet(
+            f'''
+            QPushButton {{
+                border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                border-top-right-radius: {self._settings_user._box_border_radius}px;
+                background-color: rgb{self._settings_user._color_box_background};
+                color: rgb{self._settings_user._color_text};
+                font-size: 15px;
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user._color_box_highlight};
+            }}
+            '''
+        )
+
+        # storage
+        self._symbols = ({}, {}, {})
+        self._symbols_prev_keys = []
+
+        self.__is_constant_value_used = False
 
     def __answer_formatting_before(self, string: str) -> str:
         """
@@ -728,12 +781,16 @@ class MainWindow(ControlWindow):
         """
 
         self.__flip_type_toggle = False  # resets the format type
+        self.__button_format_visibility(True)  # shows the format button
 
         text = self._box_text.toPlainText()  # gets the string from the text box
         text = str_format.function_convert(text)  # ensures functions won't be messed up
 
         # scans the text for any variables
         temp = self.__variable_formatting(self._symbols)
+
+        if self.__is_constant_value_used:  # hides the format button is a
+            self.__button_format_visibility(False)
 
         for x in text:
             if x in temp:
@@ -780,6 +837,48 @@ class MainWindow(ControlWindow):
 
         # self._box_answer.setText(self.__answer_temp)  # displays the answer
 
+    def __button_format_visibility(self, is_visible: bool) -> None:
+        """
+        Hides or shows the format button. Allows for correct visuals.
+
+        :param is_visible: If the buttons is going to be visible or not.
+        """
+
+        if is_visible:
+            self._bar_format.show()
+            self._bar_answer.setStyleSheet(
+                f'''
+                            QPushButton {{
+                                border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                                border-bottom-left-radius: {self._settings_user._box_border_radius}px;
+                                background-color: rgb{self._settings_user._color_box_background};
+                                color: rgb{self._settings_user._color_text};
+                                font-size: 15px;
+                            }}
+                            QPushButton:pressed {{
+                                background-color: rgb{self._settings_user._color_box_highlight};
+                            }}
+                            '''
+            )
+
+        else:
+            self._bar_format.hide()
+            self._bar_answer.setStyleSheet(
+                f'''
+                            QPushButton {{
+                                border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                                border-bottom-left-radius: {self._settings_user._box_border_radius}px;
+                                border-top-right-radius: {self._settings_user._box_border_radius}px;
+                                background-color: rgb{self._settings_user._color_box_background};
+                                color: rgb{self._settings_user._color_text};
+                                font-size: 15px;
+                            }}
+                            QPushButton:pressed {{
+                                background-color: rgb{self._settings_user._color_box_highlight};
+                            }}
+                            '''
+            )
+
     def __copy(self) -> None:
         """
         Lets the user copy the answer by clicking the answer box.
@@ -794,6 +893,8 @@ class MainWindow(ControlWindow):
         Adds and removes variables in the variables box based on the new user input.
         Removes the answer from the answer box.
         """
+
+        self.__button_format_visibility(False)  # hides the format button
 
         self._user_select = self.sender()  # saves which text box the user was typing in
 
@@ -1470,9 +1571,23 @@ class RunWindow(MultiBox, MainWindow):  # include all children of the MainWindow
 
         box_answer_height = int(self._settings_user._box_answer_height_percent * (self.height() - self._settings_user._title_bar_height - (3 * self._settings_user._box_padding)))
 
+        box_text_y1 = self._settings_user._box_padding + self._settings_user._title_bar_height
+        box_text_height = self.height() - box_answer_height - (self._settings_user._box_padding * 3) - self._settings_user._title_bar_height - self._settings_user._bar_button_height
+        box_text_x1 = self._settings_user._box_padding
+        box_text_width = int((self.width() * self._settings_user._box_width_left) - (self._settings_user._box_padding * 1.5))
+
         # text box
-        self._box_text.move(self._settings_user._box_padding, self._settings_user._box_padding + self._settings_user._title_bar_height)
-        self._box_text.resize(int((self.width() * self._settings_user._box_width_left) - (self._settings_user._box_padding * 1.5)), self.height() - box_answer_height - (self._settings_user._box_padding * 3) - self._settings_user._title_bar_height)  # 1.5 is used so the gap to the right of the box isn't too big
+        self._box_text.move(box_text_x1, box_text_y1)
+        self._box_text.resize(box_text_width, box_text_height)  # 1.5 is used so the gap to the right of the box isn't too big
+
+        self._bar_answer.move(self._settings_user._box_padding, box_text_y1 + box_text_height - self._settings_user._box_border)
+        self._bar_answer.resize(self._settings_user._bar_button_width, self._settings_user._bar_button_height)
+
+        self._bar_format.move(self._settings_user._box_padding + self._settings_user._bar_button_width - self._settings_user._box_border, box_text_y1 + box_text_height - self._settings_user._box_border)
+        self._bar_format.resize(self._settings_user._bar_button_width, self._settings_user._bar_button_height)
+
+        self._bar_blank.move(self._settings_user._box_padding + self._settings_user._bar_button_width - self._settings_user._box_border, box_text_y1 + box_text_height - self._settings_user._box_border)
+        self._bar_blank.resize(box_text_x1 + box_text_width - (self._settings_user._box_padding + self._settings_user._bar_button_width - self._settings_user._box_border), self._settings_user._bar_button_height)
 
         # answer box
         self._box_answer.move(self._settings_user._box_padding, self.height() - self._settings_user._box_padding - box_answer_height)
@@ -1594,7 +1709,7 @@ def main():
     app.setPalette(palette)
 
     # starts the window
-    window = TestButtons()  # set the window equal to RunWindow() to run without the test buttons, set it to TestButtons() to run it with them
+    window = RunWindow()  # set the window equal to RunWindow() to run without the test buttons, set it to TestButtons() to run it with them
     window.show()
     sys.exit(app.exec())
 
