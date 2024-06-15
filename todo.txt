@@ -80,11 +80,6 @@ Before Beta:
 
     - Fix the vertical spacing in the notations tab
 
-    - Move the answer button to the bottom left of the text box
-
-    - Move the flip button to the right of the answer button
-        - Make it disappear when it cannot be pressed
-
     - Test on macOS
 
     - Add these features:
