@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QLayout, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout
-from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QKeySequence
+from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QKeySequence, QPixmap
 from PyQt6.QtCore import Qt, QPoint, QTimer, QSize
 import sympy as sy
 import pyperclip
@@ -17,26 +17,46 @@ import symbols
 
 class Settings:
     def __init__(self):
+        self.__load_defaults()
+
+    def __load_defaults(self):
+        """
+        Converts / initializes all settings to their default values.
+        """
 
         # Window ------------------------------------------------------------------------------------------------
 
-        self._window_title = 'Calculator'
-        self._window_title_position = (
-            5,  # x position
-            -5  # y position
-        )
-        self._window_start_size = (
+        self._window_start_size_main = (
             100,  # initial x position
             100,  # initial y position
             800,  # initial x size
             600   # initial y size
         )
 
+        self._window_settings_scale = .8  # number that the settings window's dimensions will be scaled by
+        self._window_start_size_settings = (
+            int(self._window_start_size_main[2] * self._window_settings_scale),  # initial x size
+            int(self._window_start_size_main[3] * self._window_settings_scale)   # initial y size
+        )
+
         self._widget_resize_size = 5  # thickness of the resizing widgets
+        self._window_size_min_main = 650, 450  # min size of the main window
+        self._window_size_min_settings = int(self._window_size_min_main[0] * self._window_settings_scale), int(self._window_size_min_main[1] * self._window_settings_scale)  # min size of the settings window
+
+        # title bar
         self._title_bar_height = 22  # height of the title bar
-        self._title_bar_button_width = 1.5  # as a percentage of the title bar height
-        self._window_size_min_x = 650  # minimum width of the window
-        self._window_size_min_y = 450  # minimum height of the window
+        self._title_bar_button_width = int(1.5 * self._title_bar_height)  # width of the title bar buttons
+        self._title_bar_settings_icon_scale = .8  # the size of the icon relative to the button size
+        self._title_bar_settings_spacing = int(self._title_bar_height / 11)  # spacing between the button and the top / bottom of the title bar
+        self._title_bar_settings_width = self._title_bar_height - (2 * self._title_bar_settings_spacing)  # width of the settings button
+        self._title_bar_settings_separate = 20  # spacing between the settings button, and the other buttons
+
+        self._window_title_main = 'Calculator'
+        self._window_title_settings = 'Settings'
+        self._window_title_position = (
+            int(5 + (self._title_bar_height / 2) - (22 / 2)),  # x position
+            int(3 + (self._title_bar_height / 2) - (22 / 2))  # y position
+        )
 
         # Testing Buttons ---------------------------------------------------------------------------------------
 
@@ -48,7 +68,7 @@ class Settings:
         # Boxes -------------------------------------------------------------------------------------------------
 
         # general
-        self._box_width_left = 1/2  # percentage of screen width
+        self._box_width_left = 1/2  # fraction of screen width
         self._box_padding = 20  # amount of spacing between the boxes
         self._box_border = 4  # the border thickness for all widgets
         self._box_border_radius = self._box_border * 2  # the curvature of the border corners
@@ -61,7 +81,7 @@ class Settings:
         self._answer_default = 'Answer'
         self._answer_format_size = 20  # the size of the symbol that shows the current selected answer format
 
-        self._box_answer_height_percent = 2/5  # percentage of screen height
+        self._box_answer_height_scale = 2/5  # fraction of screen height
         self._box_answer_padding = 12  # distance from the image to the border of the answer box
         self._latex_image_dpi = 800
 
@@ -115,43 +135,39 @@ class Settings:
         return self._color_text_highlight_inactive
 
 
-class ControlWindow(QMainWindow, Settings):
+class ControlWindow(QWidget, Settings):
     def __init__(self):
-        QMainWindow.__init__(self)
 
-        self._settings_default = Settings()  # used to reset the settings to the default values when needed
+        QWidget.__init__(self)
+
         self._settings_user = Settings()  # used to keep track of any settings the user changes within the window
-
         self.__op = system_settings.OperatingSystem()  # initializes settings depending on the operating system
 
         # Window ------------------------------------------------------------------------------------------------
 
-        self.setGeometry(*self._settings_user._window_start_size)  # initial window size / position
-        self.setWindowTitle(self._settings_user._window_title)  # window title
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)  # removes default title bar
-
-        self.setMinimumSize(self._settings_user._window_size_min_x, self._settings_user._window_size_min_y)  # need to check if this works on Windows too
 
         # Title Bar ---------------------------------------------------------------------------------------------
 
         self.__window_moving = False  # initial state of the window moving
         self.__offset = None  # initial state of the window offset
-        self.__button_width = int(self._settings_user._title_bar_button_width * self._settings_user._title_bar_height)
 
         # window move widget
         self.__widget_move = QWidget(self)
-
-        # displayed title
-        self.__title_label = QLabel(self._settings_user._window_title, self)
-        self.__title_label.setStyleSheet(f'color: rgb{self._settings_user._color_title_bar_text}; font-weight: bold; font-size: 11px;')
-        self.__title_label.move(self._settings_user._window_title_position[0], self._settings_user._window_title_position[1])
 
         # close button
         self.__button_close = QPushButton('', self)
         self.__button_close.setIcon(QIcon(file_path('button_close_icon.png', 'icons')))
         self.__button_close.setStyleSheet(
-            'QPushButton { background-color: transparent;}'
-            f'QPushButton:hover {{ background-color: rgb{self._settings_user._color_title_bat_button_exit}; border: none; }}'
+            f'''
+            QPushButton {{
+                background-color: transparent;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user._color_title_bat_button_exit};
+                border: none;
+            }}
+            '''
         )
         self.__button_close.clicked.connect(self.__button_logic_close)
 
@@ -159,8 +175,15 @@ class ControlWindow(QMainWindow, Settings):
         self.__button_maximize = QPushButton('', self)
         self.__button_maximize.setIcon(QIcon(file_path('button_maximize_icon.png', 'icons')))
         self.__button_maximize.setStyleSheet(
-            'QPushButton { background-color: transparent;}'
-            f'QPushButton:hover {{ background-color: rgb{self._settings_user._color_title_bar_button_hover}; border: none; }}'
+            f'''
+            QPushButton {{
+                background-color: transparent;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user._color_title_bar_button_hover};
+                border: none;
+            }}
+            '''
         )
         self.__button_maximize.clicked.connect(self.__button_logic_maximize)
 
@@ -168,9 +191,18 @@ class ControlWindow(QMainWindow, Settings):
         self.__button_minimize = QPushButton('', self)
         self.__button_minimize.setIcon(QIcon(file_path('button_minimize_icon.png', 'icons')))
         self.__button_minimize.setStyleSheet(
-            'QPushButton { background-color: transparent;}'
-            f'QPushButton:hover {{ background-color: rgb{self._settings_user._color_title_bar_button_hover}; border: none; }}'
-            'QPushButton::icon { margin-bottom: -5px; }'
+            f'''
+            QPushButton {{
+                background-color: transparent;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user._color_title_bar_button_hover};
+                border: none;
+            }}
+            QPushButton::icon {{
+                margin-bottom: -5px; 
+            }}
+            '''
         )
         self.__button_minimize.clicked.connect(self.showMinimized)
 
@@ -206,6 +238,31 @@ class ControlWindow(QMainWindow, Settings):
 
         # -------------------------------------------------------------------------------------------------------
 
+    def _set_title(self, title: str):
+        """
+        Sets the title of the window.
+        """
+
+        self.setWindowTitle(title)
+
+        # displays title
+        self.__title_label = QLabel(title, self)
+        self.__title_label.setStyleSheet(f'color: rgb{self._settings_user._color_title_bar_text}; font-weight: bold; font-size: 11px;')
+        self.__title_label.move(self._settings_user._window_title_position[0], self._settings_user._window_title_position[1])
+
+    def _set_geometry(self, size: tuple[int, int, int, int]):
+        """
+        Sets the initial size of the window.
+
+        :param size: initial x position, initial y position, initial x size, initial y size.
+        """
+        self.setGeometry(*size)  # initial window size / position
+
+    def _set_size_min(self, size: tuple[int, int]):
+        self.setMinimumSize(*size)  # sets the minimum size of the window (used for macOS since the OS automatically controls the resizing)
+
+        self.size_min = size
+
     def _update_control(self) -> None:
         """
         Updates the positions of all widgets in the control class.
@@ -216,16 +273,16 @@ class ControlWindow(QMainWindow, Settings):
         self.__widget_move.resize(self.width() - self._settings_user._widget_resize_size - (3 * self._settings_user._title_bar_height), self._settings_user._title_bar_height - self._settings_user._widget_resize_size)
 
         # close button
-        self.__button_close.move(self.width() - self.__button_width, 0)
-        self.__button_close.resize(self.__button_width, self._settings_user._title_bar_height)
+        self.__button_close.move(self.width() - self._settings_user._title_bar_button_width, 0)
+        self.__button_close.resize(self._settings_user._title_bar_button_width, self._settings_user._title_bar_height)
 
         # maximize button
-        self.__button_maximize.move(self.width() - (2 * self.__button_width), 0)
-        self.__button_maximize.resize(self.__button_width, self._settings_user._title_bar_height)
+        self.__button_maximize.move(self.width() - (2 * self._settings_user._title_bar_button_width), 0)
+        self.__button_maximize.resize(self._settings_user._title_bar_button_width, self._settings_user._title_bar_height)
 
         # minimize button
-        self.__button_minimize.move(self.width() - (3 * self.__button_width), 0)
-        self.__button_minimize.resize(self.__button_width, self._settings_user._title_bar_height)
+        self.__button_minimize.move(self.width() - (3 * self._settings_user._title_bar_button_width), 0)
+        self.__button_minimize.resize(self._settings_user._title_bar_button_width, self._settings_user._title_bar_height)
 
         # Resize Widgets, Order: right, top right, top, top left, left, bottom left, bottom, bottom right
         self.__widget_resize[0].move(self.width() - self._settings_user._widget_resize_size, self._settings_user._widget_resize_size)
@@ -254,13 +311,10 @@ class ControlWindow(QMainWindow, Settings):
 
     def __button_logic_close(self) -> None:
         """
-        Checks if work was saved, then closes the window. Uses the exit button.
+        Closes the window.
         """
 
-        # logic for saving will go here
-
-        # eventually may want to keep the program running after the window exits
-        exit()  # instantly exits the program
+        self.close()
 
     def __button_logic_maximize(self) -> None:
         """
@@ -400,7 +454,7 @@ class ControlWindow(QMainWindow, Settings):
             # exits the maximized setting
             if self.isMaximized():
 
-                offset_x = min(int(self.normalGeometry().width() * (self.__offset.x() / self.width())), self.normalGeometry().width() - (3 * self.__button_width))
+                offset_x = min(int(self.normalGeometry().width() * (self.__offset.x() / self.width())), self.normalGeometry().width() - (3 * self._settings_user._title_bar_button_width))
                 self.__offset = QPoint(offset_x, self.__offset.y())
 
                 self.__button_logic_maximize()
@@ -409,7 +463,7 @@ class ControlWindow(QMainWindow, Settings):
 
             elif self.isFullScreen():
 
-                offset_x = min(int(self.normalGeometry().width() * (self.__offset.x() / self.width())), self.normalGeometry().width() - (3 * self.__button_width))
+                offset_x = min(int(self.normalGeometry().width() * (self.__offset.x() / self.width())), self.normalGeometry().width() - (3 * self._settings_user._title_bar_button_width))
                 self.__offset = QPoint(offset_x, self.__offset.y())
 
                 self.__logic_full_screen()
@@ -427,13 +481,13 @@ class ControlWindow(QMainWindow, Settings):
             # right
             if self.__window_resize_direction == 0:
                 new_width = event.position().toPoint().x()
-                if new_width >= self._settings_user._window_size_min_x:
+                if new_width >= self.size_min[0]:
                     self.resize(new_width, self.height())
 
             # bottom
             elif self.__window_resize_direction == 6:
                 new_height = event.position().toPoint().y()
-                if new_height >= self._settings_user._window_size_min_y:
+                if new_height >= self.size_min[1]:
                     self.resize(self.width(), new_height)
 
             # top right
@@ -446,15 +500,15 @@ class ControlWindow(QMainWindow, Settings):
                 temp_event_y = event.position().toPoint().y()  # gets the mouse y position
                 new_height = self.height() - temp_event_y
 
-                if new_width >= self._settings_user._window_size_min_x and new_height >= self._settings_user._window_size_min_y:
+                if new_width >= self.size_min[0] and new_height >= self.size_min[1]:
                     # moves window to new position and changes its shape
                     self.setGeometry(self.x(), self.y() + temp_event_y, new_width, new_height)
 
-                elif new_width >= self._settings_user._window_size_min_x:
+                elif new_width >= self.size_min[0]:
                     # resizes the window to the new size
                     self.resize(new_width, self.height())
 
-                elif new_height >= self._settings_user._window_size_min_y:
+                elif new_height >= self.size_min[1]:
                     # moves window to new position and changes its shape
                     self.setGeometry(self.x(), self.y() + temp_event_y, self.width(), new_height)
 
@@ -468,15 +522,15 @@ class ControlWindow(QMainWindow, Settings):
                 new_width = self.width() - temp_event_x
                 new_height = event.position().toPoint().y()
 
-                if new_width >= self._settings_user._window_size_min_x and new_height >= self._settings_user._window_size_min_y:
+                if new_width >= self.size_min[0] and new_height >= self.size_min[1]:
                     # moves window to new position and changes its shape
                     self.setGeometry(self.x() + temp_event_x, self.y(), new_width, new_height)
 
-                elif new_width >= self._settings_user._window_size_min_x:
+                elif new_width >= self.size_min[0]:
                     # resizes the window to the new size
                     self.setGeometry(self.x() + temp_event_x, self.y(), new_width, self.height())
 
-                elif new_height >= self._settings_user._window_size_min_y:
+                elif new_height >= self.size_min[1]:
                     # moves window to new position and changes its shape
                     self.resize(self.width(), new_height)
 
@@ -489,7 +543,7 @@ class ControlWindow(QMainWindow, Settings):
                 temp_event_y = event.position().toPoint().y()  # gets the mouse y position
                 new_height = self.height() - temp_event_y
 
-                if new_height >= self._settings_user._window_size_min_y:
+                if new_height >= self.size_min[1]:
                     # moves window to new position and changes its shape
                     self.setGeometry(self.x(), self.y() + temp_event_y, self.width(), new_height)
 
@@ -502,7 +556,7 @@ class ControlWindow(QMainWindow, Settings):
                 temp_event_x = event.position().toPoint().x()  # gets the mouse x position
                 new_width = self.width() - temp_event_x
 
-                if new_width >= self._settings_user._window_size_min_x:
+                if new_width >= self.size_min[0]:
                     # moves window to new position and changes its shape
                     self.setGeometry(self.x() + temp_event_x, self.y(), new_width, self.height())
 
@@ -517,29 +571,63 @@ class ControlWindow(QMainWindow, Settings):
                 temp_event_y = event.position().toPoint().y()  # gets the mouse y position
                 new_height = self.height() - temp_event_y
 
-                if new_width >= self._settings_user._window_size_min_x and new_height >= self._settings_user._window_size_min_y:
+                if new_width >= self.size_min[0] and new_height >= self.size_min[1]:
                     # moves window to new position and changes its shape
                     self.setGeometry(self.x() + temp_event_x, self.y() + temp_event_y, new_width, new_height)
 
-                elif new_width >= self._settings_user._window_size_min_x:
+                elif new_width >= self.size_min[0]:
                     # moves window to new position and changes its shape
                     self.setGeometry(self.x() + temp_event_x, self.y(), new_width, self.height())
 
-                elif new_height >= self._settings_user._window_size_min_y:
+                elif new_height >= self.size_min[1]:
                     # moves window to new position and changes its shape
                     self.setGeometry(self.x(), self.y() + temp_event_y, self.width(), new_height)
 
             # bottom right
             elif self.__window_resize_direction == 7:
 
-                new_width = max(self._settings_user._window_size_min_x, event.position().toPoint().x())
-                new_height = max(self._settings_user._window_size_min_y, event.position().toPoint().y())
+                new_width = max(self.size_min[0], event.position().toPoint().x())
+                new_height = max(self.size_min[1], event.position().toPoint().y())
                 self.resize(new_width, new_height)
+
+
+class SettingsWindow(ControlWindow):
+    def __init__(self, position: tuple[int, int]):
+        super().__init__()
+        self._set_title(self._settings_user._window_title_settings)
+        self._set_geometry(position + self._settings_user._window_start_size_settings)
+        self._set_size_min(self._settings_user._window_size_min_settings)
+
+    def resizeEvent(self, event):
+        self._update_control()
 
 
 class MainWindow(ControlWindow):
     def __init__(self):
         super().__init__()
+        self._set_title(self._settings_user._window_title_main)
+        self._set_geometry(self._settings_user._window_start_size_main)
+        self._set_size_min(self._settings_user._window_size_min_main)
+
+        # settings button
+        self.__button_settings = QPushButton('', self)
+        self.__button_settings.clicked.connect(self.__window_settings_open)
+        self.__button_settings.setIcon(QIcon(file_path('gear_icon.png', 'icons')))
+        size = int(self._settings_user._title_bar_settings_icon_scale * (self._settings_user._title_bar_height - (2 * self._settings_user._title_bar_settings_spacing)))
+        self.__button_settings.setIcon(QIcon(QPixmap(file_path('gear_icon.png', 'icons')).scaled(size, size)))
+        self.__button_settings.setStyleSheet(
+            f'''
+            QPushButton {{
+                background-color: transparent;
+                border-radius: 3px
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user._color_title_bar_button_hover};
+                border: none;
+                border-radius: 3px
+            }}
+            '''
+        )
 
         # answer box
         self.__answer = None  # user shouldn't be able to access this string yet
@@ -573,10 +661,10 @@ class MainWindow(ControlWindow):
         self._box_answer_format_label.setFixedWidth(25)
         self._box_answer_format_label.setStyleSheet(
             f'''
-                QLabel {{
-                    font-size: {self._settings_user._answer_format_size}px;
-                    color: rgb{self._settings_user._color_text}
-                }}
+            QLabel {{
+                font-size: {self._settings_user._answer_format_size}px;
+                color: rgb{self._settings_user._color_text}
+            }}
             '''
         )
 
@@ -622,13 +710,13 @@ class MainWindow(ControlWindow):
         self._bar_blank = QWidget(self)  # adds a blank space to the right of the bar buttons
         self._bar_blank.setStyleSheet(
             f'''
-                    QWidget {{
-                        border-bottom: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
-                        border-right: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
-                        border-bottom-right-radius: {self._settings_user._box_border_radius}px;
-                        background-color: rgb{self._settings_user._color_box_background};
-                    }}
-                    '''
+            QWidget {{
+                border-bottom: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                border-right: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                border-bottom-right-radius: {self._settings_user._box_border_radius}px;
+                background-color: rgb{self._settings_user._color_box_background};
+            }}
+            '''
         )
 
         self._bar_answer = QPushButton('Answer', self)  # the button that lets the user compute the answer
@@ -671,6 +759,83 @@ class MainWindow(ControlWindow):
         self._symbols_prev_keys = []
 
         self.__is_constant_value_used = False
+
+        # settings Window
+        self.window_settings = None
+
+    def _get_answer(self) -> None:
+        """
+        Calculates the answer from the user input.
+
+        Displays the answer in the answer box.
+        """
+
+        self.__flip_type_toggle = False  # resets the format type
+        self.__button_format_visibility(True)  # shows the format button
+
+        text = self._box_text.toPlainText()  # gets the string from the text box
+        text = str_format.function_convert(text)  # ensures functions won't be messed up
+
+        # scans the text for any variables
+        temp = self.__variable_formatting(self._symbols)
+
+        if self.__is_constant_value_used:  # hides the format button is a
+            self.__button_format_visibility(False)
+
+        for x in text:
+            if x in temp:
+                text = text.replace(f'{x}', f'({temp[x]})')
+
+        text = self.__answer_formatting_before(text)  # reformats the string
+
+        self.__solution = Solve(text, self.__generate_value_used_bool(), self._settings_user._color_latex, self._settings_user._latex_image_dpi)
+        self.__solution.print()  # shows the before and after expression (for testing purposes)
+        self.__answer = self.__solution.get_exact()
+
+        self._flip_type()
+
+    def _flip_type(self) -> None:
+        """
+        Flips the answer format between decimal and exact.
+        """
+
+        if self.__answer == self._settings_user._answer_default:
+            return
+
+        self._box_answer.setText('')
+
+        # uses answer_temp to save the answer
+        if self.__flip_type_toggle or self.__is_constant_value_used:
+            self.__answer_temp = self.__solution.get_approximate()  # turns the answer into its decimal format
+            image_path = self.__answer_image_path_approximate
+            self._box_answer_format_label.setText('≈')
+        else:
+            self.__answer_temp = self.__answer  # returns the original answer
+            image_path = self.__answer_image_path_exact
+            self._box_answer_format_label.setText('=')
+
+        self.__flip_type_toggle = not self.__flip_type_toggle  # keeps track of which format is being displayed
+
+        # use this for an option that lets the user set the non latex image as the answer
+        # self._box_answer.setText(self.__answer_temp)  # displays the answer
+
+        self._box_answer.setIcon(QIcon(image_path))
+        image = Image.open(image_path)
+        self._icon_aspect_ratio_inverse = image.size[1] / image.size[0]
+
+        self.resizeEvent(None)
+
+        # self._box_answer.setText(self.__answer_temp)  # displays the answer
+
+    def _update_main(self):
+        self.__button_settings.move(self.width() - self._settings_user._title_bar_settings_width - self._settings_user._title_bar_settings_separate - (3 * self._settings_user._title_bar_button_width), self._settings_user._title_bar_settings_spacing)
+        self.__button_settings.resize(self._settings_user._title_bar_settings_width, self._settings_user._title_bar_height - (2 * self._settings_user._title_bar_settings_spacing))
+
+    def __window_settings_open(self):
+        position = self.pos().x() + 40, self.pos().y() + 30
+
+        self.window_settings = SettingsWindow(position)
+        self.window_settings.show()
 
     def __answer_formatting_before(self, string: str) -> str:
         """
@@ -773,70 +938,6 @@ class MainWindow(ControlWindow):
 
         return constant_symbol_used
 
-    def _get_answer(self) -> None:
-        """
-        Calculates the answer from the user input.
-
-        Displays the answer in the answer box.
-        """
-
-        self.__flip_type_toggle = False  # resets the format type
-        self.__button_format_visibility(True)  # shows the format button
-
-        text = self._box_text.toPlainText()  # gets the string from the text box
-        text = str_format.function_convert(text)  # ensures functions won't be messed up
-
-        # scans the text for any variables
-        temp = self.__variable_formatting(self._symbols)
-
-        if self.__is_constant_value_used:  # hides the format button is a
-            self.__button_format_visibility(False)
-
-        for x in text:
-            if x in temp:
-                text = text.replace(f'{x}', f'({temp[x]})')
-
-        text = self.__answer_formatting_before(text)  # reformats the string
-
-        self.__solution = Solve(text, self.__generate_value_used_bool(), self._settings_user._color_latex, self._settings_user._latex_image_dpi)
-        self.__solution.print()  # shows the before and after expression (for testing purposes)
-        self.__answer = self.__solution.get_exact()
-
-        self._flip_type()
-
-    def _flip_type(self) -> None:
-        """
-        Flips the answer format between decimal and exact.
-        """
-
-        if self.__answer == self._settings_user._answer_default:
-            return
-
-        self._box_answer.setText('')
-
-        # uses answer_temp to save the answer
-        if self.__flip_type_toggle or self.__is_constant_value_used:
-            self.__answer_temp = self.__solution.get_approximate()  # turns the answer into its decimal format
-            image_path = self.__answer_image_path_approximate
-            self._box_answer_format_label.setText('≈')
-        else:
-            self.__answer_temp = self.__answer  # returns the original answer
-            image_path = self.__answer_image_path_exact
-            self._box_answer_format_label.setText('=')
-
-        self.__flip_type_toggle = not self.__flip_type_toggle  # keeps track of which format is being displayed
-
-        # use this for an option that lets the user set the non latex image as the answer
-        # self._box_answer.setText(self.__answer_temp)  # displays the answer
-
-        self._box_answer.setIcon(QIcon(image_path))
-        image = Image.open(image_path)
-        self._icon_aspect_ratio_inverse = image.size[1] / image.size[0]
-
-        self.resizeEvent(None)
-
-        # self._box_answer.setText(self.__answer_temp)  # displays the answer
-
     def __button_format_visibility(self, is_visible: bool) -> None:
         """
         Hides or shows the format button. Allows for correct visuals.
@@ -848,35 +949,35 @@ class MainWindow(ControlWindow):
             self._bar_format.show()
             self._bar_answer.setStyleSheet(
                 f'''
-                            QPushButton {{
-                                border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
-                                border-bottom-left-radius: {self._settings_user._box_border_radius}px;
-                                background-color: rgb{self._settings_user._color_box_background};
-                                color: rgb{self._settings_user._color_text};
-                                font-size: 15px;
-                            }}
-                            QPushButton:pressed {{
-                                background-color: rgb{self._settings_user._color_box_highlight};
-                            }}
-                            '''
+                QPushButton {{
+                    border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                    border-bottom-left-radius: {self._settings_user._box_border_radius}px;
+                    background-color: rgb{self._settings_user._color_box_background};
+                    color: rgb{self._settings_user._color_text};
+                    font-size: 15px;
+                }}
+                QPushButton:pressed {{
+                    background-color: rgb{self._settings_user._color_box_highlight};
+                }}
+                '''
             )
 
         else:
             self._bar_format.hide()
             self._bar_answer.setStyleSheet(
                 f'''
-                            QPushButton {{
-                                border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
-                                border-bottom-left-radius: {self._settings_user._box_border_radius}px;
-                                border-top-right-radius: {self._settings_user._box_border_radius}px;
-                                background-color: rgb{self._settings_user._color_box_background};
-                                color: rgb{self._settings_user._color_text};
-                                font-size: 15px;
-                            }}
-                            QPushButton:pressed {{
-                                background-color: rgb{self._settings_user._color_box_highlight};
-                            }}
-                            '''
+                QPushButton {{
+                    border: {self._settings_user._box_border}px solid rgb{self._settings_user._color_box_border};
+                    border-bottom-left-radius: {self._settings_user._box_border_radius}px;
+                    border-top-right-radius: {self._settings_user._box_border_radius}px;
+                    background-color: rgb{self._settings_user._color_box_background};
+                    color: rgb{self._settings_user._color_text};
+                    font-size: 15px;
+                }}
+                QPushButton:pressed {{
+                    background-color: rgb{self._settings_user._color_box_highlight};
+                }}
+                '''
             )
 
     def __copy(self) -> None:
@@ -1019,14 +1120,22 @@ class MainWindow(ControlWindow):
 
         self._box_answer_format_label.setText('')
 
+    def closeEvent(self, event):
+        """
+        Closes all windows if the main window is closed.
+        """
+
+        if self.window_settings is not None:
+            self.window_settings.close()
+        event.accept()
+
 
 class MultiBox(MainWindow):
     def __init__(self):
         super().__init__()
+        self._setup()
 
-        self._setup_multi()
-
-    def _setup_multi(self):
+    def _setup(self):
 
         # Scroll Area Setup -------------------------------------------------------------------------------------
 
@@ -1552,13 +1661,14 @@ class MultiBox(MainWindow):
         pyperclip.copy(text)
 
 
-class RunWindow(MultiBox, MainWindow):  # include all children of the MainWindow class here
+class RunWindow(MultiBox, MainWindow):
     def __init__(self):  # initialize all children here
         MainWindow.__init__(self)
-        MultiBox._setup_multi(self)
+        MultiBox._setup(self)
 
     def resizeEvent(self, event):
         self.__update()
+        self._update_main()
         self._update_control()
         self._update_multi()
 
@@ -1569,7 +1679,7 @@ class RunWindow(MultiBox, MainWindow):  # include all children of the MainWindow
         May also be used to update other stuff in the future.
         """
 
-        box_answer_height = int(self._settings_user._box_answer_height_percent * (self.height() - self._settings_user._title_bar_height - (3 * self._settings_user._box_padding)))
+        box_answer_height = int(self._settings_user._box_answer_height_scale * (self.height() - self._settings_user._title_bar_height - (3 * self._settings_user._box_padding)))
 
         box_text_y1 = self._settings_user._box_padding + self._settings_user._title_bar_height
         box_text_height = self.height() - box_answer_height - (self._settings_user._box_padding * 3) - self._settings_user._title_bar_height - self._settings_user._bar_button_height
