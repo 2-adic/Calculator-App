@@ -42,6 +42,8 @@ Bugs:
         - Not sure what to do about this because this doesn't happen in mathematics to my knowledge
         - Maybe make it if any value is entered for variable A, then an error occurs
 
+    - e^n for n != 1 gives a decimal value when the symbol is supposed to be used
+
 Future Features:
     - Need shadowing for the sides of the window (for Windows)
 
