@@ -1168,13 +1168,17 @@ class MultiBox(MainWindow):
 
         # Selectors ---------------------------------------------------------------------------------------------
 
+        self.__button_selected = 0  # the default selected button is the variables tab
+
         self.__button_selectors = []
         for i in range(self.__area_amount):
             button = QPushButton(self.__selector_names[i], self)
             button.setCursor(Qt.CursorShape.PointingHandCursor)
-            button.clicked.connect(self.__button_logic_selector)
+            button.clicked.connect(self.__button_selector_logic)
             self.__button_selector_style(button, i)  # sets the button style
             self.__button_selectors.append(button)  # adds the button to a list
+
+        self.__button_selector_initialize(self.__button_selected)  # applies the selected style to the default button
 
         # All Tabs ----------------------------------------------------------------------------------------------
 
@@ -1520,34 +1524,53 @@ class MultiBox(MainWindow):
             tup[0].resize(int((self.width() * (1 - self._settings_user._box_width_left)) - (self._settings_user._box_padding * 1.5)), self.height() - (self._settings_user._box_padding * 2) - self._settings_user._title_bar_height - self._settings_user._select_height + self._settings_user._box_border)
 
         # symbols tab
-        for i in range(2):
-            width = self.__areas[1][2][i].viewport().width()
-            column_count = max(1, width // self._settings_user._symbols_button_width[i])  # takes into account the gap between the buttons
+        if self.__button_selected == 1:
+            print(True)
+            for i in range(2):
+                width = self.__areas[1][2][i].viewport().width()
+                column_count = max(1, width // self._settings_user._symbols_button_width[i])  # takes into account the gap between the buttons
 
-            # only rearranges if the column count changes
-            if column_count != self.__previous_column_count[i]:
-                self.__previous_column_count[i] = column_count
+                # only rearranges if the column count changes
+                if column_count != self.__previous_column_count[i]:
+                    self.__previous_column_count[i] = column_count
 
-                # re-arranges the buttons
-                for x, button in enumerate(self.__button_symbols[i]):
-                    self.__grid_layout[i].addWidget(button, x // column_count, x % column_count)
+                    # re-arranges the buttons
+                    for x, button in enumerate(self.__button_symbols[i]):
+                        self.__grid_layout[i].addWidget(button, x // column_count, x % column_count)
 
-    def __button_logic_selector(self):
+    def __button_selector_initialize(self, i: int):
+        """
+        Initializes the style of the default selector button.
+        """
+
+        button = self.__button_selectors[i]
+        self.__button_selector_style(button, i, True)
+        self.__areas[i][0].show()
+
+    def __button_selector_logic(self):
+        """
+        Applies styles to the selector buttons and keeps track of which button was selected.
+        """
 
         for i, scroll in enumerate(self.__areas):
             button = self.__button_selectors[i]
 
             if i == 1:
-                QTimer.singleShot(0, self._update_multi)  # the symbols section is not initialize correctly without this
+                QTimer.singleShot(0, self._update_multi)  # the symbols section is not initialized correctly without this
 
             if self.sender() == button:
                 self.__button_selector_style(button, i, True)
                 scroll[0].show()
+                self.__button_selected = i
+
             else:
                 self.__button_selector_style(button, i, False)  # changes all buttons to their default color
                 scroll[0].hide()
 
     def __button_selector_style(self, button: QPushButton, i: int, selected: bool = False):
+        """
+        Applies a specified style to the given button.
+        """
 
         if selected:
             background_color = self._settings_user._color_box_background_selected
