@@ -78,7 +78,17 @@ Future Features:
     - Add more functions
 
 Before Beta:
-    - Add a settings button to the right of the minimize button
+    - Add more functions
+        - Abs (Absolute Value), Ceil, Floor, Mod
+        - Tan, Csc, Sec, Cot, Arcsin, Arccos, Arctan, Arccsc, Arcsec, Arccot
+        - Differentiate
+
+    - Fill the settings window with settings
+        - Option to toggle commas; 1,000,000 <-> 1000000
+        - Option to toggle between radians and degrees
+        - Option for changing the window's colors
+
+    - Get a better gear icon
 
     - Fix the vertical spacing in the notations tab
 
@@ -91,5 +101,5 @@ Before Beta:
 
     - Fix these bugs:
         - Crashes when integration is with respect to variable A, and A is also defined as a value
-
+            - Find a way to tell the user that this is not possible via error message or something else
 
