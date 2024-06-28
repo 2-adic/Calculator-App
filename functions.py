@@ -6,10 +6,11 @@ from files import file_path
 
 
 class Solve:
-    def __init__(self, expression: str, constant_symbol_used: dict[str, bool], render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
+    def __init__(self, expression: str, constant_symbol_used: dict[str, bool], use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
 
         self.__funct = tuple(getattr(self, f'_{self.__class__.__name__}__{name.lower()}') for name in symbols.accepted_functions)  # gets a list of all the functions
 
+        self.__use_commas = use_commas
         self.__constant_counter = 0  # keeps track of the amount of constants used
         self.__expression = expression
         self.__expression = self.__expression.replace(' ', '')  # removes spaces to fix formatting issues
@@ -72,10 +73,10 @@ class Solve:
         approximate = file_path('latex_approximate.png')
 
         if self.__answer_exact is not None:  # answer is not rendered if it is none
-            convert_render_latex(self.__answer_exact, color, dpi, exact, self.__constant_counter)
+            convert_render_latex(self.__answer_exact, self.__use_commas, color, dpi, exact, self.__constant_counter)
 
         if self.__answer_approximate is not None:  # answer is not rendered if it is none
-            convert_render_latex(self.__answer_approximate, color, dpi, approximate, self.__constant_counter)
+            convert_render_latex(self.__answer_approximate, self.__use_commas, color, dpi, approximate, self.__constant_counter)
 
     def __exact(self):
         """

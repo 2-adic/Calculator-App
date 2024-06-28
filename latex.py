@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import sympy as sy
-import str_format
 from PIL import Image
 from files import file_path
+import re
 
 
 def render_latex(latex_str, filename, dpi=300, text_color=(1, 1, 1)):
@@ -65,12 +65,13 @@ def crop_image(filename):
         cropped_img.save(image_path)
 
 
-def convert_render_latex(string: str, color: tuple[int, int, int] = (255, 255, 255), dpi: int = 300, filename: str = 'Untitled.png', constant_amount: int = 0) -> str:
+def convert_render_latex(string: str, use_commas: bool = False, color: tuple[int, int, int] = (255, 255, 255), dpi: int = 300, filename: str = 'Untitled.png', constant_amount: int = 0) -> str:
     """
     Takes a math expression as a string, and converts it into the LaTeX format.
     Also renders the image of the LaTeX string as a png named "latex_answer.png".
 
     :param string: String to be converted into LaTeX format
+    :param use_commas: If the image is rendered using number comma formatting.
     :param color: Color of the text as a rgb value.
     :param dpi: Sets the resolution of the image.
     :param filename: The filename of the resulting image.
@@ -80,7 +81,30 @@ def convert_render_latex(string: str, color: tuple[int, int, int] = (255, 255, 2
 
     latex = sy.latex(string, fold_short_frac=False)
 
+    if use_commas:
+        latex = format_with_commas(latex)
+
     render_latex(latex, filename, text_color=color, dpi=dpi)
     crop_image(filename)
 
     return latex
+
+
+def format_with_commas(latex_str):
+    """
+    Formats all numbers in a latex string to use commas as thousands separators.
+    """
+
+    # Use a regular expression to find numbers and insert commas
+    def insert_commas(match):
+        number = match.group(0)
+        # Check if the number contains a decimal point
+        if '.' in number:
+            integer_part, decimal_part = number.split('.')
+            return "{:,}.{}".format(int(integer_part), decimal_part)
+        else:
+            return "{:,}".format(int(number))
+
+    # Replace numbers in the LaTeX string with formatted numbers
+    formatted_str = re.sub(r'\b\d+(\.\d+)?\b', insert_commas, latex_str)
+    return formatted_str

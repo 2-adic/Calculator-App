@@ -48,7 +48,6 @@ Future Features:
     - Need shadowing for the sides of the window (for Windows)
 
     - Add a settings section
-        - Option to toggle commas; 1,000,000 <-> 1000000
         - Option to toggle between radians and degrees
 
     - Add window's snap functionality
@@ -84,9 +83,13 @@ Before Beta:
         - Differentiate
 
     - Fill the settings window with settings
-        - Option to toggle commas; 1,000,000 <-> 1000000
         - Option to toggle between radians and degrees
         - Option for changing the window's colors
+        - Add an apply button
+            - Put it on the bottom of the settings window centered in the middle
+            - When it is clicked:
+                - If and only if an answer is being shown, then it should be re-rendered
+                - All windows should be updated
 
     - Get a better gear icon
 
@@ -95,7 +98,6 @@ Before Beta:
     - Test on macOS
 
     - Add these features:
-        - Add a settings section
         - Add more functions
         - Change the font of the LaTeX image (Might add if it doesn't take too long)
 

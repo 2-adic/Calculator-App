@@ -123,7 +123,9 @@ class Settings:
         self._color_scrollbar_background = 63, 65, 72
         self._color_latex = self._color_text
 
-        # -------------------------------------------------------------------------------------------------------
+        # Other -------------------------------------------------------------------------------------------------
+
+        self._use_commas = False
 
     def get_color_text(self):
         return self._color_text
@@ -135,12 +137,17 @@ class Settings:
         return self._color_text_highlight_inactive
 
 
-class ControlWindow(QWidget, Settings):
-    def __init__(self):
+class ControlWindow(QWidget):
+    def __init__(self, settings: Settings | None = None):
 
         QWidget.__init__(self)
 
-        self._settings_user = Settings()  # used to keep track of any settings the user changes within the window
+        # used to keep track of any settings the user changes within the window
+        if settings is None:
+            self._settings_user = Settings()
+        else:  # allows for the settings class object to be shared between multiple windows
+            self._settings_user = settings
+
         self.__op = system_settings.OperatingSystem()  # initializes settings depending on the operating system
 
         # Window ------------------------------------------------------------------------------------------------
@@ -604,19 +611,19 @@ class ControlWindow(QWidget, Settings):
 
 
 class SettingsWindow(ControlWindow):
-    def __init__(self, position: tuple[int, int]):
-        super().__init__()
+    def __init__(self, settings: Settings, position: tuple[int, int]):
+        super().__init__(settings)
         self._set_title(self._settings_user._window_title_settings)
         self._set_geometry(position + self._settings_user._window_start_size_settings)
         self._set_size_min(self._settings_user._window_size_min_settings)
 
         # Settings Menu -----------------------------------------------------------------------------------------
 
-        settings = (
+        settings_list = (
             ('General', (
                 # function, default option number, setting label, option 1, option2, ... option n
                 (self.__button_clicked, 0, 'Angle Unit', 'Radians', 'Degrees'),
-                (self.__button_clicked, 0, 'Number Format', 'Standard', 'Commas'))),
+                (self.__formatting_commas, 0, 'Number Format', 'Standard', 'Commas'))),
 
             ('Test 2', (
                 (self.__button_clicked, 0, 'Button 0', 'On', 'Off'),
@@ -693,7 +700,7 @@ class SettingsWindow(ControlWindow):
         top_spacer = QSpacerItem(0, 5, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         left_spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         right_spacer = QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        
+
         button_layout.addItem(left_spacer)  # adds spacing to the left of the top section buttons
 
         top_button_group = QButtonGroup(self)
@@ -706,7 +713,7 @@ class SettingsWindow(ControlWindow):
             '''
         )
 
-        for i, section in enumerate(settings):
+        for i, section in enumerate(settings_list):
             button = QPushButton(section[0])  # creates the section buttons
             button.setCheckable(True)  # allows the buttons to be toggleable
             button.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
@@ -789,7 +796,7 @@ class SettingsWindow(ControlWindow):
 
         return container_widget
 
-    def __button_clicked(self, label):
+    def __button_clicked(self, label: str):
         """
         Used to test if the settings buttons work.
 
@@ -797,6 +804,16 @@ class SettingsWindow(ControlWindow):
         """
 
         print(label)
+
+    def __formatting_commas(self, label: str):
+        """
+        Toggles the comma formatting for numbers.
+        """
+
+        if label == 'Standard':
+            self._settings_user._use_commas = False
+        else:
+            self._settings_user._use_commas = True
 
     def __update_setting(self):
         """
@@ -987,7 +1004,7 @@ class MainWindow(ControlWindow):
 
         text = self.__answer_formatting_before(text)  # reformats the string
 
-        self.__solution = Solve(text, self.__generate_value_used_bool(), self._settings_user._color_latex, self._settings_user._latex_image_dpi)
+        self.__solution = Solve(text, self.__generate_value_used_bool(), self._settings_user._use_commas, self._settings_user._color_latex, self._settings_user._latex_image_dpi)
         self.__solution.print()  # shows the before and after expression (for testing purposes)
         self.__answer = self.__solution.get_exact()
 
@@ -1167,7 +1184,7 @@ class MainWindow(ControlWindow):
         position = self.pos().x() + 40, self.pos().y() + 30
 
         if self.window_settings is None:  # creates and opens the setting window
-            self.window_settings = SettingsWindow(position)
+            self.window_settings = SettingsWindow(self._settings_user, position)
             self.window_settings.show()
 
         else:  # the settings window already exists, it is showed and repositioned
