@@ -2335,7 +2335,7 @@ class MultiBox(MainWindow):
         button = self.sender()
         text = button.text()
 
-        if text not in symbols.copy_notation[0]:  # adds brackets to functions
+        if text not in symbols.copy_notation[0]:  # adds parentheses to functions
             text += '()'
 
         pyperclip.copy(text)

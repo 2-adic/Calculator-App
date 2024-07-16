@@ -235,7 +235,7 @@ class Solve:
 
         return expression
 
-    def __integrate(self, f: str, x: str) -> str:  # 'integrate[f, x]' -> ∫(f)dx
+    def __integrate(self, f: str, x: str) -> str:  # 'integrate(f, x)' -> ∫(f)dx
         """
         Integrates the expression given.
 
