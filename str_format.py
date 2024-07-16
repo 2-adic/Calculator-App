@@ -17,25 +17,9 @@ def to_subscript(string: str) -> str:
     return final
 
 
-def contains(string: str, array: list) -> bool:
-    """
-    Returns if a string contains at least one substring + '[' from a list of strings.
-
-    :param string: String which may contain substring + '['.
-    :param array: List of substrings to check in string.
-    """
-
-    for x in array:
-        x += '['
-        if x in string:
-            return True
-
-    return False
-
-
 def find_substring_index(string: str, array: list) -> tuple[str, int]:
     """
-    Finds the first substring from the array within the string, and returns the index of the '[' after the substring.
+    Finds the first substring from the array within the string, and returns the index of the '(' after the substring.
 
     :param string: String to be checked for a substring.
     :param array: List of possible substrings.
@@ -47,13 +31,13 @@ def find_substring_index(string: str, array: list) -> tuple[str, int]:
             return substring, string.find(substring) + len(substring)
 
 
-def get_elements_in_bracket(string: str, index: int) -> tuple[list, int]:
+def get_elements_in_parentheses(string: str, index: int) -> tuple[list, int]:
     """
-    Only call this function if a mathematical function with brackets is in the string.
+    Only call this function if a mathematical function with parentheses is in the string.
 
     :param string: The string with the mathematical function.
-    :param index: The index of the left bracket.
-    :return: A list with the elements separated by commas within the brackets.
+    :param index: The index of the left parenthesis.
+    :return: A list with the elements separated by commas within the parentheses.
     """
 
     element_array = []
@@ -61,22 +45,22 @@ def get_elements_in_bracket(string: str, index: int) -> tuple[list, int]:
 
     element = ''
 
-    # loops through each character starting at the starting bracket
+    # loops through each character starting at the starting parenthesis
     for i in range(index, len(string)):
         char = string[i]
 
-        # gets the bracket level
-        if char == '[':
+        # gets the parentheses level
+        if char == '(':
             nested_level += 1
-        elif char == ']':
+        elif char == ')':
             nested_level -= 1
 
-            # if the ending bracket is found, the array is returned
+            # if the ending parenthesis is found, the array is returned
             if nested_level == 0:
                 element_array.append(element)
                 return element_array, i
 
-        # if a comma separates an element of the base bracket level, the old element is stored, and the element string is reset
+        # if a comma separates an element of the base parentheses level, the old element is stored, and the element string is reset
         if char == ',' and nested_level == 1:
 
             # checks if teh element is empty
@@ -86,12 +70,12 @@ def get_elements_in_bracket(string: str, index: int) -> tuple[list, int]:
             element_array.append(element)
             element = ''
 
-        # if the element is not the starting bracket, it is added to the element string
+        # if the element is not the starting parenthesis, it is added to the element string
         elif i != index:
             element += char
 
-    # if no last bracket is found, the string is formatted incorrectly
-    raise 'Error: String not formatted properly; No final bracket found.'
+    # if no last parenthesis is found, the string is formatted incorrectly
+    raise 'Error: String not formatted properly; No final parenthesis found.'
 
 
 def replace_substring(original: str, start: int, end: int, replacement: str) -> str:
@@ -137,7 +121,7 @@ def function_convert(string: str) -> str:
     """
 
     for i in range(len(symbols.accepted_functions)):
-        string = string.replace(symbols.accepted_functions[i], f'§{i}')
+        string = string.replace(symbols.accepted_functions[i], f'§{i}¦')  # adds the '¦' character to prevent implicit multiplication
 
     return string
 
@@ -167,8 +151,8 @@ def remove_parentheses(string: str) -> str:
 
 def get_function_parameters(string: str):
     start = string.find('§')
-    bracket = string.find('[', start)
+    parenthesis = string.find('(', start)
 
-    array = get_elements_in_bracket(string, bracket)
+    array = get_elements_in_parentheses(string, parenthesis)
 
-    return string[start + 1:bracket], array[0], bracket, array[1]  # returns the function number, and a list of the parameters
+    return string[start + 1:parenthesis], array[0], parenthesis, array[1]  # returns the function number, and a list of the parameters
