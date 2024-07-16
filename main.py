@@ -2,16 +2,14 @@ import sys
 from PyQt6.QtWidgets import QApplication, QStackedWidget, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout
 from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QPixmap
 from PyQt6.QtCore import Qt, QPoint, QTimer, QSize
-import sympy as sy
 import pyperclip
 import fontcontrol
 from files import file_path
-from str_format import contains_substring
+from str_format import contains_substring, function_convert
 from PIL import Image
 import system_settings
 import misc_functions
 from functions import Solve
-import str_format
 import symbols
 
 
@@ -120,6 +118,7 @@ class Settings:
 
         # Other -------------------------------------------------------------------------------------------------
 
+        self.__use_degrees = False
         self.__use_commas = False
 
     def __load_defaults(self):
@@ -568,6 +567,14 @@ class Settings:
     @color_latex.setter
     def color_latex(self, value: tuple[int, int, int]) -> None:
         self.__color_latex = value
+
+    @property
+    def use_degrees(self) -> bool:
+        return self.__use_degrees
+
+    @use_degrees.setter
+    def use_degrees(self, value: bool) -> None:
+        self.__use_degrees = value
 
     @property
     def use_commas(self) -> bool:
@@ -1080,7 +1087,7 @@ class SettingsWindow(ControlWindow):
         settings_list = (
             ('General', (
                 # function, default option number, setting label, option 1, option2, ... option n
-                (self.__button_clicked, 0, 'Angle Unit', 'Radians', 'Degrees'),
+                (self.__degree_units, 0, 'Angle Unit', 'Radians', 'Degrees'),
                 (self.__formatting_commas, 0, 'Number Format', 'Standard', 'Commas'))),
 
             ('Test 2', (
@@ -1228,7 +1235,8 @@ class SettingsWindow(ControlWindow):
                 button_group.addButton(button)
 
                 # connects the buttons to their specified function
-                button.clicked.connect(lambda checked, l=option: function(l) if checked else None)
+                button.clicked.connect(lambda checked, f=function, l=option: f(l) if checked else None)
+
 
                 if i == default_option:  # logic for if the button is the default one
                     button.setChecked(True)  # visually shows the default button as selected
@@ -1261,7 +1269,7 @@ class SettingsWindow(ControlWindow):
         Will be replaced by different functions in the future
         """
 
-        print(label)
+        return
 
     def __formatting_commas(self, label: str):
         """
@@ -1272,6 +1280,17 @@ class SettingsWindow(ControlWindow):
             self._settings_user.use_commas = False
         else:
             self._settings_user.use_commas = True
+
+    def __degree_units(self, label: str):
+        """
+        Changes the angle unit between degrees or radians.
+        """
+
+        if label == 'Radians':
+            self._settings_user.use_degrees = False
+        else:
+            # self._settings_user.use_degrees = True
+            print('Degrees not enabled yet.')
 
     def __update_setting(self):
         """
@@ -1449,23 +1468,13 @@ class MainWindow(ControlWindow):
         self.__button_format_visibility(True)  # shows the format button
 
         text = self._box_text.toPlainText()  # gets the string from the text box
-        text = str_format.function_convert(text)  # ensures functions won't be messed up
 
-        # scans the text for any variables
-        temp = self.__variable_formatting(self._symbols)
-
-        if self.__is_constant_value_used:  # hides the format button is a
-            self.__button_format_visibility(False)
-
-        for x in text:
-            if x in temp:
-                text = text.replace(f'{x}', f'({temp[x]})')
-
-        text = self.__answer_formatting_before(text)  # reformats the string
-
-        self.__solution = Solve(text, self.__generate_value_used_bool(), self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
-        self.__solution.print()  # shows the before and after expression (for testing purposes)
+        self.__solution = Solve(text, self.__variable_formatting(self._symbols), self.__generate_value_used_bool(), self._settings_user.use_degrees, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
+        self.__solution.print()  # shows the before and after expressions (for testing purposes)
         self.__answer = self.__solution.get_exact()
+
+        if self.__is_constant_value_used:  # hides the format button if a constant value was used
+            self.__button_format_visibility(False)
 
         self._flip_type()
 
@@ -1515,7 +1524,7 @@ class MainWindow(ControlWindow):
         self._user_select = self.sender()  # saves which text box the user was typing in
 
         text = self._box_text.toPlainText()
-        text = str_format.function_convert(text)
+        text = function_convert(text)
 
         temp = set()  # used later for deleting variables in self._symbols which are not in the text box
 
@@ -1571,7 +1580,7 @@ class MainWindow(ControlWindow):
         formatted = {}  # used to preserve functions
         keys = list(self._symbols[0].keys())
         for y in keys:
-            formatted[y] = str_format.function_convert(self._symbols[0][y][1].text())  # lets functions be inside of variables
+            formatted[y] = function_convert(self._symbols[0][y][1].text())  # lets functions be inside of variables
             for x in formatted[y]:
                 # checks if the character is in one of the accepted lists
                 if x in symbols.accepted_variables:
@@ -1654,48 +1663,6 @@ class MainWindow(ControlWindow):
             self.window_settings._window_normal()  # takes the window out of its special states
             self.window_settings.raise_()  # focuses the window to the front
 
-    def __answer_formatting_before(self, string: str) -> str:
-        """
-        Reformats the string before the answer is calculated.
-
-        Gives the user more freedom to type expressions different ways.
-
-        :param string: The user input.
-        """
-
-        # removes white spaces
-        string = string.replace(' ', '')
-        string = string.replace('\n', '')
-        string = string.replace('\t', '')
-
-        # adds multiplication symbol for implicit multiplication
-        x = 0
-        while x < len(string) - 1:
-            if string[x] in symbols.accepted_variables or string[x] in symbols.accepted_constants or string[x] in symbols.accepted_numbers or string[x] == ')' or string[x] == ']' or string[x] == '.':
-                if string[x + 1] in symbols.accepted_variables or string[x + 1] in symbols.accepted_constants or string[x + 1] == '(' or string[x + 1] == '§':
-                    # inserts in front of x
-                    string = string[:x + 1] + '*' + string[x + 1:]
-                    x -= 1
-            x += 1
-
-        # turns all decimals into rationals
-        temp = string + ' '  # character added to end of string to recognize final number
-        num = ''
-        for x in temp:
-            if x in symbols.accepted_numbers or x == '.':
-                num += x
-            else:
-                if num == '.':  # user error; displays 'error' in answer box
-                    print('Not yet fixed, do later')
-
-                elif num != '' and '.' in num:  # num is not blank, and is a decimal
-                    # replaces the first instance of each number
-                    string = string.replace(num, f'({sy.Rational(num)})', 1)
-
-                num = ''  # resets num
-
-        return string
-
     def __variable_formatting(self, symbols: tuple[dict, dict, dict]) -> dict:
 
         self.__is_constant_value_used = False  # resets if a constant value was used
@@ -1707,7 +1674,7 @@ class MainWindow(ControlWindow):
             for key in keys:
 
                 if index == 0:
-                    temp1[key] = str_format.function_convert(symbols[index][key][1].text())
+                    temp1[key] = function_convert(symbols[index][key][1].text())
 
                     if temp1[key] == '':  # if the user did not define a variable, then it is equal to itself
                         temp1[key] = key
@@ -1810,7 +1777,8 @@ class MainWindow(ControlWindow):
         Lets the user copy the answer by clicking the answer box.
         """
 
-        pyperclip.copy(str(self.__answer_temp))  # copies answer to clipboard
+        string = str(self.__answer_temp).replace('*', '')  # removes all multiplication symbols
+        pyperclip.copy(string)  # copies answer to clipboard
 
     def closeEvent(self, event):
         """
@@ -2368,7 +2336,7 @@ class MultiBox(MainWindow):
         text = button.text()
 
         if text not in symbols.copy_notation[0]:  # adds brackets to functions
-            text += '[]'
+            text += '()'
 
         pyperclip.copy(text)
 
