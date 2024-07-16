@@ -43,16 +43,66 @@ accepted_variables = sorted([
 
 accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
-accepted_functions = [
-    'Integrate',
-    'Ln',
-    'Sin',
-    'Cos',
+functions = [
+    'integrate',
+    'ln',
+    'exp',
+    'abs',
+    'mod',
+    'floor',
+    'ceil',
+    'sin',
+    'cos',
+    'tan',
+    'csc',
+    'sec',
+    'cot',
+    'arcsin',
+    'arccos',
+    'arctan',
+    'arccsc',
+    'arcsec',
+    'arccot',
+    'sinh',
+    'cosh',
+    'tanh',
+    'csch',
+    'sech',
+    'coth',
+    'arcsinh',
+    'arccosh',
+    'arctanh',
+    'arccsch',
+    'arcsech',
+    'arccoth'
 ]
+
+accepted_functions = sorted(functions, key=len, reverse=True)  # sorts the functions from longest to shortest, so substring functions errors won't occur: such as arcsin being misidentified as sin
+
+# the function names to replace after the expression has been solved
+name_change = {
+    'Abs': 'abs',
+    'Mod': 'mod',
+    'ceiling': 'ceil',
+    'asin': 'arcsin',
+    'acos': 'arccos',
+    'atan': 'arctan',
+    'acsc': 'arccsc',
+    'asec': 'arcsec',
+    'acot': 'arccot',
+    'asinh': 'arcsinh',
+    'acosh': 'arccosh',
+    'atanh': 'arctanh',
+    'acsch': 'arccsch',
+    'asech': 'arcsech',
+    'acoth': 'arccoth'
+}
+
+name_change_keys = sorted(name_change.keys(), key=len, reverse=True)  # sorts the keys from longest to shortest
 
 copy_notation = [
     ['π', 'φ', 'γ', 'θ'],
-    accepted_functions
+    functions
 ]
 
 subscript = {
