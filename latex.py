@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import sympy as sy
 from PIL import Image
 from files import file_path
+from symbols import name_change, name_change_keys
 import re
 
 
@@ -81,8 +82,13 @@ def convert_render_latex(string: str, use_commas: bool = False, color: tuple[int
 
     latex = sy.latex(string, fold_short_frac=False)
 
-    if use_commas:
+    if use_commas:  # converts the number format to use commas
         latex = format_with_commas(latex)
+
+    for key in name_change_keys:  # changes the names of some of the functions
+        latex = latex.replace(key, name_change[key])
+
+    latex = latex.replace(r'\bmod', r'\operatorname{mod}')  # stops mod from crashing the program when Ex: mod(x, y)
 
     render_latex(latex, filename, text_color=color, dpi=dpi)
     crop_image(filename)
