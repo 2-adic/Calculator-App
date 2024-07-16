@@ -3,14 +3,17 @@ import symbols
 import str_format as form
 from latex import convert_render_latex
 from files import file_path
+import str_format
 
 
 class Solve:
-    def __init__(self, expression: str, constant_symbol_used: dict[str, bool], use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
+    def __init__(self, expression: str, variables: dict[str, str] = dict(), constant_symbol_used: dict[str, bool] = dict(), use_degrees: bool = False, use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
 
         self.__funct = tuple(getattr(self, f'_{self.__class__.__name__}__{name.lower()}') for name in symbols.accepted_functions)  # gets a list of all the functions
 
+        self.__use_degrees = use_degrees
         self.__use_commas = use_commas
+
         self.__constant_counter = 0  # keeps track of the amount of constants used
         self.__expression = expression
         self.__expression = self.__expression.replace(' ', '')  # removes spaces to fix formatting issues
@@ -20,7 +23,7 @@ class Solve:
         self.__answer_exact = None
         self.__answer_approximate = None
 
-        format_expression = self.__format_before(self.__expression, constant_symbol_used)
+        format_expression = self.__format_before(self.__expression, variables, constant_symbol_used)
         self.__expression_solved = self.__solve(format_expression)  # solves the expression
         self.__exact()  # turns the solution into its exact form
         self.__approximate()  # turns the solution into its approximate form
@@ -39,6 +42,7 @@ class Solve:
         """
 
         expression = self.__expression  # copies the expression to save the original
+        expression = expression.replace('¦', '')
         for key in range(len(self.__funct)):
             expression = expression.replace(f'§{key}', symbols.accepted_functions[key])
 
@@ -95,14 +99,14 @@ class Solve:
 
     def __custom_approx(self, expression):
         if expression.is_Atom:
-            # if the expression is a number, evaluate it numerically
+            # if the expression is a number, evaluates it numerically
             if expression.is_Number:
                 return expression.evalf()
-            # if the expression is a symbol, return it as is
+            # if the expression is a symbol, returns it as is
             else:
                 return expression
         else:
-            # recursively apply custom_approx to all arguments of the expression
+            # recursively applies custom_approx to all arguments of the expression
             return expression.func(*[self.__custom_approx(arg) for arg in expression.args])
 
     def __approximate(self):
@@ -118,10 +122,19 @@ class Solve:
             self.__answer_approximate = 'Error'
             self.__error = e
 
-    def __format_before(self, expression: str, constant_symbol_used: dict[str, bool]) -> str:
+    def __format_before(self, expression: str, variables: dict[str, str], constant_symbol_used: dict[str, bool]) -> str:
         """
         Formats the expression before it is solved.
         """
+        expression = self.__remove_white_spaces(expression)
+        expression = str_format.function_convert(expression)  # converts functions to a format so implicit multiplication won't change them
+
+        for x in expression:  # replaces all variables with their defined values
+            if x in variables:
+                expression = expression.replace(f'{x}', f'({variables[x]})')
+
+        expression = self.__implicit_to_explicit(expression)  # changes the expression to use explicit multiplication
+        expression = expression.replace('¦', '')  # removes the special character after implicit multiplication is formatted
 
         for key in list(constant_symbol_used.keys()):
             if constant_symbol_used[key]:
@@ -137,8 +150,61 @@ class Solve:
         Performs some final formatting to the answer in its exact and approximate form.
         """
 
-        self.__answer_exact = str(self.__answer_exact).replace('**', '^')
-        self.__answer_approximate = str(self.__answer_approximate).replace('**', '^')
+        self.__answer_exact = str(self.__answer_exact)
+        self.__answer_approximate = str(self.__answer_approximate)
+
+        self.__answer_exact = self.__answer_exact.replace('**', '^')
+        self.__answer_approximate = self.__answer_approximate.replace('**', '^')
+
+        for key in symbols.name_change_keys:
+            self.__answer_exact = self.__answer_exact.replace(key, symbols.name_change[key])
+            self.__answer_approximate = self.__answer_approximate.replace(key, symbols.name_change[key])
+
+    def __remove_white_spaces(self, string):
+        """
+        Removes all white spaces.
+        """
+
+        string = string.replace(' ', '')
+        string = string.replace('\n', '')
+        string = string.replace('\t', '')
+
+        return string
+
+    def __implicit_to_explicit(self, string: str):
+        """
+        Reformats the expression from implicit multiplication to explicit multiplication.
+
+        Gives the user more freedom to type expressions different ways.
+        """
+
+        # adds multiplication symbol for implicit multiplication
+        x = 0
+        while x < len(string) - 1:
+            if string[x] in symbols.accepted_variables or string[x] in symbols.accepted_constants or string[x] in symbols.accepted_numbers or string[x] == ')' or string[x] == ']' or string[x] == '.':
+                if string[x + 1] in symbols.accepted_variables or string[x + 1] in symbols.accepted_constants or string[x + 1] == '(' or string[x + 1] == '§':
+                    # inserts in front of x
+                    string = string[:x + 1] + '*' + string[x + 1:]
+                    x -= 1
+            x += 1
+
+        # turns all decimals into rationals
+        temp = string + ' '  # character added to end of string to recognize final number
+        num = ''
+        for x in temp:
+            if x in symbols.accepted_numbers or x == '.':
+                num += x
+            else:
+                if num == '.':  # user error; displays 'error' in answer box
+                    print('Not yet fixed, do later')
+
+                elif num != '' and '.' in num:  # num is not blank, and is a decimal
+                    # replaces the first instance of each number
+                    string = string.replace(num, f'({sy.Rational(num)})', 1)
+
+                num = ''  # resets num
+
+        return string
 
     def __solve(self, string: str) -> str:
         """
@@ -169,7 +235,7 @@ class Solve:
 
         return expression
 
-    def __integrate(self, f: str, x: str) -> str:  # 'Integrate[f, x]' -> ∫(f)dx
+    def __integrate(self, f: str, x: str) -> str:  # 'integrate[f, x]' -> ∫(f)dx
         """
         Integrates the expression given.
 
@@ -182,9 +248,7 @@ class Solve:
         if x not in symbols.accepted_variables:
             raise 'Error: Second parameter not formatted correctly'
 
-        # solves other functions inside the function before solving the function
-        while '§' in f:
-            f = self.__function_check(f)
+        f = self.__solve(f)  # solve functions within this function before solving it
 
         # adds a unique constant
         new_constant = 'C' + form.to_subscript(str(self.__constant_counter))
@@ -193,16 +257,100 @@ class Solve:
         # solves the integration
         return str(sy.integrate(sy.simplify(f), sy.symbols(x))) + ' + ' + new_constant
 
-    def __ln(self, x: str):  # Ln[x]
+    def __ln(self, x: str):
         return f'ln({x})'
 
-    def __sin(self, x: str):  # Sin[x]
-        # x = f'({x})*(pi/180)'
-        print('Add functionality for degrees.')
+    def __exp(self, x: str):
+        return f'exp({x})'
+
+    def __floor(self, x: str):
+        return f'floor({x})'
+
+    def __ceil(self, x: str):
+        return f'ceiling({x})'
+
+    def __abs(self, x: str):
+        return f'Abs({x})'
+
+    def __mod(self, x: str, y: str):
+        print(f'Mod({x}, {y})')
+        return f'Mod({x}, {y})'
+
+    def __sin(self, x: str):
+        '''
+        if self.__use_degrees:
+            x = f'({x})*(pi/180)'
+        '''
         return f'sin({x})'
 
-    def __cos(self, x: str):  # Cos[x]
+    def __cos(self, x: str):
         return f'cos({x})'
+
+    def __tan(self, x: str):
+        return f'tan({x})'
+
+    def __csc(self, x: str):
+        return f'csc({x})'
+
+    def __sec(self, x: str):
+        return f'sec({x})'
+
+    def __cot(self, x: str):
+        return f'cot({x})'
+
+    def __arcsin(self, x: str):
+        return f'asin({x})'
+
+    def __arccos(self, x: str):
+        return f'acos({x})'
+
+    def __arctan(self, x: str):
+        return f'atan({x})'
+
+    def __arccsc(self, x: str):
+        return f'acsc({x})'
+
+    def __arcsec(self, x: str):
+        return f'asec({x})'
+
+    def __arccot(self, x: str):
+        return f'acot({x})'
+
+    def __sinh(self, x: str):
+        return f'sinh({x})'
+
+    def __cosh(self, x: str):
+        return f'cosh({x})'
+
+    def __tanh(self, x: str):
+        return f'tanh({x})'
+
+    def __csch(self, x: str):
+        return f'csch({x})'
+
+    def __sech(self, x: str):
+        return f'sech({x})'
+
+    def __coth(self, x: str):
+        return f'coth({x})'
+
+    def __arcsinh(self, x: str):
+        return f'asinh({x})'
+
+    def __arccosh(self, x: str):
+        return f'acosh({x})'
+
+    def __arctanh(self, x: str):
+        return f'atanh({x})'
+
+    def __arccsch(self, x: str):
+        return f'acsch({x})'
+
+    def __arcsech(self, x: str):
+        return f'asech({x})'
+
+    def __arccoth(self, x: str):
+        return f'acoth({x})'
 
 
 ''' 
