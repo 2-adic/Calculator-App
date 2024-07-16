@@ -5,17 +5,19 @@ Bugs:
     - When deleting multiple variables at once, some variables in the multi area are still showing up
         - Currently it seems to only happen when a variable is inside another variable, and everything is deleted from the textbox
 
-    - Implicit multiplication before a decimal is not working
-        - Ex:
-            - x.1 -> x(1/10): should be x*(1/10)
-        - Not sure if this functionality is wanted anymore
-        - x.1 seems as an incorrect way to write this out, check how other calculators handle this case
-
     - When using tab to go to the next variable, it sometimes skips to the textbox
         - How it should work (in each step the user presses tab), it should loop as shown: text box -> variable 1 -> variable 2 -> variable n -> text box
-        - give the user a way to still type a tab in the text box (maybe mac: option + tab, Windows: 'not sure yet' + tab)
+        - Give the user a way to still type a tab in the text box (maybe mac: option + tab, Windows: 'not sure yet' + tab)
 
-    - App crashes when user inputs ".." and clicks the answer button
+    - App crashes from a lot of things
+        - Need to use more try except blocks
+        - Need to display to the use why an error occurred
+        - Crashes when:
+            - User inputs ".." and clicks the answer button
+            - Integration is with respect to variable A, and A is also defined as a value
+                - Ex: integrate(x, x)   And the users sets x = 2
+                - Not sure what to do about this because this doesn't happen in mathematics
+                - Maybe make it if any value is entered for variable A, then an error pops up for the user
 
     - If the user is in a variable box while their mouse is on top of a variable text box, their mouse flashes between two different cursor shapes
         - Solution: when typing is detected, hide the cursor until the user moves their mouse again
@@ -25,10 +27,6 @@ Bugs:
         - Ex: x + 7
         - This should be fixed, but testing on macOS is needed
 
-    - Implicit multiplication gives an error when the number comes after the variable
-        - Ex: x8 should give (x)*8, but instead gives (x)8
-        - Not sure if this should be implemented, normals calculators also give errors for this case
-
     - Windows flash open and close while typing in the text box (when spamming enter, or pressing multiple keys at the same time)
         - Not sure why this happens
         - Find a way to stop these windows from generating
@@ -37,12 +35,8 @@ Bugs:
     - Variable labels become too compacted and blocks each other's view
         - Only happens on macOS
 
-    - Crashes when integration is with respect to variable A, and A is also defined as a value
-        - Ex: Integrate[x, x]   And the users sets x = 2
-        - Not sure what to do about this because this doesn't happen in mathematics to my knowledge
-        - Maybe make it if any value is entered for variable A, then an error occurs
-
     - e^n for n != 1 gives a decimal value when the symbol is supposed to be used
+        - This is caused by the __custom_approx function
 
 Future Features:
     - Need shadowing for the sides of the window (for Windows)
@@ -61,9 +55,9 @@ Future Features:
             - When in approximate form:  5x ± 1 -> 5x + 1 -> (5*2) + 1 -> 10 + 1 -> 11  (Displays both answers somehow)
                                                 -> 5x - 1 -> (5*2) - 1 -> 10 - 1 -> 9
 
-    - Represent functions like Cos[] with italics
+    - Represent functions like cos() with italics
         - Might solve this problem another way without the use of color (not sure yet)
-        - Make the "Cos" highlight if the program detects it may be a function
+        - Make the "cos" highlight if the program detects it may be a function
             - If the user does an input (click + control, not sure), cos turns into italics and is considered a function instead of c*o*s
         - May want a font where the italics are the same width as the normal characters
 
@@ -77,29 +71,29 @@ Future Features:
     - Add more functions
 
 Before Beta:
-    - Add more functions
-        - Abs (Absolute Value), Ceil, Floor, Mod
-        - Tan, Csc, Sec, Cot, Arcsin, Arccos, Arctan, Arccsc, Arcsec, Arccot
-        - Differentiate
+    - Functions
+        - Functions to add
+            - differentiate, log, root, sign (returns 1 if positive, -1 if negative, and 0 if 0)
+        - May want to fix the rendering of mod
+            - Ex: mod(x, y) renders as xmody
 
     - Fill the settings window with settings
         - Option to toggle between radians and degrees
+            - Currently it works, but the answer needs to be checked after the answer is solved. If degrees are used, then the angle needs to be changed to display degrees.
+
         - Option for changing the window's colors
+
         - Add an apply button
             - Put it on the bottom of the settings window centered in the middle
             - When it is clicked:
                 - If and only if an answer is being shown, then it should be re-rendered
                 - All windows should be updated
 
-    - Get a better gear icon
-
     - Fix the vertical spacing in the notations tab
 
-    - Test on macOS
+    - Change the font of the LaTeX image (Might add if it doesn't take too long)
 
-    - Add these features:
-        - Add more functions
-        - Change the font of the LaTeX image (Might add if it doesn't take too long)
+    - Test on macOS
 
     - Fix these bugs:
         - Crashes when integration is with respect to variable A, and A is also defined as a value
