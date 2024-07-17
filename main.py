@@ -11,6 +11,7 @@ import system_settings
 import misc_functions
 from functions import Solve
 import symbols
+from latex import convert_render_latex
 
 
 class Settings:
@@ -1341,6 +1342,7 @@ class MainWindow(ControlWindow):
         self._icon_aspect_ratio_inverse = None
 
         self._box_answer = QPushButton(self._settings_user.answer_default, self)
+        self._box_answer.setWordWrap(True)  # allows the text to wrap
         self._box_answer.clicked.connect(self.__copy)
         self._box_answer.setStyleSheet(
             f'''
@@ -1469,14 +1471,25 @@ class MainWindow(ControlWindow):
 
         text = self._box_text.toPlainText()  # gets the string from the text box
 
-        self.__solution = Solve(text, self.__variable_formatting(self._symbols), self.__generate_value_used_bool(), self._settings_user.use_degrees, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
-        self.__solution.print()  # shows the before and after expressions (for testing purposes)
-        self.__answer = self.__solution.get_exact()
+        try:
+            self.__solution = Solve(text, self.__variable_formatting(self._symbols), self.__generate_value_used_bool(), self._settings_user.use_degrees, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
+            self.__solution.print()  # shows the before and after expressions (for testing purposes)
+            self.__answer = self.__solution.get_exact()
 
-        if self.__is_constant_value_used:  # hides the format button if a constant value was used
+            if self.__is_constant_value_used:  # hides the format button if a constant value was used
+                self.__button_format_visibility(False)
+
+            self._flip_type()
+
+        except Exception as error:
             self.__button_format_visibility(False)
 
-        self._flip_type()
+            self.__answer = f'Error: {error}'
+            self.__answer_temp = self.__answer
+            self._box_answer.setText(f'Error:\n{error}')  # displays the answer
+            print(self.__answer)
+
+
 
     def _flip_type(self) -> None:
         """
