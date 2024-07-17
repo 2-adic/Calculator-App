@@ -44,13 +44,16 @@ accepted_variables = sorted([
 accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 functions = [
+    'differentiate',
     'integrate',
+    'log',
     'ln',
     'exp',
     'abs',
     'mod',
     'floor',
     'ceil',
+    'random',
     'sin',
     'cos',
     'tan',
@@ -80,7 +83,8 @@ functions = [
 accepted_functions = sorted(functions, key=len, reverse=True)  # sorts the functions from longest to shortest, so substring functions errors won't occur: such as arcsin being misidentified as sin
 
 # the function names to replace after the expression has been solved
-name_change = {
+name_change_function = {
+    'log': 'ln',  # replaces log with ln since
     'Abs': 'abs',
     'Mod': 'mod',
     'ceiling': 'ceil',
@@ -98,7 +102,16 @@ name_change = {
     'acoth': 'arccoth'
 }
 
-name_change_keys = sorted(name_change.keys(), key=len, reverse=True)  # sorts the keys from longest to shortest
+name_change_function_keys = sorted(name_change_function.keys(), key=len, reverse=True)  # sorts the keys from longest to shortest
+
+temp = {}
+for key in constants:
+    temp[constants[key][0]] = key
+
+name_change_all = name_change_function.copy()
+name_change_all.update(temp)
+
+name_change_all_keys = sorted(name_change_all.keys(), key=len, reverse=True)
 
 copy_notation = [
     ['π', 'φ', 'γ', 'θ'],
@@ -112,5 +125,5 @@ subscript = {
     '(': '₍', ')': '₎'
 }
 
-constant_values = get_constant_values(constants, 20)
+constant_values = get_constant_values(constants, 20)  # amount of digits used for calculations
 constant_preview = get_constant_values(constants, 2)
