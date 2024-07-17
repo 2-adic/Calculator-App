@@ -4,6 +4,8 @@ import str_format as form
 from latex import convert_render_latex
 from files import file_path
 import str_format
+from random import randint
+from misc_functions import is_all_int
 
 
 class Solve:
@@ -27,6 +29,7 @@ class Solve:
         self.__expression_solved = self.__solve(format_expression)  # solves the expression
         self.__exact()  # turns the solution into its exact form
         self.__approximate()  # turns the solution into its approximate form
+        self.__result_simplification()
         self.__render(render_color, render_dpi)  # renders the image of the exact and approximate solutions
         self.__format_after()  # formats the exact and approximate answer
 
@@ -148,6 +151,8 @@ class Solve:
     def __format_after(self):
         """
         Performs some final formatting to the answer in its exact and approximate form.
+
+        Used for copying purposes.
         """
 
         self.__answer_exact = str(self.__answer_exact)
@@ -156,9 +161,18 @@ class Solve:
         self.__answer_exact = self.__answer_exact.replace('**', '^')
         self.__answer_approximate = self.__answer_approximate.replace('**', '^')
 
-        for key in symbols.name_change_keys:
-            self.__answer_exact = self.__answer_exact.replace(key, symbols.name_change[key])
-            self.__answer_approximate = self.__answer_approximate.replace(key, symbols.name_change[key])
+        for key in symbols.name_change_all_keys:
+            self.__answer_exact = self.__answer_exact.replace(key, symbols.name_change_all[key])
+            self.__answer_approximate = self.__answer_approximate.replace(key, symbols.name_change_all[key])
+
+    def __result_simplification(self):
+        """
+        Some functions require steps to be further simplified.
+        """
+
+        # this is needed for: ln(e^x) -> x, ln(x^n) -> nln(x), etc
+        self.__answer_exact = sy.expand_log(self.__answer_exact, force=True)
+        self.__answer_approximate = sy.expand_log(self.__answer_approximate, force=True)
 
     def __remove_white_spaces(self, string):
         """
@@ -235,6 +249,24 @@ class Solve:
 
         return expression
 
+    def __differentiate(self, f: str, x: str):
+        """
+        Differentiates the expression given.
+
+        :param f: The expression to differentiate.
+        :param x: Differentiates with respect to the variable in x.
+        """
+
+        # checks if the independent variable is a valid variable
+        x = form.remove_parentheses(x)  # x cannot contain parentheses
+        if x not in symbols.accepted_variables:
+            raise 'Error: Second parameter not formatted correctly'
+
+        f = self.__solve(f)  # solves functions within this function before solving it
+
+        # solves the differentiation
+        return str(sy.diff(sy.simplify(f), sy.symbols(x)))
+
     def __integrate(self, f: str, x: str) -> str:  # 'integrate(f, x)' -> ∫(f)dx
         """
         Integrates the expression given.
@@ -248,7 +280,7 @@ class Solve:
         if x not in symbols.accepted_variables:
             raise 'Error: Second parameter not formatted correctly'
 
-        f = self.__solve(f)  # solve functions within this function before solving it
+        f = self.__solve(f)  # solves functions within this function before solving it
 
         # adds a unique constant
         new_constant = 'C' + form.to_subscript(str(self.__constant_counter))
@@ -256,6 +288,9 @@ class Solve:
 
         # solves the integration
         return str(sy.integrate(sy.simplify(f), sy.symbols(x))) + ' + ' + new_constant
+
+    def __log(self, x: str, b: str):
+        return f'log({x},{b})'
 
     def __ln(self, x: str):
         return f'ln({x})'
@@ -269,12 +304,21 @@ class Solve:
     def __ceil(self, x: str):
         return f'ceiling({x})'
 
+    def __random(self, a: str, b: str):
+
+        a = str(sy.simplify(a))
+        b = str(sy.simplify(b))
+
+        if not is_all_int((a, b)):
+            raise Exception('A parameter in the "random" function is not an int')
+
+        return f'{randint(int(a), int(b))}'
+
     def __abs(self, x: str):
         return f'Abs({x})'
 
     def __mod(self, x: str, y: str):
-        print(f'Mod({x}, {y})')
-        return f'Mod({x}, {y})'
+        return f'Mod({x},{y})'
 
     def __sin(self, x: str):
         '''
@@ -351,14 +395,3 @@ class Solve:
 
     def __arccoth(self, x: str):
         return f'acoth({x})'
-
-
-''' 
-Needs fixing:
-Displays log in terms of e.
-Doesn't display the log base, and instead does 'log(x, base)' -> log(x)/log(base).
-Made it so a default base value is not given so the user has to specify the specific value. (clears confusing about the default base being e vs 10 vs 2)
-
-def log(self, x: str, base: str):  # Log[x, base]
-    return f'log({x}, {base})'
-'''
