@@ -11,7 +11,7 @@ Bugs:
 
     - App crashes from a lot of things
         - Need to use more try except blocks
-        - Need to display to the use why an error occurred
+        - More raises need to be used to account for common user errors
         - Crashes when:
             - User inputs ".." and clicks the answer button
             - Integration is with respect to variable A, and A is also defined as a value
@@ -45,7 +45,8 @@ Future Features:
         - Option to toggle between radians and degrees
 
     - Add window's snap functionality
-        - Find a way to do it
+        - Based on research, it does not seem possible to enable
+            - May need to create the feature from scratch
 
     - Animation for minimizing functionality (for Windows)
 
@@ -73,11 +74,11 @@ Future Features:
 Before Beta:
     - Functions
         - Functions to add
-            - differentiate, log, root, sign (returns 1 if positive, -1 if negative, and 0 if 0)
+            - root, sign (returns 1 if positive, -1 if negative, and 0 if 0)
         - May want to fix the rendering of mod
             - Ex: mod(x, y) renders as xmody
 
-    - Fill the settings window with settings
+    - Fill the settings window with settings:
         - Option to toggle between radians and degrees
             - Currently it works, but the answer needs to be checked after the answer is solved. If degrees are used, then the angle needs to be changed to display degrees.
 
@@ -89,9 +90,11 @@ Before Beta:
                 - If and only if an answer is being shown, then it should be re-rendered
                 - All windows should be updated
 
+    - Add word wrapping to the answer button for when errors are being displayed
+
     - Fix the vertical spacing in the notations tab
 
-    - Change the font of the LaTeX image (Might add if it doesn't take too long)
+    - Change the font of the LaTeX image
 
     - Test on macOS
 
