@@ -1342,7 +1342,6 @@ class MainWindow(ControlWindow):
         self._icon_aspect_ratio_inverse = None
 
         self._box_answer = QPushButton(self._settings_user.answer_default, self)
-        self._box_answer.setWordWrap(True)  # allows the text to wrap
         self._box_answer.clicked.connect(self.__copy)
         self._box_answer.setStyleSheet(
             f'''
@@ -1353,8 +1352,12 @@ class MainWindow(ControlWindow):
                 color: rgb{self._settings_user.color_text};
                 font-size: 15px;
             }}
-            QPushButton:pressed {{
+            QPushButton:hover {{
                 background-color: rgb{self._settings_user.color_box_highlight};
+                padding-top: -5px;
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_box_background_selected};
             }}
             '''
         )
