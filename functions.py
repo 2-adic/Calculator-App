@@ -5,7 +5,8 @@ from latex import convert_render_latex
 from files import file_path
 import str_format
 from random import randint
-from misc_functions import is_all_int
+import error_detection as error
+from inspect import currentframe
 
 
 class Solve:
@@ -17,16 +18,15 @@ class Solve:
         self.__use_commas = use_commas
 
         self.__constant_counter = 0  # keeps track of the amount of constants used
-        self.__expression = expression
-        self.__expression = self.__expression.replace(' ', '')  # removes spaces to fix formatting issues
+        self.__expression_save = self.__remove_white_spaces(expression)
 
         self.__is_value_used = not all(constant_symbol_used.values())  # gets a bool for if a constant value was used
         self.__error = None  # saves the reason for an error
         self.__answer_exact = None
         self.__answer_approximate = None
 
-        format_expression = self.__format_before(self.__expression, variables, constant_symbol_used)
-        self.__expression_solved = self.__solve(format_expression)  # solves the expression
+        self.__format_before(variables, constant_symbol_used)
+        self.__expression_solved = self.__solve(self.__expression_solved)  # solves the expression
         self.__exact()  # turns the solution into its exact form
         self.__approximate()  # turns the solution into its approximate form
         self.__result_simplification()
@@ -44,7 +44,7 @@ class Solve:
         Prints the initial expression, and the solved expressions.
         """
 
-        expression = self.__expression  # copies the expression to save the original
+        expression = self.__expression_save  # copies the expression to save the original
         expression = expression.replace('¦', '')
         for key in range(len(self.__funct)):
             expression = expression.replace(f'§{key}', symbols.accepted_functions[key])
@@ -125,11 +125,13 @@ class Solve:
             self.__answer_approximate = 'Error'
             self.__error = e
 
-    def __format_before(self, expression: str, variables: dict[str, str], constant_symbol_used: dict[str, bool]) -> str:
+    def __format_before(self, variables: dict[str, str], constant_symbol_used: dict[str, bool]) -> None:
         """
         Formats the expression before it is solved.
         """
-        expression = self.__remove_white_spaces(expression)
+
+        expression = self.__expression_save
+        error.valid_symbols(expression)
         expression = str_format.function_convert(expression)  # converts functions to a format so implicit multiplication won't change them
 
         for x in expression:  # replaces all variables with their defined values
@@ -146,7 +148,7 @@ class Solve:
             else:
                 expression = expression.replace(key, f'({symbols.constant_values[key]})')
 
-        return expression
+        self.__expression_solved = expression
 
     def __format_after(self):
         """
@@ -249,7 +251,7 @@ class Solve:
 
         return expression
 
-    def __differentiate(self, f: str, x: str):
+    def __diff(self, f: str, x: str):
         """
         Differentiates the expression given.
 
@@ -257,10 +259,8 @@ class Solve:
         :param x: Differentiates with respect to the variable in x.
         """
 
-        # checks if the independent variable is a valid variable
-        x = form.remove_parentheses(x)  # x cannot contain parentheses
-        if x not in symbols.accepted_variables:
-            raise 'Error: Second parameter not formatted correctly'
+        x = str(sy.simplify(x))  # x cannot contain parentheses
+        error.char_is_variable(x, currentframe().f_code.co_name)  # checks if the independent variable is valid
 
         f = self.__solve(f)  # solves functions within this function before solving it
 
@@ -275,10 +275,8 @@ class Solve:
         :param x: Integrates with respect to the variable in x.
         """
 
-        # checks if the independent variable is a valid variable
-        x = form.remove_parentheses(x)  # x cannot contain parentheses
-        if x not in symbols.accepted_variables:
-            raise 'Error: Second parameter not formatted correctly'
+        x = str(sy.simplify(x))  # x cannot contain parentheses
+        error.char_is_variable(x, currentframe().f_code.co_name)  # checks if the independent variable/s are valid
 
         f = self.__solve(f)  # solves functions within this function before solving it
 
@@ -309,8 +307,7 @@ class Solve:
         a = str(sy.simplify(a))
         b = str(sy.simplify(b))
 
-        if not is_all_int((a, b)):
-            raise Exception('A parameter in the "random" function is not an int')
+        error.all_is_int((a, b), currentframe().f_code.co_name)
 
         return f'{randint(int(a), int(b))}'
 
