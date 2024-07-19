@@ -1,30 +1,4 @@
-def get_constant_values(dictionary: dict, digits: int) -> dict:
-    """
-    Sets the amount of digits for the constants.
-
-    :param dictionary: The dictionary of the constants.
-    :param digits: The amount of digits for the constants (counting from after the decimal place).
-    :return: Returns the dictionary, but the constants have the amount of digits specified.
-    """
-
-    max_digits = 100
-    if digits > max_digits:
-        print(f'Constants will use their maximum saved value of {max_digits}, since the specified value is over that amount: {digits}')
-        digits = max_digits
-
-    elif digits < 1:
-        print(f'Constants will be 1 digit long, since the specified value is under that amount: {digits}')
-        digits = 1
-
-    digits += 2  # since digits are counted from after the decimal place, 2 is added to address this
-
-    # adds each constant value to the new dictionary with the specified amount of digits
-    ans = {}
-    for key in sorted(dictionary.keys()):
-        ans[key] = dictionary[key][1][:digits]
-
-    return ans
-
+from misc_functions import get_constant_values
 
 constants = {
     'i': ('I', 'i'),
@@ -34,14 +8,18 @@ constants = {
     'γ': ('EulerGamma',     '0.5772156649015328606065120900824024310421593359399235988057672348848677267776646709369470632917467495')
 }
 
-accepted_constants = sorted(constants.keys())
-
 accepted_variables = sorted([
     'a', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
     'θ'
 ])
 
 accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+accepted_misc = [
+    '(', ')', ',', '.',
+    '=', '<', '>',
+    '+', '*', '-', '/', '^', '!', '%'
+]
 
 functions = [
     'differentiate',
@@ -80,11 +58,8 @@ functions = [
     'arccoth'
 ]
 
-accepted_functions = sorted(functions, key=len, reverse=True)  # sorts the functions from longest to shortest, so substring functions errors won't occur: such as arcsin being misidentified as sin
-
-# the function names to replace after the expression has been solved
-name_change_function = {
-    'log': 'ln',  # replaces log with ln since
+name_change_function = {  # the function names to replace after the expression has been solved
+    'log': 'ln',  # replaces log with ln since log is treated as log base e
     'Abs': 'abs',
     'Mod': 'mod',
     'ceiling': 'ceil',
@@ -102,17 +77,6 @@ name_change_function = {
     'acoth': 'arccoth'
 }
 
-name_change_function_keys = sorted(name_change_function.keys(), key=len, reverse=True)  # sorts the keys from longest to shortest
-
-temp = {}
-for key in constants:
-    temp[constants[key][0]] = key
-
-name_change_all = name_change_function.copy()
-name_change_all.update(temp)
-
-name_change_all_keys = sorted(name_change_all.keys(), key=len, reverse=True)
-
 copy_notation = [
     ['π', 'φ', 'γ', 'θ'],
     functions
@@ -127,3 +91,26 @@ subscript = {
 
 constant_values = get_constant_values(constants, 20)  # amount of digits used for calculations
 constant_preview = get_constant_values(constants, 2)
+
+# used for checking the type of symbol / if they are allowed -------------------------------------
+
+accepted_constants = sorted(constants.keys())
+accepted_functions = sorted(functions, key=len, reverse=True)  # sorts the functions from longest to shortest, so substring function errors won't occur: such as arcsin being misidentified as sin
+accepted_characters = accepted_misc + accepted_variables + accepted_numbers + accepted_constants
+
+# ------------------------------------------------------------------------------------------------
+
+# used for changing the names of functions shown to the user -------------------------------------
+
+name_change_function_keys = sorted(name_change_function.keys(), key=len, reverse=True)  # sorts the keys from longest to shortest
+
+temp = {}
+for key in constants:
+    temp[constants[key][0]] = key
+
+name_change_all = name_change_function.copy()
+name_change_all.update(temp)
+
+name_change_all_keys = sorted(name_change_all.keys(), key=len, reverse=True)
+
+# ------------------------------------------------------------------------------------------------
