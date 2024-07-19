@@ -46,3 +46,31 @@ def is_all_int(array: tuple[str, ...]) -> bool:
                     return False
 
     return True
+
+
+def get_constant_values(dictionary: dict, digits: int) -> dict:
+    """
+    Sets the amount of digits for the constants.
+
+    :param dictionary: The dictionary of the constants.
+    :param digits: The amount of digits for the constants (counting from after the decimal place).
+    :return: Returns the dictionary, but the constants have the amount of digits specified.
+    """
+
+    max_digits = 100
+    if digits > max_digits:
+        print(f'Constants will use their maximum saved value of {max_digits}, since the specified value is over that amount: {digits}')
+        digits = max_digits
+
+    elif digits < 1:
+        print(f'Constants will be 1 digit long, since the specified value is under that amount: {digits}')
+        digits = 1
+
+    digits += 2  # since digits are counted from after the decimal place, 2 is added to address this
+
+    # adds each constant value to the new dictionary with the specified amount of digits
+    ans = {}
+    for key in sorted(dictionary.keys()):
+        ans[key] = dictionary[key][1][:digits]
+
+    return ans
