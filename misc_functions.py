@@ -26,28 +26,6 @@ def get_line_edit_key(dictionary: dict, line_edit: QLineEdit) -> str:
             return key
 
 
-def is_all_int(array: tuple[str, ...]) -> bool:
-    """
-    Checks if all the elements in a list are ints or not.
-
-    Assumes all elements are in the form: _ or _.__
-    """
-
-    for element in array:
-        if '/' in element:  # number is a fraction (not an int since fractions are simplified)
-            return False
-
-        if '.' in element:  # if a non 0 appears after a decimal point, it is not an int
-
-            element = element[element.find('.') + 1:]
-
-            for char in element:
-                if char != '0':
-                    return False
-
-    return True
-
-
 def get_constant_values(dictionary: dict, digits: int) -> dict:
     """
     Sets the amount of digits for the constants.
