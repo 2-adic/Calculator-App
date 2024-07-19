@@ -22,7 +22,7 @@ accepted_misc = [
 ]
 
 functions = [
-    'differentiate',
+    'diff',
     'integrate',
     'log',
     'ln',
