@@ -39,7 +39,7 @@ class Solve:
     def __str__(self):
         return self.__expression_solved
 
-    def print(self):
+    def print(self) -> None:
         """
         Prints the initial expression, and the solved expressions.
         """
@@ -68,7 +68,7 @@ class Solve:
         """
         return self.__answer_approximate
 
-    def __render(self, color: tuple[int, int, int] = (255, 255, 255), dpi: int = 300):
+    def __render(self, color: tuple[int, int, int] = (255, 255, 255), dpi: int = 300) -> None:
         """
         Renders images of the solved expression.
 
@@ -85,7 +85,7 @@ class Solve:
         if self.__answer_approximate is not None:  # answer is not rendered if it is none
             convert_render_latex(self.__answer_approximate, self.__use_commas, color, dpi, approximate, self.__constant_counter)
 
-    def __exact(self):
+    def __exact(self) -> None:
         """
         Turns the answer into its exact form.
         """
@@ -112,7 +112,7 @@ class Solve:
             # recursively applies custom_approx to all arguments of the expression
             return expression.func(*[self.__custom_approx(arg) for arg in expression.args])
 
-    def __approximate(self):
+    def __approximate(self) -> None:
         """
         Turns the answer into its approximate form.
         """
@@ -141,7 +141,7 @@ class Solve:
         expression = self.__implicit_to_explicit(expression)  # changes the expression to use explicit multiplication
         expression = expression.replace('¦', '')  # removes the special character after implicit multiplication is formatted
 
-        for key in list(constant_symbol_used.keys()):
+        for key in sorted(constant_symbol_used.keys(), key=lambda key: symbols.constant_order[key]):  # sorts the order to avoid substring replacement errors
             if constant_symbol_used[key]:
                 expression = expression.replace(key, symbols.constants[key][0])  # replaces the constant with it's recognized sympy symbol
 
@@ -150,7 +150,7 @@ class Solve:
 
         self.__expression_solved = expression
 
-    def __format_after(self):
+    def __format_after(self) -> None:
         """
         Performs some final formatting to the answer in its exact and approximate form.
 
@@ -167,16 +167,18 @@ class Solve:
             self.__answer_exact = self.__answer_exact.replace(key, symbols.name_change_all[key])
             self.__answer_approximate = self.__answer_approximate.replace(key, symbols.name_change_all[key])
 
-    def __result_simplification(self):
+    def __result_simplification(self) -> None:
         """
         Some functions require steps to be further simplified.
         """
 
         # this is needed for: ln(e^x) -> x, ln(x^n) -> nln(x), etc
-        self.__answer_exact = sy.expand_log(self.__answer_exact, force=True)
+        if not self.__is_value_used:
+            self.__answer_exact = sy.expand_log(self.__answer_exact, force=True)
+
         self.__answer_approximate = sy.expand_log(self.__answer_approximate, force=True)
 
-    def __remove_white_spaces(self, string):
+    def __remove_white_spaces(self, string) -> str:
         """
         Removes all white spaces.
         """
@@ -187,7 +189,7 @@ class Solve:
 
         return string
 
-    def __implicit_to_explicit(self, string: str):
+    def __implicit_to_explicit(self, string: str) -> str:
         """
         Reformats the expression from implicit multiplication to explicit multiplication.
 
@@ -251,7 +253,7 @@ class Solve:
 
         return expression
 
-    def __diff(self, f: str, x: str):
+    def __diff(self, f: str, x: str) -> str:
         """
         Differentiates the expression given.
 
@@ -287,22 +289,31 @@ class Solve:
         # solves the integration
         return str(sy.integrate(sy.simplify(f), sy.symbols(x))) + ' + ' + new_constant
 
-    def __log(self, x: str, b: str):
+    def __log(self, x: str, b: str) -> str:
         return f'log({x},{b})'
 
-    def __ln(self, x: str):
+    def __ln(self, x: str) -> str:
         return f'ln({x})'
 
-    def __exp(self, x: str):
+    def __exp(self, x: str) -> str:
         return f'exp({x})'
 
-    def __floor(self, x: str):
+    def __pow(self, x: str, y: str) -> str:
+        return f'{x}**{y}'
+
+    def __root(self, x: str, y: str) -> str:
+        return f'{x}**(1/{y})'
+
+    def __floor(self, x: str) -> str:
         return f'floor({x})'
 
-    def __ceil(self, x: str):
+    def __ceil(self, x: str) -> str:
         return f'ceiling({x})'
 
-    def __random(self, a: str, b: str):
+    def __sign(self, x: str) -> str:
+        return f'sign({x})'
+
+    def __random(self, a: str, b: str) -> str:
 
         a = str(sy.simplify(a))
         b = str(sy.simplify(b))
@@ -311,84 +322,84 @@ class Solve:
 
         return f'{randint(int(a), int(b))}'
 
-    def __abs(self, x: str):
+    def __abs(self, x: str) -> str:
         return f'Abs({x})'
 
-    def __mod(self, x: str, y: str):
+    def __mod(self, x: str, y: str) -> str:
         return f'Mod({x},{y})'
 
-    def __sin(self, x: str):
+    def __sin(self, x: str) -> str:
         '''
         if self.__use_degrees:
             x = f'({x})*(pi/180)'
         '''
         return f'sin({x})'
 
-    def __cos(self, x: str):
+    def __cos(self, x: str) -> str:
         return f'cos({x})'
 
-    def __tan(self, x: str):
+    def __tan(self, x: str) -> str:
         return f'tan({x})'
 
-    def __csc(self, x: str):
+    def __csc(self, x: str) -> str:
         return f'csc({x})'
 
-    def __sec(self, x: str):
+    def __sec(self, x: str) -> str:
         return f'sec({x})'
 
-    def __cot(self, x: str):
+    def __cot(self, x: str) -> str:
         return f'cot({x})'
 
-    def __arcsin(self, x: str):
+    def __arcsin(self, x: str) -> str:
         return f'asin({x})'
 
-    def __arccos(self, x: str):
+    def __arccos(self, x: str) -> str:
         return f'acos({x})'
 
-    def __arctan(self, x: str):
+    def __arctan(self, x: str) -> str:
         return f'atan({x})'
 
-    def __arccsc(self, x: str):
+    def __arccsc(self, x: str) -> str:
         return f'acsc({x})'
 
-    def __arcsec(self, x: str):
+    def __arcsec(self, x: str) -> str:
         return f'asec({x})'
 
-    def __arccot(self, x: str):
+    def __arccot(self, x: str) -> str:
         return f'acot({x})'
 
-    def __sinh(self, x: str):
+    def __sinh(self, x: str) -> str:
         return f'sinh({x})'
 
-    def __cosh(self, x: str):
+    def __cosh(self, x: str) -> str:
         return f'cosh({x})'
 
-    def __tanh(self, x: str):
+    def __tanh(self, x: str) -> str:
         return f'tanh({x})'
 
-    def __csch(self, x: str):
+    def __csch(self, x: str) -> str:
         return f'csch({x})'
 
-    def __sech(self, x: str):
+    def __sech(self, x: str) -> str:
         return f'sech({x})'
 
-    def __coth(self, x: str):
+    def __coth(self, x: str) -> str:
         return f'coth({x})'
 
-    def __arcsinh(self, x: str):
+    def __arcsinh(self, x: str) -> str:
         return f'asinh({x})'
 
-    def __arccosh(self, x: str):
+    def __arccosh(self, x: str) -> str:
         return f'acosh({x})'
 
-    def __arctanh(self, x: str):
+    def __arctanh(self, x: str) -> str:
         return f'atanh({x})'
 
-    def __arccsch(self, x: str):
+    def __arccsch(self, x: str) -> str:
         return f'acsch({x})'
 
-    def __arcsech(self, x: str):
+    def __arcsech(self, x: str) -> str:
         return f'asech({x})'
 
-    def __arccoth(self, x: str):
+    def __arccoth(self, x: str) -> str:
         return f'acoth({x})'
