@@ -11,7 +11,6 @@ import system_settings
 import misc_functions
 from functions import Solve
 import symbols
-from latex import convert_render_latex
 
 
 class Settings:
@@ -1485,14 +1484,8 @@ class MainWindow(ControlWindow):
             self._flip_type()
 
         except Exception as error:
-            self.__button_format_visibility(False)
-
-            self.__answer = f'Error: {error}'
-            self.__answer_temp = self.__answer
-            self._box_answer.setText(f'Error:\n{error}')  # displays the answer
-            print(self.__answer)
-
-
+            self.__box_answer_set(f'Error: {error}', f'Error:\n{error}')  # displays the error
+            print(f'Error: {error}')
 
     def _flip_type(self) -> None:
         """
@@ -1525,8 +1518,6 @@ class MainWindow(ControlWindow):
 
         self.resizeEvent(None)
 
-        # self._box_answer.setText(self.__answer_temp)  # displays the answer
-
     def _text_update(self) -> None:
         """
         Activates each time a user changes their input in the text box.
@@ -1534,8 +1525,6 @@ class MainWindow(ControlWindow):
         Adds and removes variables in the variables box based on the new user input.
         Removes the answer from the answer box.
         """
-
-        self.__button_format_visibility(False)  # hides the format button
 
         self._user_select = self.sender()  # saves which text box the user was typing in
 
@@ -1573,6 +1562,10 @@ class MainWindow(ControlWindow):
                     option1 = QRadioButton(f'{x}')
                     option2 = QRadioButton(symbols.constant_preview[x] + '...')
                     option1.setChecked(True)
+
+                    # displays the default answer if a radio button was selected
+                    option1.toggled.connect(lambda checked: self.__box_answer_set(self._settings_user.answer_default) if checked else None)  # used to see if a new value was selected
+                    option2.toggled.connect(lambda checked: self.__box_answer_set(self._settings_user.answer_default) if checked else None)
 
                     radio_group = QButtonGroup(self)
                     radio_group.addButton(option1)
@@ -1625,6 +1618,10 @@ class MainWindow(ControlWindow):
                         option2 = QRadioButton(symbols.constant_preview[x] + '...')
                         option1.setChecked(True)
 
+                        # displays the default answer if a radio button was selected
+                        option1.toggled.connect(lambda checked: self.__box_answer_set(self._settings_user.answer_default) if checked else None)  # used to see if a new value was selected
+                        option2.toggled.connect(lambda checked: self.__box_answer_set(self._settings_user.answer_default) if checked else None)
+
                         radio_group = QButtonGroup(self)
                         radio_group.addButton(option1)
                         radio_group.addButton(option2)
@@ -1652,17 +1649,30 @@ class MainWindow(ControlWindow):
 
         self._fill_variables()  # adds all variables found in the variable box
 
-        # clears the answer box to prevent user from thinking the answer is for what was just typed in the text box
-        self.__answer = self._settings_user.answer_default  # sets answer to default answer so if the user flips the format, the default answer still displays
-        self._box_answer.setIcon(QIcon())
-
-        self._box_answer.setText(f'{self.__answer}')  # displays the answer
-
-        self._box_answer_format_label.setText('')
+        self.__box_answer_set(self._settings_user.answer_default)  # clears the previous answer
 
     def _update_main(self):
         self.__button_settings.move(self.width() - self._settings_user.title_bar_settings_width - self._settings_user.title_bar_settings_separate - (3 * self._settings_user.title_bar_button_width), self._settings_user.title_bar_settings_spacing)
         self.__button_settings.resize(self._settings_user.title_bar_settings_width, self._settings_user.title_bar_height - (2 * self._settings_user.title_bar_settings_spacing))
+
+    def __box_answer_set(self, text: str, displayed_text: str = None) -> None:
+        """
+        Sets the answer button to the display the given text.
+
+        Used for displaying errors and the default answer.
+        """
+
+        if displayed_text is None:
+            displayed_text = text
+
+        self._box_answer.setIcon(QIcon())  # removes the image
+        self._box_answer_format_label.setText('')  # removes the format icon
+        self._box_answer.setText(displayed_text)  # sets the text of the button
+
+        self.__button_format_visibility(False)  # removes the format button
+
+        self.__answer = text
+        self.__answer_temp = text
 
     def __window_settings_open(self):
         position = self.pos().x() + 40, self.pos().y() + 30
