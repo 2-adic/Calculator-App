@@ -1,7 +1,7 @@
 from misc_functions import get_constant_values
 
 constants = {
-    'i': ('I', 'i'),
+    'i': ('I',              'i'),
     'e': ('E',              '2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274'),
     'π': ('pi',             '3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679'),
     'φ': ('GoldenRatio',    '1.6180339887498948482045868343656381177203091798057628621354486227052604628189024497072072041893911374'),
@@ -27,10 +27,13 @@ functions = [
     'log',
     'ln',
     'exp',
+    'pow',
+    'root',
     'abs',
     'mod',
     'floor',
     'ceil',
+    'sign',
     'random',
     'sin',
     'cos',
@@ -112,5 +115,16 @@ name_change_all = name_change_function.copy()
 name_change_all.update(temp)
 
 name_change_all_keys = sorted(name_change_all.keys(), key=len, reverse=True)
+
+# ------------------------------------------------------------------------------------------------
+
+# gets the order to constants from sympy names smallest to largest -------------------------------
+
+temp = constants.copy()
+temp = {value[0]: key for key, value in temp.items()}
+temp_key = sorted(temp.keys(), key=len)
+constant_order = {}
+for i, key in enumerate(temp_key):
+    constant_order[temp[key]] = i
 
 # ------------------------------------------------------------------------------------------------
