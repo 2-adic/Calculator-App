@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QStackedWidget, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout
 from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QPalette, QMouseEvent, QPixmap
-from PyQt6.QtCore import Qt, QPoint, QTimer, QSize
+from PyQt6.QtCore import Qt, QPoint, QTimer, QSize, pyqtSignal, pyqtSlot
 import pyperclip
 import fontcontrol
 from files import file_path
@@ -82,6 +82,9 @@ class Settings:
         self.__symbols_button_width = 50, 120  # width of the copy buttons within the symbols tab, a tuple is used for the width of different sections
         self.__symbols_button_height = 50  # height of the copy buttons, all buttons have the same height
 
+        # buttons
+        self.__button_text_hover_raise = 5  # the height text is raised when a button is being hovered
+
         # Colors ------------------------------------------------------------------------------------------------
         # all int values in this section can be from 0 to 255
 
@@ -106,10 +109,10 @@ class Settings:
 
         # boxes
         self.__color_box_background = 85, 88, 97
-        self.__color_box_background_selected = 51, 75, 97
+        self.__color_box_hover = 81, 100, 117
+        self.__color_box_selected = 51, 75, 97
         self.__color_box_border = 35, 36, 40
-        self.__color_box_highlight = 81, 100, 117
-
+        
         # other
         self.__color_line_primary = 41, 42, 47
         self.__color_line_secondary = 49, 51, 56
@@ -401,6 +404,14 @@ class Settings:
         self.__symbols_button_height = value
 
     @property
+    def button_text_hover_raise(self) -> int:
+        return self.__button_text_hover_raise
+
+    @button_text_hover_raise.setter
+    def button_text_hover_raise(self, value: int) -> None:
+        self.__button_text_hover_raise = value
+
+    @property
     def color_background(self) -> tuple[int, int, int]:
         return self.__color_background
 
@@ -513,12 +524,12 @@ class Settings:
         self.__color_box_background = value
 
     @property
-    def color_box_background_selected(self) -> tuple[int, int, int]:
-        return self.__color_box_background_selected
+    def color_box_selected(self) -> tuple[int, int, int]:
+        return self.__color_box_selected
 
-    @color_box_background_selected.setter
-    def color_box_background_selected(self, value: tuple[int, int, int]) -> None:
-        self.__color_box_background_selected = value
+    @color_box_selected.setter
+    def color_box_selected(self, value: tuple[int, int, int]) -> None:
+        self.__color_box_selected = value
 
     @property
     def color_box_border(self) -> tuple[int, int, int]:
@@ -529,12 +540,12 @@ class Settings:
         self.__color_box_border = value
 
     @property
-    def color_box_highlight(self) -> tuple[int, int, int]:
-        return self.__color_box_highlight
+    def color_box_hover(self) -> tuple[int, int, int]:
+        return self.__color_box_hover
 
-    @color_box_highlight.setter
-    def color_box_highlight(self, value: tuple[int, int, int]) -> None:
-        self.__color_box_highlight = value
+    @color_box_hover.setter
+    def color_box_hover(self, value: tuple[int, int, int]) -> None:
+        self.__color_box_hover = value
 
     @property
     def color_line_primary(self) -> tuple[int, int, int]:
@@ -713,7 +724,13 @@ class ControlWindow(QWidget):
 
         # displays title
         self.__title_label = QLabel(title, self)
-        self.__title_label.setStyleSheet(f'color: rgb{self._settings_user.color_title_bar_text}; font-weight: bold; font-size: 11px;')
+        self.__title_label.setStyleSheet(
+            f'''
+            color: rgb{self._settings_user.color_title_bar_text};
+            font-weight: bold;
+            font-size: 11px;
+            '''
+        )
         self.__title_label.move(self._settings_user.window_title_position[0], self._settings_user.window_title_position[1])
 
     def _set_geometry(self, size: tuple[int, int, int, int]):
@@ -1076,11 +1093,16 @@ class ControlWindow(QWidget):
 
 
 class SettingsWindow(ControlWindow):
+
+    button_apply_signal = pyqtSignal()  # lets the apply button connect to the MainWindow class
+
     def __init__(self, settings: Settings, position: tuple[int, int]):
         super().__init__(settings)
         self._set_title(self._settings_user.window_title_settings)
         self._set_geometry(position + self._settings_user.window_start_size_settings)
         self._set_size_min(self._settings_user.window_size_min_settings)
+
+
 
         # Settings Menu -----------------------------------------------------------------------------------------
 
@@ -1127,13 +1149,14 @@ class SettingsWindow(ControlWindow):
             }}
             QPushButton {{ 
                 width: 100px; 
+                height: 30px;
             }}
             QPushButton:hover {{
-                background-color: rgb{self._settings_user.color_box_highlight};
-                padding-top: -5px;
+                background-color: rgb{self._settings_user.color_box_hover};
+                padding-top: -{self._settings_user.button_text_hover_raise}px;
             }}
             QPushButton:checked {{
-                background-color: rgb{self._settings_user.color_box_background_selected};
+                background-color: rgb{self._settings_user.color_box_selected};
             }}
             QScrollBar:vertical {{
                 border-radius: 4px;
@@ -1195,10 +1218,30 @@ class SettingsWindow(ControlWindow):
 
         button_layout.addItem(right_spacer)  # adds spacing to the right of the top section buttons
 
+        # adds the apply button
+        button_apply = QPushButton('Apply')
+        button_apply.setStyleSheet(
+            f'''
+            QPushButton {{ 
+                min-width: 100px;
+                max-width: 100px;
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_box_selected}
+            }}
+            '''
+        )
+        button_apply.clicked.connect(self.__apply_settings)
+        layout = QHBoxLayout()
+        layout.addWidget(button_apply)
+
         # main_layout
         main_layout.addItem(top_spacer)
         main_layout.addLayout(button_layout)
         main_layout.addWidget(stacked_widget)
+
+        main_layout.addLayout(layout)
+        # main_layout.addWidget(button_apply)
 
     def __sections_initialize(self, settings_list):
         """
@@ -1227,7 +1270,7 @@ class SettingsWindow(ControlWindow):
                         border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
                     }}
                     QPushButton {{ 
-                        width: 80px; 
+                        width: 80px;
                     }}
                     '''
                 )
@@ -1270,6 +1313,13 @@ class SettingsWindow(ControlWindow):
         """
 
         return
+
+    def __apply_settings(self) -> None:
+        """
+        Refreshes the windows / rendered answer to apply the new settings.
+        """
+
+        self.button_apply_signal.emit()  # runs the __apply_settings_main function within the MainWindow class
 
     def __formatting_commas(self, label: str):
         """
@@ -1352,11 +1402,11 @@ class MainWindow(ControlWindow):
                 font-size: 15px;
             }}
             QPushButton:hover {{
-                background-color: rgb{self._settings_user.color_box_highlight};
-                padding-top: -5px;
+                background-color: rgb{self._settings_user.color_box_hover};
+                padding-top: -{self._settings_user.button_text_hover_raise}px;
             }}
             QPushButton:pressed {{
-                background-color: rgb{self._settings_user.color_box_background_selected};
+                background-color: rgb{self._settings_user.color_box_selected};
             }}
             '''
         )
@@ -1380,6 +1430,7 @@ class MainWindow(ControlWindow):
         self._user_select = None
         self._box_text = QPlainTextEdit(self)
         self._box_text.textChanged.connect(self._text_update)
+        self.__set_custom_context_menu(self._box_text)
         self._box_text.setStyleSheet(
             f'''
             QPlainTextEdit {{
@@ -1428,7 +1479,7 @@ class MainWindow(ControlWindow):
         )
 
         self._bar_answer = QPushButton('Answer', self)  # the button that lets the user compute the answer
-        self._bar_answer.clicked.connect(self._get_answer)
+        self._bar_answer.clicked.connect(lambda: self._get_answer())
 
         self._bar_format = QPushButton('Format', self)  # the button that changes the format of the answer
         self._bar_format.clicked.connect(self._flip_type)
@@ -1443,11 +1494,11 @@ class MainWindow(ControlWindow):
                 font-size: 15px;
             }}
             QPushButton:hover {{
-                background-color: rgb{self._settings_user.color_box_highlight};
-                padding-top: -5px;
+                background-color: rgb{self._settings_user.color_box_hover};
+                padding-top: -{self._settings_user.button_text_hover_raise}px;
             }}
             QPushButton:pressed {{
-                background-color: rgb{self._settings_user.color_box_background_selected};
+                background-color: rgb{self._settings_user.color_box_selected};
             }}
             '''
         )
@@ -1461,14 +1512,21 @@ class MainWindow(ControlWindow):
         # settings Window
         self.window_settings = None
 
-    def _get_answer(self) -> None:
+        # other
+        self._text_update_lambda = lambda: self._text_update()  # used to keep track of the function for when it gets disconnected
+
+    def _get_answer(self, stop_format_reset: bool | None = None) -> None:
         """
         Calculates the answer from the user input.
 
         Displays the answer in the answer box.
         """
 
-        self.__flip_type_toggle = False  # resets the format type
+        if stop_format_reset is None:
+            self.__flip_type_toggle = False  # resets the format type
+        else:  # stops the format from flipping if the apply button was pressed
+            self.__flip_type_toggle = not stop_format_reset
+
         self.__button_format_visibility(True)  # shows the format button
 
         text = self._box_text.toPlainText()  # gets the string from the text box
@@ -1518,7 +1576,7 @@ class MainWindow(ControlWindow):
 
         self.resizeEvent(None)
 
-    def _text_update(self) -> None:
+    def _text_update(self, activated: bool = False) -> None:
         """
         Activates each time a user changes their input in the text box.
 
@@ -1526,7 +1584,10 @@ class MainWindow(ControlWindow):
         Removes the answer from the answer box.
         """
 
-        self._user_select = self.sender()  # saves which text box the user was typing in
+        if activated:  # if the _text_update was activated automatically, then sender is set the text box
+            self._user_select = self._box_text
+        else:
+            self._user_select = self.sender()  # saves which text box the user was typing in
 
         text = self._box_text.toPlainText()
         text = function_convert(text)
@@ -1554,6 +1615,7 @@ class MainWindow(ControlWindow):
 
                     text_box = QLineEdit(self)
                     text_box.setPlaceholderText(f'{x}')
+                    self.__set_custom_context_menu(text_box)
                     self._symbols[0][x] = (label, text_box)
 
                 elif index == 1:
@@ -1578,7 +1640,7 @@ class MainWindow(ControlWindow):
                                 background-color: rgb{self._settings_user.color_box_background};
                             }}
                             QRadioButton::indicator:checked {{
-                                background-color: rgb{self._settings_user.color_box_highlight};
+                                background-color: rgb{self._settings_user.color_box_hover};
                             }}
                             '''
                     option1.setStyleSheet(style)
@@ -1609,6 +1671,7 @@ class MainWindow(ControlWindow):
 
                         text_box = QLineEdit(self)
                         text_box.setPlaceholderText(f'{x}')
+                        self.__set_custom_context_menu(text_box)
                         self._symbols[0][x] = (label, text_box)
 
                     elif index_2 == 1:
@@ -1633,7 +1696,7 @@ class MainWindow(ControlWindow):
                                     background-color: rgb{self._settings_user.color_box_background};
                                 }}
                                 QRadioButton::indicator:checked {{
-                                    background-color: rgb{self._settings_user.color_box_highlight};
+                                    background-color: rgb{self._settings_user.color_box_hover};
                                 }}
                                 '''
                         option1.setStyleSheet(style)
@@ -1649,7 +1712,8 @@ class MainWindow(ControlWindow):
 
         self._fill_variables()  # adds all variables found in the variable box
 
-        self.__box_answer_set(self._settings_user.answer_default)  # clears the previous answer
+        if not activated:
+            self.__box_answer_set(self._settings_user.answer_default)  # clears the previous answer
 
     def _update_main(self):
         self.__button_settings.move(self.width() - self._settings_user.title_bar_settings_width - self._settings_user.title_bar_settings_separate - (3 * self._settings_user.title_bar_button_width), self._settings_user.title_bar_settings_spacing)
@@ -1674,11 +1738,37 @@ class MainWindow(ControlWindow):
         self.__answer = text
         self.__answer_temp = text
 
+    def __set_custom_context_menu(self, widget):
+        """
+        Sets the context menu stylesheet.
+        """
+
+        def context_menu_event(event):
+            menu = widget.createStandardContextMenu()
+            menu.setStyleSheet(
+                f'''
+                QMenu {{
+                    background-color: rgb{self._settings_user.color_box_background};
+                    border: 1px solid rgb{self._settings_user.color_box_border};
+                    border-radius: 0px;
+                    color: white;
+                    font-size: 13px;
+                }}
+                QMenu::item::selected {{
+                    background-color: rgb{self._settings_user.color_box_hover};
+                }}
+                '''
+            )
+            menu.exec(event.globalPos())
+
+        widget.contextMenuEvent = context_menu_event
+
     def __window_settings_open(self):
         position = self.pos().x() + 40, self.pos().y() + 30
 
         if self.window_settings is None:  # creates and opens the setting window
             self.window_settings = SettingsWindow(self._settings_user, position)
+            self.window_settings.button_apply_signal.connect(self.__apply_settings_main)  # lets the apply button connect to the MainWindow class
             self.window_settings.show()
 
         else:  # the settings window already exists, it is showed and repositioned
@@ -1688,6 +1778,197 @@ class MainWindow(ControlWindow):
 
             self.window_settings._window_normal()  # takes the window out of its special states
             self.window_settings.raise_()  # focuses the window to the front
+
+    @pyqtSlot()
+    def __apply_settings_main(self) -> None:
+        """
+        Applies user settings from SettingsWindow to MainWindow.
+        """
+
+        is_displaying_answer = self._box_answer.text() == ''  # tells if an answer is being displayed or not
+
+        if is_displaying_answer:
+            self._get_answer(self.__flip_type_toggle)
+
+        misc_functions.test_colors(self._settings_user)  # changes all colors to random values for testing
+
+        self.__update_colors_main()  # updates all colors for MainWindow
+
+    def __update_colors_main(self) -> None:
+        """
+        Updates the stylesheets of everything in MainWindow.
+
+        Currently, this function is not fully implemented. Some widgets / buttons need to be automatically updated.
+        """
+
+        self._text_update(True)  # updates the colors in the variables tab
+
+        # commented out these stylesheets due to errors
+        """
+        self.__button_close.setStyleSheet(
+            f'''
+            QPushButton {{
+                background-color: transparent;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user.color_title_bar_button_exit_hover};
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_title_bar_button_exit_press};
+            }}
+            '''
+        )
+        
+        self.__button_maximize.setStyleSheet(
+            f'''
+            QPushButton {{
+                background-color: transparent;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user.color_title_bar_button_hover};
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_title_bar_button_press};
+            }}
+            '''
+        )
+        
+        self.__button_minimize.setStyleSheet(
+            f'''
+            QPushButton {{
+                background-color: transparent;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user.color_title_bar_button_hover};
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_title_bar_button_press};
+            }}
+            QPushButton::icon {{
+                margin-bottom: -5px; 
+            }}
+            '''
+        )
+        
+        self.__title_label.setStyleSheet(
+            f'''
+            color: rgb{self._settings_user.color_title_bar_text};
+            font-weight: bold;
+            font-size: 11px;
+            '''
+        )
+        """
+
+        self.__button_settings.setStyleSheet(
+            f'''
+            QPushButton {{
+                background-color: transparent;
+                border-radius: 3px
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user.color_title_bar_button_hover};
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_title_bar_button_press}
+            }}
+            '''
+        )
+
+        self._box_answer.setStyleSheet(
+            f'''
+            QPushButton {{
+                border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+                border-radius: {self._settings_user.box_border_radius}px;
+                background-color: rgb{self._settings_user.color_box_background};
+                color: rgb{self._settings_user.color_text};
+                font-size: 15px;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user.color_box_hover};
+                padding-top: -{self._settings_user.button_text_hover_raise}px;
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_box_selected};
+            }}
+            '''
+        )
+
+        self._box_answer_format_label.setStyleSheet(
+            f'''
+            QLabel {{
+                font-size: {self._settings_user.answer_format_size}px;
+                color: rgb{self._settings_user.color_text}
+            }}
+            '''
+        )
+
+        self._box_text.setStyleSheet(
+            f'''
+            QPlainTextEdit {{
+                border-top: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+                border-left: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+                border-right: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+                background-color: rgb{self._settings_user.color_box_background};
+                border-top-left-radius: {self._settings_user.box_border_radius}px;
+                border-top-right-radius: {self._settings_user.box_border_radius}px;
+                color: rgb{self._settings_user.color_text};
+                font-size: 15px;
+            }}
+            QScrollBar:vertical {{
+                border-radius: 4px;
+                background-color: rgb{self._settings_user.color_scrollbar_background};
+                width: 12px;
+                margin: 4px 4px 4px 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: rgb{self._settings_user.color_box_border};
+                border-radius: 4px;
+                min-height: 20px;
+            }}
+            QScrollBar::add-line:vertical {{
+                width: 0px;
+            }}
+            QScrollBar::sub-line:vertical {{
+                width: 0px;
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                background: none;
+            }}
+            '''
+        )
+
+        self._bar_blank.setStyleSheet(
+            f'''
+            QWidget {{
+                border-bottom: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+                border-right: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+                border-bottom-right-radius: {self._settings_user.box_border_radius}px;
+                background-color: rgb{self._settings_user.color_box_background};
+            }}
+            '''
+        )
+
+        self._bar_format.setStyleSheet(
+            f'''
+            QPushButton {{
+                border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+                border-top-right-radius: {self._settings_user.box_border_radius}px;
+                background-color: rgb{self._settings_user.color_box_background};
+                color: rgb{self._settings_user.color_text};
+                font-size: 15px;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user.color_box_hover};
+                padding-top: -{self._settings_user.button_text_hover_raise}px;
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_box_selected};
+            }}
+            '''
+        )
 
     def __variable_formatting(self, symbols: tuple[dict, dict, dict]) -> dict:
 
@@ -1767,11 +2048,11 @@ class MainWindow(ControlWindow):
                     font-size: 15px;
                 }}
                 QPushButton:hover {{
-                    background-color: rgb{self._settings_user.color_box_highlight};
-                    padding-top: -5px;
+                    background-color: rgb{self._settings_user.color_box_hover};
+                    padding-top: -{self._settings_user.button_text_hover_raise}px;
                 }}
                 QPushButton:pressed {{
-                    background-color: rgb{self._settings_user.color_box_background_selected};
+                    background-color: rgb{self._settings_user.color_box_selected};
                 }}
                 '''
             )
@@ -1789,11 +2070,11 @@ class MainWindow(ControlWindow):
                     font-size: 15px;
                 }}
                 QPushButton:hover {{
-                    background-color: rgb{self._settings_user.color_box_highlight};
-                    padding-top: -5px;
+                    background-color: rgb{self._settings_user.color_box_hover};
+                    padding-top: -{self._settings_user.button_text_hover_raise}px;
                 }}
                 QPushButton:pressed {{
-                    background-color: rgb{self._settings_user.color_box_background_selected};
+                    background-color: rgb{self._settings_user.color_box_selected};
                 }}
                 '''
             )
@@ -1980,7 +2261,7 @@ class MultiBox(MainWindow):
                         h_layout.addWidget(label)
                         h_layout.addWidget(edit, 1)  # The 1 here allows the QLineEdit to expand
 
-                        edit.textChanged.connect(self._text_update)
+                        edit.textChanged.connect(self._text_update_lambda)
 
                     if i == 1:
                         label, option1, option2 = self._symbols[1][key]
@@ -2172,11 +2453,11 @@ class MultiBox(MainWindow):
                         border-radius: {self._settings_user.box_border_radius}px;
                     }}
                     QPushButton:hover {{
-                        background-color: rgb{self._settings_user.color_box_highlight};
-                        padding-top: -5px;
+                        background-color: rgb{self._settings_user.color_box_hover};
+                        padding-top: -{self._settings_user.button_text_hover_raise}px;
                     }}
                     QPushButton:pressed {{
-                        background-color: rgb{self._settings_user.color_box_background_selected};
+                        background-color: rgb{self._settings_user.color_box_selected};
                     }}
                     '''
                 )
@@ -2264,11 +2545,11 @@ class MultiBox(MainWindow):
                     font-size: 15px;
                 }}
                 QPushButton:hover {{
-                    padding-top: -5px;
-                    background-color: rgb{self._settings_user.color_box_highlight};
+                    padding-top: -{self._settings_user.button_text_hover_raise}px;
+                    background-color: rgb{self._settings_user.color_box_hover};
                 }}
                 QPushButton:checked {{
-                    background-color: rgb{self._settings_user.color_box_background_selected};
+                    background-color: rgb{self._settings_user.color_box_selected};
                 }}
                 '''
             )
@@ -2284,11 +2565,11 @@ class MultiBox(MainWindow):
                     font-size: 15px;
                 }}
                 QPushButton:hover {{
-                    padding-top: -5px;
-                    background-color: rgb{self._settings_user.color_box_highlight};
+                    padding-top: -{self._settings_user.button_text_hover_raise}px;
+                    background-color: rgb{self._settings_user.color_box_hover};
                 }}
                 QPushButton:checked {{
-                    background-color: rgb{self._settings_user.color_box_background_selected};
+                    background-color: rgb{self._settings_user.color_box_selected};
                 }}
                 '''
             )
@@ -2303,11 +2584,11 @@ class MultiBox(MainWindow):
                     font-size: 15px;
                 }}
                 QPushButton:hover {{
-                    padding-top: -5px;
-                    background-color: rgb{self._settings_user.color_box_highlight};
+                    padding-top: -{self._settings_user.button_text_hover_raise}px;
+                    background-color: rgb{self._settings_user.color_box_hover};
                 }}
                 QPushButton:checked {{
-                    background-color: rgb{self._settings_user.color_box_background_selected};
+                    background-color: rgb{self._settings_user.color_box_selected};
                 }}
                 '''
             )
@@ -2328,7 +2609,7 @@ class MultiBox(MainWindow):
             keys = list(self._symbols[index].keys())
             for key in keys:
                 try:
-                    self._symbols[index][key][1].textChanged.disconnect(self._text_update)
+                    self._symbols[index][key][1].textChanged.disconnect(self._text_update_lambda)
                 except:
                     pass
 
@@ -2446,7 +2727,7 @@ class TestButtons(RunWindow):  # buttons, and functions for testing purposes
 
         # answer button
         self.__button_hook.append(QPushButton(self._settings_user.answer_default, self))
-        self.__button_hook[-1].clicked.connect(self._get_answer)
+        self.__button_hook[-1].clicked.connect(lambda: self._get_answer())
 
         # flip button
         self.__button_hook.append(QPushButton('Flip', self))
