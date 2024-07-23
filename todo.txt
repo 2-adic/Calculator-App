@@ -38,6 +38,9 @@ Bugs:
     - e^n for n != 1 gives a decimal value when the symbol is supposed to be used
         - This is caused by the __custom_approx function
 
+    - Fix the rendering of mod
+        - Ex: mod(x, y) renders as xmody
+
 Future Features:
     - Need shadowing for the sides of the window (for Windows)
 
@@ -72,33 +75,23 @@ Future Features:
     - Add more functions
 
 Before Beta:
-    - Functions
-        - Functions to add
-            - root, sign (returns 1 if positive, -1 if negative, and 0 if 0)
-        - May want to fix the rendering of mod
-            - Ex: mod(x, y) renders as xmody
 
     - Fill the settings window with settings:
         - Option to toggle between radians and degrees
             - Currently it works, but the answer needs to be checked after the answer is solved. If degrees are used, then the angle needs to be changed to display degrees.
 
-        - Option for changing the window's colors
+        - Add rgb settings for changing the colors of text / background / borders / etc
 
-        - Add an apply button
-            - Put it on the bottom of the settings window centered in the middle
-            - When it is clicked:
-                - If and only if an answer is being shown, then it should be re-rendered
-                - All windows should be updated
+        - Apply Button:
+            - Need to somehow stop settings from changing before the apply button is pressed
+                - Specifically the non-color settings (since the color settings don't apply until the button is pressed)
 
-    - Add word wrapping to the answer button for when errors are being displayed
+    - Add word wrapping to the answer button for when long errors are being displayed
 
     - Fix the vertical spacing in the notations tab
+        - may not fix since the user cannot tell anything is wrong with it
+            - it looks normal due to the amount of math functions below the symbols section
 
-    - Change the font of the LaTeX image
+    - Add more error detection
 
     - Test on macOS
-
-    - Fix these bugs:
-        - Crashes when integration is with respect to variable A, and A is also defined as a value
-            - Find a way to tell the user that this is not possible via error message or something else
-
