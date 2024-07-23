@@ -172,11 +172,10 @@ class Solve:
         Some functions require steps to be further simplified.
         """
 
-        # this is needed for: ln(e^x) -> x, ln(x^n) -> nln(x), etc
         if not self.__is_value_used:
-            self.__answer_exact = sy.expand_log(self.__answer_exact, force=True)
+            self.__answer_exact = sy.expand_log(self.__answer_exact, force=True)  # ln(e^x) -> x, ln(x^n) -> nln(x), etc
 
-        self.__answer_approximate = sy.expand_log(self.__answer_approximate, force=True)
+        self.__answer_approximate = sy.expand_log(self.__answer_approximate, force=True)  # ln(e^x) -> x, ln(x^n) -> nln(x), etc
 
     def __remove_white_spaces(self, string) -> str:
         """
@@ -299,10 +298,10 @@ class Solve:
         return f'exp({x})'
 
     def __pow(self, x: str, y: str) -> str:
-        return f'{x}**{y}'
+        return f'({x})**{y}'
 
     def __root(self, x: str, y: str) -> str:
-        return f'{x}**(1/{y})'
+        return f'({x})**(1/{y})'
 
     def __floor(self, x: str) -> str:
         return f'floor({x})'
