@@ -124,7 +124,7 @@ class Settings:
         self.__use_degrees = False
         self.__use_commas = False
 
-    def __load_defaults(self):
+    def __load_defaults(self) -> None:
         """
         Converts all settings to their default values.
         """
@@ -623,6 +623,7 @@ class ControlWindow(QWidget):
 
         # close button
         self.__button_close = QPushButton('', self)
+        self.__button_close.setCursor(Qt.CursorShape.PointingHandCursor)
         self.__button_close.setIcon(QIcon(file_path('button_close_icon.png', 'icons')))
         self.__button_close.setStyleSheet(
             f'''
@@ -644,6 +645,7 @@ class ControlWindow(QWidget):
 
         # maximize button
         self.__button_maximize = QPushButton('', self)
+        self.__button_maximize.setCursor(Qt.CursorShape.PointingHandCursor)
         self.__button_maximize.setIcon(QIcon(file_path('button_maximize_icon.png', 'icons')))
         self.__button_maximize.setStyleSheet(
             f'''
@@ -663,6 +665,7 @@ class ControlWindow(QWidget):
 
         # minimize button
         self.__button_minimize = QPushButton('', self)
+        self.__button_minimize.setCursor(Qt.CursorShape.PointingHandCursor)
         self.__button_minimize.setIcon(QIcon(file_path('button_minimize_icon.png', 'icons')))
         self.__button_minimize.setStyleSheet(
             f'''
@@ -746,7 +749,7 @@ class ControlWindow(QWidget):
 
         self.size_min = size
 
-    def _window_normal(self):
+    def _window_normal(self) -> None:
         """
         Returns the window to its normal state, and enables all resizing widgets. Takes the window out of all modes.
         """
@@ -797,13 +800,76 @@ class ControlWindow(QWidget):
         self.__widget_resize[7].move(self.width() - self._settings_user.widget_resize_size, self.height() - self._settings_user.widget_resize_size)
         self.__widget_resize[7].resize(self._settings_user.widget_resize_size, self._settings_user.widget_resize_size)
 
-    def __button_close_press(self):
+    def _update_colors_control(self) -> None:
+        """
+        Updates the colors for the ControlWindow.
+
+        Updates the title bar button colors, and the title label color.
+        """
+
+        self.__button_close.setStyleSheet(
+            f'''
+            QPushButton {{
+                background-color: transparent;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user.color_title_bar_button_exit_hover};
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_title_bar_button_exit_press};
+            }}
+            '''
+        )
+
+        self.__button_maximize.setStyleSheet(
+            f'''
+            QPushButton {{
+                background-color: transparent;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user.color_title_bar_button_hover};
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_title_bar_button_press};
+            }}
+            '''
+        )
+
+        self.__button_minimize.setStyleSheet(
+            f'''
+            QPushButton {{
+                background-color: transparent;
+                border: none;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user.color_title_bar_button_hover};
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_title_bar_button_press};
+            }}
+            QPushButton::icon {{
+                margin-bottom: -5px; 
+            }}
+            '''
+        )
+
+        self.__title_label.setStyleSheet(
+            f'''
+            color: rgb{self._settings_user.color_title_bar_text};
+            font-weight: bold;
+            font-size: 11px;
+            '''
+        )
+
+    def __button_close_press(self) -> None:
         self.__button_close.setIcon(QIcon(file_path('button_close_press_icon.png', 'icons')))
 
-    def __button_close_release(self):
+    def __button_close_release(self) -> None:
         self.__button_close.setIcon(QIcon(file_path('button_close_icon.png', 'icons')))
 
-    def __window_resize_enable(self):
+    def __window_resize_enable(self) -> None:
         """
         Re-enables resizing after the timer expires.
         """
@@ -844,7 +910,7 @@ class ControlWindow(QWidget):
 
         self.resizeEvent(None)  # resizes the window
 
-    def __logic_full_screen(self):
+    def __logic_full_screen(self) -> None:
         """
         Fullscreens the window.
         """
@@ -1102,8 +1168,6 @@ class SettingsWindow(ControlWindow):
         self._set_geometry(position + self._settings_user.window_start_size_settings)
         self._set_size_min(self._settings_user.window_size_min_settings)
 
-
-
         # Settings Menu -----------------------------------------------------------------------------------------
 
         settings_list = (
@@ -1112,7 +1176,7 @@ class SettingsWindow(ControlWindow):
                 (self.__degree_units, 0, 'Angle Unit', 'Radians', 'Degrees'),
                 (self.__formatting_commas, 0, 'Number Format', 'Standard', 'Commas'))),
 
-            ('Test 2', (
+            ('Colors', (
                 (self.__button_clicked, 0, 'Button 0', 'On', 'Off'),
                 (self.__button_clicked, 0, 'Button 1', 'On', 'Off'),
                 (self.__button_clicked, 0, 'Button 2', 'On', 'Off'),
@@ -1130,7 +1194,7 @@ class SettingsWindow(ControlWindow):
                 (self.__button_clicked, 0, 'Button 14', 'On', 'Off'),
                 (self.__button_clicked, 0, 'Button 15', 'On', 'Off'))),
 
-            ('Test 3', (
+            ('Other', (
                 (self.__button_clicked, 0, 'Button 0', 'Option 0', 'Option 1', 'Option 2'),
                 (self.__button_clicked, 1, 'Button 1', 'Option 0', 'Option 1', 'Option 2'),
                 (self.__button_clicked, 1, 'Button 2', 'Option 0', 'Option 1', 'Option 2'),
@@ -1148,8 +1212,9 @@ class SettingsWindow(ControlWindow):
                 font-size: 15px;
             }}
             QPushButton {{ 
-                width: 100px; 
-                height: 30px;
+                width: 100px;
+                max-width: 100px;
+                min-height: 30px;
             }}
             QPushButton:hover {{
                 background-color: rgb{self._settings_user.color_box_hover};
@@ -1183,6 +1248,7 @@ class SettingsWindow(ControlWindow):
 
         main_layout = QVBoxLayout(self.__menu)
         button_layout = QHBoxLayout()  # layout for the section buttons
+        self.__button_storage = []  # keeps track of buttons for future stylesheet changes
 
         # section button spacers
         top_spacer = QSpacerItem(0, 5, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
@@ -1203,6 +1269,7 @@ class SettingsWindow(ControlWindow):
 
         for i, section in enumerate(settings_list):
             button = QPushButton(section[0])  # creates the section buttons
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
             button.setCheckable(True)  # allows the buttons to be toggleable
             button.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
 
@@ -1219,21 +1286,18 @@ class SettingsWindow(ControlWindow):
         button_layout.addItem(right_spacer)  # adds spacing to the right of the top section buttons
 
         # adds the apply button
-        button_apply = QPushButton('Apply')
-        button_apply.setStyleSheet(
+        self.__button_apply = QPushButton('Apply')  # keeps track of button for future stylesheet changes
+        self.__button_apply.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.__button_apply.setStyleSheet(
             f'''
-            QPushButton {{ 
-                min-width: 100px;
-                max-width: 100px;
-            }}
             QPushButton:pressed {{
-                background-color: rgb{self._settings_user.color_box_selected}
+                background-color: rgb{self._settings_user.color_box_selected};
             }}
             '''
         )
-        button_apply.clicked.connect(self.__apply_settings)
+        self.__button_apply.clicked.connect(self.__apply_settings)
         layout = QHBoxLayout()
-        layout.addWidget(button_apply)
+        layout.addWidget(self.__button_apply)
 
         # main_layout
         main_layout.addItem(top_spacer)
@@ -1241,7 +1305,6 @@ class SettingsWindow(ControlWindow):
         main_layout.addWidget(stacked_widget)
 
         main_layout.addLayout(layout)
-        # main_layout.addWidget(button_apply)
 
     def __sections_initialize(self, settings_list):
         """
@@ -1263,13 +1326,13 @@ class SettingsWindow(ControlWindow):
 
             for i, option in enumerate(options):  # creates a button for each option
                 button = QPushButton(option)
+                button.setCursor(Qt.CursorShape.PointingHandCursor)
+                self.__button_storage.append(button)
                 button.setCheckable(True)
                 button.setStyleSheet(
                     f'''
-                    * {{
+                    QPushButton {{
                         border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
-                    }}
-                    QPushButton {{ 
                         width: 80px;
                     }}
                     '''
@@ -1279,7 +1342,6 @@ class SettingsWindow(ControlWindow):
 
                 # connects the buttons to their specified function
                 button.clicked.connect(lambda checked, f=function, l=option: f(l) if checked else None)
-
 
                 if i == default_option:  # logic for if the button is the default one
                     button.setChecked(True)  # visually shows the default button as selected
@@ -1305,6 +1367,89 @@ class SettingsWindow(ControlWindow):
 
         return container_widget
 
+    def __apply_settings(self) -> None:
+        """
+        Refreshes the windows / rendered answer to apply the new settings.
+        """
+
+        self.button_apply_signal.emit()  # runs the _apply_settings_all function within the RunWindow class
+        self.__update_colors_settings()
+
+    def __update_colors_settings(self) -> None:
+        """
+        Updates the colors for the SettingWindow.
+        """
+
+        self.repaint()  # updates the colors for the title bar and background
+
+        self._update_colors_control()  # updates the colors of stuff in the title bar
+
+        self.__button_apply.setStyleSheet(
+            f'''
+            QPushButton {{ 
+                max-width: 100px;
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self._settings_user.color_box_selected}
+            }}
+            '''
+        )
+
+        for button in self.__button_storage:
+            button.setStyleSheet(
+                f'''
+                QPushButton {{
+                    border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+                    width: 80px;
+                }}
+                '''
+            )
+
+        self.__menu.setStyleSheet(
+            f'''
+            QWidget {{
+                border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+                background-color: rgb{self._settings_user.color_box_background};
+                border-radius: {self._settings_user.box_border_radius}px;
+                color: rgb{self._settings_user.color_text};
+                font-size: 15px;
+            }}
+            QPushButton {{
+                width: 100px; 
+                min-height: 30px;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self._settings_user.color_box_hover};
+                padding-top: -{self._settings_user.button_text_hover_raise}px;
+                border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+            }}
+            QPushButton:checked {{
+                background-color: rgb{self._settings_user.color_box_selected};
+                border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+            }}
+            QScrollBar:vertical {{
+                border-radius: 4px;
+                background-color: rgb{self._settings_user.color_scrollbar_background};
+                width: 12px;
+                margin: 4px 4px 4px 0px;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: rgb{self._settings_user.color_box_border};
+                border-radius: 4px;
+                min-height: 20px;
+            }}
+            QScrollBar::add-line:vertical {{
+                width: 0px;
+            }}
+            QScrollBar::sub-line:vertical {{
+                width: 0px;
+            }}
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                background: none;
+            }}
+            '''
+        )
+
     def __button_clicked(self, label: str):
         """
         Used to test if the settings buttons work.
@@ -1313,13 +1458,6 @@ class SettingsWindow(ControlWindow):
         """
 
         return
-
-    def __apply_settings(self) -> None:
-        """
-        Refreshes the windows / rendered answer to apply the new settings.
-        """
-
-        self.button_apply_signal.emit()  # runs the __apply_settings_main function within the MainWindow class
 
     def __formatting_commas(self, label: str):
         """
@@ -1342,7 +1480,7 @@ class SettingsWindow(ControlWindow):
             # self._settings_user.use_degrees = True
             print('Degrees not enabled yet.')
 
-    def __update_setting(self):
+    def __update_setting(self) -> None:
         """
         Updates the position of everything in the settings window.
         """
@@ -1364,6 +1502,7 @@ class MainWindow(ControlWindow):
 
         # settings button
         self.__button_settings = QPushButton('', self)
+        self.__button_settings.setCursor(Qt.CursorShape.PointingHandCursor)
         self.__button_settings.clicked.connect(self.__window_settings_open)
         self.__button_settings.setIcon(QIcon(file_path('gear_icon.png', 'icons')))
         size = int(self._settings_user.title_bar_settings_icon_scale * (self._settings_user.title_bar_height - (2 * self._settings_user.title_bar_settings_spacing)))
@@ -1391,6 +1530,7 @@ class MainWindow(ControlWindow):
         self._icon_aspect_ratio_inverse = None
 
         self._box_answer = QPushButton(self._settings_user.answer_default, self)
+        self._box_answer.setCursor(Qt.CursorShape.PointingHandCursor)
         self._box_answer.clicked.connect(self.__copy)
         self._box_answer.setStyleSheet(
             f'''
@@ -1479,9 +1619,11 @@ class MainWindow(ControlWindow):
         )
 
         self._bar_answer = QPushButton('Answer', self)  # the button that lets the user compute the answer
+        self._bar_answer.setCursor(Qt.CursorShape.PointingHandCursor)
         self._bar_answer.clicked.connect(lambda: self._get_answer())
 
         self._bar_format = QPushButton('Format', self)  # the button that changes the format of the answer
+        self._bar_format.setCursor(Qt.CursorShape.PointingHandCursor)
         self._bar_format.clicked.connect(self._flip_type)
         self.__button_format_visibility(False)  # sets the style for the answer button
         self._bar_format.setStyleSheet(
@@ -1622,7 +1764,9 @@ class MainWindow(ControlWindow):
                     label = QLabel(f'{x}:', self)
 
                     option1 = QRadioButton(f'{x}')
+                    option1.setCursor(Qt.CursorShape.PointingHandCursor)
                     option2 = QRadioButton(symbols.constant_preview[x] + '...')
+                    option2.setCursor(Qt.CursorShape.PointingHandCursor)
                     option1.setChecked(True)
 
                     # displays the default answer if a radio button was selected
@@ -1639,8 +1783,11 @@ class MainWindow(ControlWindow):
                                 border: 2px solid rgb{self._settings_user.color_box_border};
                                 background-color: rgb{self._settings_user.color_box_background};
                             }}
-                            QRadioButton::indicator:checked {{
+                            QRadioButton::indicator:hover {{
                                 background-color: rgb{self._settings_user.color_box_hover};
+                            }}
+                            QRadioButton::indicator:checked {{
+                                background-color: rgb{self._settings_user.color_box_selected};
                             }}
                             '''
                     option1.setStyleSheet(style)
@@ -1678,7 +1825,9 @@ class MainWindow(ControlWindow):
                         label = QLabel(f'{x}:', self)
 
                         option1 = QRadioButton(f'{x}')
+                        option1.setCursor(Qt.CursorShape.PointingHandCursor)
                         option2 = QRadioButton(symbols.constant_preview[x] + '...')
+                        option2.setCursor(Qt.CursorShape.PointingHandCursor)
                         option1.setChecked(True)
 
                         # displays the default answer if a radio button was selected
@@ -1695,8 +1844,11 @@ class MainWindow(ControlWindow):
                                     border: 2px solid rgb{self._settings_user.color_box_border};
                                     background-color: rgb{self._settings_user.color_box_background};
                                 }}
-                                QRadioButton::indicator:checked {{
+                                QRadioButton::indicator:hover {{
                                     background-color: rgb{self._settings_user.color_box_hover};
+                                }}
+                                QRadioButton::indicator:checked {{
+                                    background-color: rgb{self._settings_user.color_box_selected};
                                 }}
                                 '''
                         option1.setStyleSheet(style)
@@ -1715,7 +1867,7 @@ class MainWindow(ControlWindow):
         if not activated:
             self.__box_answer_set(self._settings_user.answer_default)  # clears the previous answer
 
-    def _update_main(self):
+    def _update_main(self) -> None:
         self.__button_settings.move(self.width() - self._settings_user.title_bar_settings_width - self._settings_user.title_bar_settings_separate - (3 * self._settings_user.title_bar_button_width), self._settings_user.title_bar_settings_spacing)
         self.__button_settings.resize(self._settings_user.title_bar_settings_width, self._settings_user.title_bar_height - (2 * self._settings_user.title_bar_settings_spacing))
 
@@ -1763,12 +1915,12 @@ class MainWindow(ControlWindow):
 
         widget.contextMenuEvent = context_menu_event
 
-    def __window_settings_open(self):
+    def __window_settings_open(self) -> None:
         position = self.pos().x() + 40, self.pos().y() + 30
 
         if self.window_settings is None:  # creates and opens the setting window
             self.window_settings = SettingsWindow(self._settings_user, position)
-            self.window_settings.button_apply_signal.connect(self.__apply_settings_main)  # lets the apply button connect to the MainWindow class
+            self.window_settings.button_apply_signal.connect(self._apply_settings_all)  # lets the apply button connect to the MainWindow class
             self.window_settings.show()
 
         else:  # the settings window already exists, it is showed and repositioned
@@ -1779,88 +1931,31 @@ class MainWindow(ControlWindow):
             self.window_settings._window_normal()  # takes the window out of its special states
             self.window_settings.raise_()  # focuses the window to the front
 
-    @pyqtSlot()
-    def __apply_settings_main(self) -> None:
+    def _apply_settings_main(self) -> None:
         """
         Applies user settings from SettingsWindow to MainWindow.
         """
 
         is_displaying_answer = self._box_answer.text() == ''  # tells if an answer is being displayed or not
 
+        misc_functions.test_colors(self._settings_user)  # changes all colors to random values for testing
+        self.__update_colors_main(is_displaying_answer)  # updates all colors for MainWindow
+
         if is_displaying_answer:
             self._get_answer(self.__flip_type_toggle)
 
-        misc_functions.test_colors(self._settings_user)  # changes all colors to random values for testing
-
-        self.__update_colors_main()  # updates all colors for MainWindow
-
-    def __update_colors_main(self) -> None:
+    def __update_colors_main(self, is_displaying_answer) -> None:
         """
         Updates the stylesheets of everything in MainWindow.
 
         Currently, this function is not fully implemented. Some widgets / buttons need to be automatically updated.
         """
 
+        self.repaint()  # updates the colors for the title bar and background
         self._text_update(True)  # updates the colors in the variables tab
 
-        # commented out these stylesheets due to errors
-        """
-        self.__button_close.setStyleSheet(
-            f'''
-            QPushButton {{
-                background-color: transparent;
-                border: none;
-            }}
-            QPushButton:hover {{
-                background-color: rgb{self._settings_user.color_title_bar_button_exit_hover};
-            }}
-            QPushButton:pressed {{
-                background-color: rgb{self._settings_user.color_title_bar_button_exit_press};
-            }}
-            '''
-        )
-        
-        self.__button_maximize.setStyleSheet(
-            f'''
-            QPushButton {{
-                background-color: transparent;
-                border: none;
-            }}
-            QPushButton:hover {{
-                background-color: rgb{self._settings_user.color_title_bar_button_hover};
-            }}
-            QPushButton:pressed {{
-                background-color: rgb{self._settings_user.color_title_bar_button_press};
-            }}
-            '''
-        )
-        
-        self.__button_minimize.setStyleSheet(
-            f'''
-            QPushButton {{
-                background-color: transparent;
-                border: none;
-            }}
-            QPushButton:hover {{
-                background-color: rgb{self._settings_user.color_title_bar_button_hover};
-            }}
-            QPushButton:pressed {{
-                background-color: rgb{self._settings_user.color_title_bar_button_press};
-            }}
-            QPushButton::icon {{
-                margin-bottom: -5px; 
-            }}
-            '''
-        )
-        
-        self.__title_label.setStyleSheet(
-            f'''
-            color: rgb{self._settings_user.color_title_bar_text};
-            font-weight: bold;
-            font-size: 11px;
-            '''
-        )
-        """
+        self._update_colors_control()  # updates the colors of stuff in the title bar
+        self.__button_format_visibility(is_displaying_answer)  # updates the color for the answer button
 
         self.__button_settings.setStyleSheet(
             f'''
@@ -2033,7 +2128,7 @@ class MainWindow(ControlWindow):
         """
         Hides or shows the format button. Allows for correct visuals.
 
-        :param is_visible: If the buttons is going to be visible or not.
+        :param is_visible: If the format button is going to be visible or not.
         """
 
         if is_visible:
@@ -2102,7 +2197,7 @@ class MultiBox(MainWindow):
         super().__init__()
         self._setup()
 
-    def _setup(self):
+    def _setup(self) -> None:
 
         # Scroll Area Setup -------------------------------------------------------------------------------------
 
@@ -2186,6 +2281,134 @@ class MultiBox(MainWindow):
 
         # sections of the variable page
         self.__titles = ['Variables', 'Constants', 'Arbitrary Constants']
+
+    def _apply_settings_multi(self) -> None:
+        self.__update_colors_multi()
+
+    def __update_colors_multi(self) -> None:
+
+        # updates colors for the widgets in all the tabs
+        for i, areas in enumerate(self.__areas):
+            area = areas[0]
+
+            area.setStyleSheet(
+                f'''
+                QWidget {{
+                    border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+                    background-color: rgb{self._settings_user.color_box_background};
+                    border-bottom-left-radius: {self._settings_user.box_border_radius}px;
+                    border-bottom-right-radius: {self._settings_user.box_border_radius}px;
+                    color: rgb{self._settings_user.color_text};
+                    font-size: 15px;
+                }}
+                '''
+            )
+
+        # updates colors for the scroll areas in the notation tab
+        for scroll_area in self.__areas[1][2]:
+            scroll_area.setStyleSheet(
+                f'''
+                * {{
+                    border: none;
+                }}
+                QScrollArea {{
+                    background-color: rgb{self._settings_user.color_box_background};
+                    color: rgb{self._settings_user.color_text};
+                    font-size: 15px;
+                }}
+                QScrollBar:vertical {{
+                    border-radius: 4px;
+                    background-color: rgb{self._settings_user.color_scrollbar_background};
+                    width: 12px;
+                    margin: 4px 4px 4px 0px;
+                }}
+                QScrollBar::handle:vertical {{
+                    background-color: rgb{self._settings_user.color_box_border};
+                    border-radius: 4px;
+                    min-height: 20px;
+                }}
+                QScrollBar::add-line:vertical {{
+                    width: 0px;
+                }}
+                QScrollBar::sub-line:vertical {{
+                    width: 0px;
+                }}
+                QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                    background: none;
+                }}
+                '''
+            )
+
+        # updates the label colors in the notation tab
+        for label in self.__save_label:
+            label.setStyleSheet(
+                f'''
+                QLabel {{
+                    font-weight: bold;
+                    font-size: 14px;
+                    color: rgb{self._settings_user.color_text};
+                    border: none;
+                }}
+                '''
+            )
+
+        # updates the line colors in the notation tab
+        for line in self.__save_line:
+            line.setStyleSheet(
+                f'''
+                QFrame {{
+                    border: 1px solid rgb{self._settings_user.color_line_primary};
+                    background-color: rgb{self._settings_user.color_line_primary};
+                    border-radius: 1px
+                }}
+                '''
+            )
+
+        # updates the button colors in the notation tab
+        for button in self.__save_button:
+            button.setStyleSheet(
+                f'''
+                QPushButton {{
+                    border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
+                    border-radius: {self._settings_user.box_border_radius}px;
+                }}
+                QPushButton:hover {{
+                    background-color: rgb{self._settings_user.color_box_hover};
+                    padding-top: -{self._settings_user.button_text_hover_raise}px;
+                }}
+                QPushButton:pressed {{
+                    background-color: rgb{self._settings_user.color_box_selected};
+                }}
+                '''
+            )
+
+        # updates the colors for the constant's radio buttons
+        for i, section in enumerate(self._symbols):
+            if i == 1:
+                for key in list(section.keys()):
+                    element = section[key]
+
+                    for j, button in enumerate(element):
+                        if j > 0:
+                            button.setStyleSheet(
+                                f'''
+                                QRadioButton::indicator {{
+                                    border-radius: 6px;
+                                    border: 2px solid rgb{self._settings_user.color_box_border};
+                                    background-color: rgb{self._settings_user.color_box_background};
+                                }}
+                                QRadioButton::indicator:hover {{
+                                    background-color: rgb{self._settings_user.color_box_hover};
+                                }}
+                                QRadioButton::indicator:checked {{
+                                    background-color: rgb{self._settings_user.color_box_selected};
+                                }}
+                                '''
+                            )
+
+        # updates the color for the selector buttons
+        for i, button in enumerate(self.__button_selectors):
+            self.__button_selector_style(button, i)
 
     def _fill_variables(self) -> None:
         """
@@ -2353,7 +2576,7 @@ class MultiBox(MainWindow):
 
             self._user_select.setFocus()
 
-    def __fill_notation(self):
+    def __fill_notation(self) -> None:
         """
         Creates all buttons of hard to get symbols within the symbols tab.
 
@@ -2366,15 +2589,22 @@ class MultiBox(MainWindow):
         self.__button_symbols = []
         self.__previous_column_count = []
 
+        # saves specific elements for changing the stylesheets
+        self.__save_line = []
+        self.__save_label = []
+        self.__save_button = []
+
         for i in range(2):
 
             # adds a title for each section
             label = QLabel(label_titles[i])
+            self.__save_label.append(label)  # saves for future stylesheet changes
             label.setStyleSheet(f'font-weight: bold; font-size: 14px; color: rgb{self._settings_user.color_text}; border: none;')
             self.__areas[1][1].addWidget(label)
 
             # adds a line under the title
             line = QFrame()
+            self.__save_line.append(line)  # saves for future stylesheet changes
             line.setFrameShape(QFrame.Shape.HLine)
             line.setFrameShadow(QFrame.Shadow.Sunken)
             line.setStyleSheet(
@@ -2445,6 +2675,8 @@ class MultiBox(MainWindow):
             self.__button_symbols.append([])
             for x, symbol in enumerate(symbols.copy_notation[i]):
                 button = QPushButton(symbol)
+                button.setCursor(Qt.CursorShape.PointingHandCursor)
+                self.__save_button.append(button)  # saves for future stylesheet changes
                 button.clicked.connect(self.__copy_button_label)
                 button.setStyleSheet(
                     f'''
@@ -2515,7 +2747,7 @@ class MultiBox(MainWindow):
                     for x, button in enumerate(self.__button_symbols[i]):
                         self.__grid_layout[i].addWidget(button, x // column_count, x % column_count)
 
-    def __button_selector_logic(self):
+    def __button_selector_logic(self) -> None:
         """
         Applies styles to the selector buttons and keeps track of which button was selected.
         """
@@ -2638,7 +2870,7 @@ class MultiBox(MainWindow):
                 self.__clear_inner_layout(item.layout())
                 item.layout().deleteLater()
 
-    def __copy_button_label(self):
+    def __copy_button_label(self) -> None:
         button = self.sender()
         text = button.text()
 
@@ -2658,6 +2890,15 @@ class RunWindow(MultiBox, MainWindow):
         self._update_main()
         self._update_control()
         self._update_multi()
+
+    @pyqtSlot()
+    def _apply_settings_all(self) -> None:
+        """
+        Applies changed settings to all classes.
+        """
+
+        self._apply_settings_main()
+        self._apply_settings_multi()
 
     def __update(self) -> None:
         """
@@ -2711,7 +2952,7 @@ class TestButtons(RunWindow):  # buttons, and functions for testing purposes
         super().__init__()
         self.__setup_test()
 
-    def __setup_test(self):
+    def __setup_test(self) -> None:
 
         self.__button_hook = []  # holds all testing buttons
 
