@@ -1,5 +1,9 @@
 from PyQt6.QtWidgets import QLineEdit
 from random import randint
+import win32clipboard as clp
+from files import file_path
+from PIL import Image
+import io
 
 
 def get_position_change(key_list_prev: list, key_list_curr: list, string: str) -> int:
@@ -55,11 +59,37 @@ def get_constant_values(dictionary: dict, digits: int) -> dict:
     return ans
 
 
+def copy_image(file_name):
+    """
+    Copies a png image to the clipboard.
+    """
+
+    image = Image.open(file_path(file_name))
+
+    # converts the image to a png
+    output_png = io.BytesIO()
+    image.save(output_png, format='PNG')
+    png_data = output_png.getvalue()
+
+    # convert the image to DIB
+    output_dib = io.BytesIO()
+    image.convert('RGB').save(output_dib, format='BMP')
+    dib_data = output_dib.getvalue()[14:]  # skips the first 14 bytes which removes the header
+
+    # copies the png to the clipboard
+    clp.OpenClipboard()
+    clp.EmptyClipboard()
+    clp.SetClipboardData(clp.RegisterClipboardFormat('PNG'), png_data)  # sets the PNG format
+    clp.SetClipboardData(clp.CF_DIB, dib_data)  # sets the DIB format
+    clp.CloseClipboard()
+
+
 def test_colors(settings) -> None:
     """
     Changes the colors of the windows to test if all colors are changing.
     """
 
+    '''
     settings.color_background = 54, 92, 46
     settings.color_text = 177, 58, 58
     settings.color_text_highlight_active = 168, 171, 45
@@ -78,8 +108,52 @@ def test_colors(settings) -> None:
     settings.color_line_primary = 82, 54, 66
     settings.color_line_secondary = 20, 140, 51
     settings.color_scrollbar_background = 134, 51, 75
+    '''
+
+    '''
+    settings.color_background = 49, 89, 153
+    settings.color_text = 181, 96, 133
+    settings.color_text_highlight_active = 168, 171, 45
+    settings.color_text_highlight_inactive = 163, 71, 45
+    settings.color_text_secondary = 130, 135, 162
+    settings.color_title_bar = 23, 37, 51
+    settings.color_title_bar_text = settings.color_text
+    settings.color_title_bar_button_hover = 40, 53, 141
+    settings.color_title_bar_button_press = 182, 46, 119
+    settings.color_title_bar_button_exit_hover = 181, 96, 133
+    settings.color_title_bar_button_exit_press = 47, 137, 88
+    settings.color_box_background = 55, 68, 74
+    settings.color_box_hover = 148, 66, 155
+    settings.color_box_selected = 139, 164, 32
+    settings.color_box_border = 54, 37, 47
+    settings.color_line_primary = 82, 54, 66
+    settings.color_line_secondary = 20, 140, 51
+    settings.color_scrollbar_background = 134, 51, 75
 
     settings.color_latex = settings.color_text
+    '''
+
+    settings.color_background = 49, 89, 153
+    settings.color_text = 255, 255, 255
+    settings.color_text_highlight_active = 168, 171, 45
+    settings.color_text_highlight_inactive = 163, 71, 45
+    settings.color_text_secondary = 48, 55, 56
+    settings.color_title_bar = 23, 37, 51
+    settings.color_title_bar_text = settings.color_text
+    settings.color_title_bar_button_hover = 18, 28, 38
+    settings.color_title_bar_button_press = 181, 96, 133
+    settings.color_title_bar_button_exit_hover = 158, 24, 75
+    settings.color_title_bar_button_exit_press = 181, 96, 133
+    settings.color_box_background = 99, 106, 115
+    settings.color_box_hover = 98, 151, 156
+    settings.color_box_selected = 47, 111, 130
+    settings.color_box_border = settings.color_title_bar
+    settings.color_line_primary = 15, 38, 71
+    settings.color_line_secondary = 19, 49, 92
+    settings.color_scrollbar_background = 59, 63, 69
+
+    settings.color_latex = settings.color_text
+
 
 
 def generate_new_colors() -> None:
