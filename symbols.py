@@ -85,6 +85,10 @@ copy_notation = [
     functions
 ]
 
+replace_latex = {  # symbols to replace for proper latex formatting
+    'θ': r'\theta'
+}
+
 subscript = {
     '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
     'a': 'ₐ', 'e': 'ₑ', 'h': 'ₕ', 'i': 'ᵢ', 'j': 'ⱼ', 'k': 'ₖ', 'l': 'ₗ', 'm': 'ₘ', 'n': 'ₙ', 'o': 'ₒ',
@@ -118,7 +122,7 @@ name_change_all_keys = sorted(name_change_all.keys(), key=len, reverse=True)
 
 # ------------------------------------------------------------------------------------------------
 
-# gets the order to constants from sympy names smallest to largest -------------------------------
+# gets the order of constants from sympy names smallest to largest -------------------------------
 
 temp = constants.copy()
 temp = {value[0]: key for key, value in temp.items()}
