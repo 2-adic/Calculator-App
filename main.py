@@ -1168,37 +1168,26 @@ class SettingsWindow(ControlWindow):
         self._set_geometry(position + self._settings_user.window_start_size_settings)
         self._set_size_min(self._settings_user.window_size_min_settings)
 
+        self.answer_display = None
+
         # Settings Menu -----------------------------------------------------------------------------------------
 
         settings_list = (
             ('General', (
                 # function, default option number, setting label, option 1, option2, ... option n
                 (self.__degree_units, 0, 'Angle Unit', 'Radians', 'Degrees'),
-                (self.__formatting_commas, 0, 'Number Format', 'Standard', 'Commas'))),
+                (self.__formatting_commas, 0, 'Number Format', 'Standard', 'Commas'),
+            )),
+
+            ('Answer', (
+                (self.__format_display, 0, 'Display Format', 'Image', 'LaTeX', 'Text'),
+                (self.__format_copy, 2, 'Copy Format', 'Image', 'LaTeX', 'Text'),
+            )),
 
             ('Colors', (
-                (self.__button_clicked, 0, 'Button 0', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 1', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 2', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 3', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 4', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 5', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 6', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 7', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 8', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 9', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 10', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 11', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 12', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 13', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 14', 'On', 'Off'),
-                (self.__button_clicked, 0, 'Button 15', 'On', 'Off'))),
-
-            ('Other', (
-                (self.__button_clicked, 0, 'Button 0', 'Option 0', 'Option 1', 'Option 2'),
-                (self.__button_clicked, 1, 'Button 1', 'Option 0', 'Option 1', 'Option 2'),
-                (self.__button_clicked, 1, 'Button 2', 'Option 0', 'Option 1', 'Option 2'),
-                (self.__button_clicked, 2, 'Button 3', 'Option 0', 'Option 1', 'Option 2')))
+                (self.__color_preset, 2, 'Appearance', 'Gray', 'Blue', 'Pink'),
+                (self.__text_color, 0, 'Text Color', 'White', 'Black'),
+            )),
         )
 
         self.__menu = QWidget(self)
@@ -1267,6 +1256,7 @@ class SettingsWindow(ControlWindow):
             '''
         )
 
+        self.__list_functions = {}
         for i, section in enumerate(settings_list):
             button = QPushButton(section[0])  # creates the section buttons
             button.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1295,7 +1285,7 @@ class SettingsWindow(ControlWindow):
             }}
             '''
         )
-        self.__button_apply.clicked.connect(self.__apply_settings)
+        self.__button_apply.clicked.connect(self._apply_settings)
         layout = QHBoxLayout()
         layout.addWidget(self.__button_apply)
 
@@ -1305,6 +1295,8 @@ class SettingsWindow(ControlWindow):
         main_layout.addWidget(stacked_widget)
 
         main_layout.addLayout(layout)
+
+        # self._apply_settings()  # applies the settings
 
     def __sections_initialize(self, settings_list):
         """
@@ -1328,6 +1320,7 @@ class SettingsWindow(ControlWindow):
                 button = QPushButton(option)
                 button.setCursor(Qt.CursorShape.PointingHandCursor)
                 self.__button_storage.append(button)
+                self.__list_functions[button] = function
                 button.setCheckable(True)
                 button.setStyleSheet(
                     f'''
@@ -1339,9 +1332,6 @@ class SettingsWindow(ControlWindow):
                 )
 
                 button_group.addButton(button)
-
-                # connects the buttons to their specified function
-                button.clicked.connect(lambda checked, f=function, l=option: f(l) if checked else None)
 
                 if i == default_option:  # logic for if the button is the default one
                     button.setChecked(True)  # visually shows the default button as selected
@@ -1367,10 +1357,17 @@ class SettingsWindow(ControlWindow):
 
         return container_widget
 
-    def __apply_settings(self) -> None:
+    def _apply_settings(self) -> None:
         """
         Refreshes the windows / rendered answer to apply the new settings.
         """
+
+        # activates the functions for all selected buttons
+        for button in self.__button_storage:
+            if button.isChecked():
+                label = button.text()
+                function = self.__list_functions[button]
+                function(label)
 
         self.button_apply_signal.emit()  # runs the _apply_settings_all function within the RunWindow class
         self.__update_colors_settings()
@@ -1450,16 +1447,14 @@ class SettingsWindow(ControlWindow):
             '''
         )
 
-    def __button_clicked(self, label: str):
+    def __button_clicked(self, label: str) -> None:
         """
         Used to test if the settings buttons work.
-
-        Will be replaced by different functions in the future
         """
 
-        return
+        # print('This setting currently does nothing')
 
-    def __formatting_commas(self, label: str):
+    def __formatting_commas(self, label: str) -> None:
         """
         Toggles the comma formatting for numbers.
         """
@@ -1469,7 +1464,7 @@ class SettingsWindow(ControlWindow):
         else:
             self._settings_user.use_commas = True
 
-    def __degree_units(self, label: str):
+    def __degree_units(self, label: str) -> None:
         """
         Changes the angle unit between degrees or radians.
         """
@@ -1479,6 +1474,88 @@ class SettingsWindow(ControlWindow):
         else:
             # self._settings_user.use_degrees = True
             print('Degrees not enabled yet.')
+
+    def __format_display(self, label: str):
+        """
+        Sets the format that the answer will display in.
+        """
+
+        self.answer_display = label
+
+    def __format_copy(self, label: str):
+        """
+        Sets the format that the answer be copied as.
+        """
+
+        self.answer_copy = label
+
+    def __color_preset(self, label: str) -> None:
+        """
+        Lets the user choose between multiple color themes.
+        """
+
+        self._settings_user.color_title_bar_button_exit_hover = 242, 63, 66
+        self._settings_user.color_title_bar_button_exit_press = 241, 112, 122
+
+        if label == 'Gray':
+            self._settings_user.color_background = 49, 51, 56
+            self._settings_user.color_text_highlight_active = 70, 115, 156
+            self._settings_user.color_text_highlight_inactive = 176, 176, 176
+            self._settings_user.color_text_secondary = 35, 36, 41
+            self._settings_user.color_title_bar = 30, 31, 34
+            self._settings_user.color_title_bar_text = 148, 155, 164
+            self._settings_user.color_title_bar_button_hover = 45, 46, 51
+            self._settings_user.color_title_bar_button_press = 53, 54, 60
+            self._settings_user.color_box_background = 85, 88, 97
+            self._settings_user.color_box_hover = 81, 100, 117
+            self._settings_user.color_box_selected = 51, 75, 97
+            self._settings_user.color_box_border = 35, 36, 40
+            self._settings_user.color_line_primary = 41, 42, 47
+            self._settings_user.color_line_secondary = 49, 51, 56
+            self._settings_user.color_scrollbar_background = 63, 65, 72
+
+        elif label == 'Blue':
+            self._settings_user.color_background = 49, 89, 153
+            self._settings_user.color_text_highlight_active = 168, 171, 45
+            self._settings_user.color_text_highlight_inactive = 163, 71, 45
+            self._settings_user.color_text_secondary = 40, 45, 46
+            self._settings_user.color_title_bar = 23, 37, 51
+            self._settings_user.color_title_bar_text = self._settings_user.color_text
+            self._settings_user.color_title_bar_button_hover = 32, 50, 69
+            self._settings_user.color_title_bar_button_press = 36, 57, 79
+            self._settings_user.color_box_background = 99, 106, 115
+            self._settings_user.color_box_hover = 98, 151, 156
+            self._settings_user.color_box_selected = 47, 111, 130
+            self._settings_user.color_box_border = self._settings_user.color_title_bar
+            self._settings_user.color_line_primary = 15, 38, 71
+            self._settings_user.color_line_secondary = 19, 49, 92
+            self._settings_user.color_scrollbar_background = 59, 63, 69
+
+        else:
+            self._settings_user.color_background = 206, 146, 141
+            self._settings_user.color_text_highlight_active = 70, 115, 156
+            self._settings_user.color_text_highlight_inactive = 176, 176, 176
+            self._settings_user.color_text_secondary = 61, 55, 55
+            self._settings_user.color_title_bar = 55, 33, 42
+            self._settings_user.color_title_bar_text = 153, 100, 96
+            self._settings_user.color_title_bar_button_hover = 74, 44, 56
+            self._settings_user.color_title_bar_button_press = 84, 50, 63
+            self._settings_user.color_box_background = 163, 143, 142
+            self._settings_user.color_box_hover = 215, 177, 168
+            self._settings_user.color_box_selected = 191, 124, 119
+            self._settings_user.color_box_border = 63, 39, 50
+            self._settings_user.color_line_primary = 74, 46, 59
+            self._settings_user.color_line_secondary = 92, 57, 73
+            self._settings_user.color_scrollbar_background = 105, 92, 91
+
+    def __text_color(self, label: str) -> None:
+        if label == 'White':
+            self._settings_user.color_text = 255, 255, 255
+
+        else:
+            self._settings_user.color_text = 0, 0, 0
+
+        self._settings_user.color_latex = self._settings_user.color_text
 
     def __update_setting(self) -> None:
         """
@@ -1496,6 +1573,11 @@ class SettingsWindow(ControlWindow):
 class MainWindow(ControlWindow):
     def __init__(self):
         super().__init__()
+
+        # settings window
+        self.window_settings = None
+        self.__window_settings_open()
+
         self._set_title(self._settings_user.window_title_main)
         self._set_geometry(self._settings_user.window_start_size_main)
         self._set_size_min(self._settings_user.window_size_min_main)
@@ -1651,9 +1733,6 @@ class MainWindow(ControlWindow):
 
         self.__is_constant_value_used = False
 
-        # settings Window
-        self.window_settings = None
-
         # other
         self._text_update_lambda = lambda: self._text_update()  # used to keep track of the function for when it gets disconnected
 
@@ -1674,7 +1753,7 @@ class MainWindow(ControlWindow):
         text = self._box_text.toPlainText()  # gets the string from the text box
 
         try:
-            self.__solution = Solve(text, self.__variable_formatting(self._symbols), self.__generate_value_used_bool(), self._settings_user.use_degrees, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
+            self.__solution = Solve(text, self.__variable_formatting(self._symbols), self.__generate_value_used_bool(), self.window_settings.answer_display, self.window_settings.answer_copy, self._settings_user.use_degrees, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
             self.__solution.print()  # shows the before and after expressions (for testing purposes)
             self.__answer = self.__solution.get_exact()
 
@@ -1692,10 +1771,8 @@ class MainWindow(ControlWindow):
         Flips the answer format between decimal and exact.
         """
 
-        if self.__answer == self._settings_user.answer_default:
-            return
-
         self._box_answer.setText('')
+        self._box_answer.setIcon(QIcon())
 
         # uses answer_temp to save the answer
         if self.__flip_type_toggle or self.__is_constant_value_used:
@@ -1709,12 +1786,13 @@ class MainWindow(ControlWindow):
 
         self.__flip_type_toggle = not self.__flip_type_toggle  # keeps track of which format is being displayed
 
-        # use this for an option that lets the user set the non latex image as the answer
-        # self._box_answer.setText(self.__answer_temp)  # displays the answer
+        if self.__solution.is_text_used():
+            self._box_answer.setText(self.__answer_temp)
 
-        self._box_answer.setIcon(QIcon(image_path))
-        image = Image.open(image_path)
-        self._icon_aspect_ratio_inverse = image.size[1] / image.size[0]
+        else:
+            self._box_answer.setIcon(QIcon(image_path))
+            image = Image.open(image_path)
+            self._icon_aspect_ratio_inverse = image.size[1] / image.size[0]
 
         self.resizeEvent(None)
 
@@ -1909,6 +1987,9 @@ class MainWindow(ControlWindow):
                 QMenu::item::selected {{
                     background-color: rgb{self._settings_user.color_box_hover};
                 }}
+                QMenu::item:pressed {{
+                    background-color: rgb{self._settings_user.color_box_selected};
+                }}
                 '''
             )
             menu.exec(event.globalPos())
@@ -1918,10 +1999,9 @@ class MainWindow(ControlWindow):
     def __window_settings_open(self) -> None:
         position = self.pos().x() + 40, self.pos().y() + 30
 
-        if self.window_settings is None:  # creates and opens the setting window
+        if self.window_settings is None:  # creates the setting window
             self.window_settings = SettingsWindow(self._settings_user, position)
-            self.window_settings.button_apply_signal.connect(self._apply_settings_all)  # lets the apply button connect to the MainWindow class
-            self.window_settings.show()
+            self.window_settings.button_apply_signal.connect(self._apply_settings_all)  # lets the apply button connect to the RunWindow class
 
         else:  # the settings window already exists, it is showed and repositioned
             self.window_settings.show()  # shows the window if the user closed it
@@ -1936,9 +2016,9 @@ class MainWindow(ControlWindow):
         Applies user settings from SettingsWindow to MainWindow.
         """
 
-        is_displaying_answer = self._box_answer.text() == ''  # tells if an answer is being displayed or not
+        # tells if an answer is being displayed or not
+        is_displaying_answer = not (self._box_answer.text() == self._settings_user.answer_default or self._box_answer.text()[5:] == 'Error:')
 
-        misc_functions.test_colors(self._settings_user)  # changes all colors to random values for testing
         self.__update_colors_main(is_displaying_answer)  # updates all colors for MainWindow
 
         if is_displaying_answer:
@@ -2179,7 +2259,19 @@ class MainWindow(ControlWindow):
         Lets the user copy the answer by clicking the answer box.
         """
 
-        string = str(self.__answer_temp).replace('*', '')  # removes all multiplication symbols
+        if self.__flip_type_toggle:
+            if self.window_settings.answer_copy == 'Image':
+                misc_functions.copy_image('latex_exact.png')
+                return
+            else:
+                string = self.__solution.get_exact_copy()
+        else:
+            if self.window_settings.answer_copy == 'Image':
+                misc_functions.copy_image('latex_approximate.png')
+                return
+            else:
+                string = self.__solution.get_approximate_copy()
+
         pyperclip.copy(string)  # copies answer to clipboard
 
     def closeEvent(self, event):
@@ -2884,6 +2976,8 @@ class RunWindow(MultiBox, MainWindow):
     def __init__(self):  # initialize all children here
         MainWindow.__init__(self)
         MultiBox._setup(self)
+
+        self.window_settings._apply_settings()
 
     def resizeEvent(self, event):
         self.__update()
