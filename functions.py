@@ -10,10 +10,12 @@ from inspect import currentframe
 
 
 class Solve:
-    def __init__(self, expression: str, variables: dict[str, str] = dict(), constant_symbol_used: dict[str, bool] = dict(), use_degrees: bool = False, use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
+    def __init__(self, expression: str, variables: dict[str, str] = dict(), constant_symbol_used: dict[str, bool] = dict(), answer_display: str = 'Image', answer_copy: str = 'Text', use_degrees: bool = False, use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
 
         self.__funct = tuple(getattr(self, f'_{self.__class__.__name__}__{name.lower()}') for name in symbols.accepted_functions)  # gets a list of all the functions
 
+        self.__answer_display = answer_display
+        self.__answer_copy = answer_copy
         self.__use_degrees = use_degrees
         self.__use_commas = use_commas
 
@@ -21,20 +23,10 @@ class Solve:
         self.__expression_save = self.__remove_white_spaces(expression)
 
         self.__is_value_used = not all(constant_symbol_used.values())  # gets a bool for if a constant value was used
-        self.__error = None  # saves the reason for an error
         self.__answer_exact = None
         self.__answer_approximate = None
 
-        self.__format_before(variables, constant_symbol_used)
-        self.__expression_solved = self.__solve(self.__expression_solved)  # solves the expression
-        self.__exact()  # turns the solution into its exact form
-        self.__approximate()  # turns the solution into its approximate form
-        self.__result_simplification()
-        self.__render(render_color, render_dpi)  # renders the image of the exact and approximate solutions
-        self.__format_after()  # formats the exact and approximate answer
-
-        if self.__error is not None:
-            print(f'Error: {self.__error}')
+        self.__calculate(variables, constant_symbol_used, answer_display, answer_copy, use_commas, render_color, render_dpi)
 
     def __str__(self):
         return self.__expression_solved
@@ -68,22 +60,79 @@ class Solve:
         """
         return self.__answer_approximate
 
-    def __render(self, color: tuple[int, int, int] = (255, 255, 255), dpi: int = 300) -> None:
+    def get_exact_copy(self) -> str:
+        """
+        Returns the answer to be copied.
+        """
+
+        if self.__answer_copy == 'Text' or self.__answer_copy == 'LaTeX':
+            return self.__answer_exact_copy
+
+        else:
+            return file_path('latex_exact.png')
+
+    def get_approximate_copy(self) -> str:
+        """
+        Returns the answer to be copied.
+        """
+
+        if self.__answer_copy == 'Text' or self.__answer_copy == 'LaTeX':
+            return self.__answer_approximate_copy
+
+        else:
+            return file_path('latex_approximate.png')
+
+    def is_text_used(self) -> bool:
+        """
+        Returns if text is used for the display.
+        """
+
+        return self.__answer_display == 'Text' or self.__answer_display == 'LaTeX'
+
+    def __calculate(self, variables, constant_symbol_used, answer_display, answer_copy, use_commas, render_color, render_dpi) -> None:
+
+        self.__format_before(variables, constant_symbol_used)
+        self.__expression_solved = self.__solve(self.__expression_solved)  # solves the expression
+        self.__exact()  # turns the solution into its exact form
+        self.__approximate()  # turns the solution into its approximate form
+        self.__result_simplification()
+
+        if answer_display == 'Image' or answer_copy == 'Image':
+            self.__render(use_commas, render_color, render_dpi)
+
+        self.__answer_exact_copy = self.__answer_exact
+        self.__answer_approximate_copy = self.__answer_approximate
+
+        if answer_display != 'LaTeX':
+            self.__answer_exact = self.__format_after(self.__answer_exact)  # formats the exact and approximate answer
+            self.__answer_approximate = self.__format_after(self.__answer_approximate)
+        else:
+            self.__answer_exact = self.__format_latex(self.__answer_exact)
+            self.__answer_approximate = self.__format_latex(self.__answer_approximate)
+
+        if answer_copy == 'Text':
+            self.__answer_exact_copy = self.__format_after(self.__answer_exact_copy)
+            self.__answer_approximate_copy = self.__format_after(self.__answer_approximate_copy)
+        elif answer_copy == 'LaTeX':
+            self.__answer_exact_copy = self.__format_latex(self.__answer_exact_copy)
+            self.__answer_approximate_copy = self.__format_latex(self.__answer_approximate_copy)
+
+    def __render(self, use_commas: bool = False, color: tuple[int, int, int] = (255, 255, 255), dpi: int = 300) -> None:
         """
         Renders images of the solved expression.
 
         :param color: The color of the rendered text.
-        :param dpi: The
+        :param dpi: The quality of the image (also affects how much it can be expanded).
         """
 
         exact = file_path('latex_exact.png')
         approximate = file_path('latex_approximate.png')
 
         if self.__answer_exact is not None:  # answer is not rendered if it is none
-            convert_render_latex(self.__answer_exact, self.__use_commas, color, dpi, exact, self.__constant_counter)
+            convert_render_latex(self.__answer_exact, use_commas, color, dpi, exact, self.__constant_counter)
 
         if self.__answer_approximate is not None:  # answer is not rendered if it is none
-            convert_render_latex(self.__answer_approximate, self.__use_commas, color, dpi, approximate, self.__constant_counter)
+            convert_render_latex(self.__answer_approximate, use_commas, color, dpi, approximate, self.__constant_counter)
 
     def __exact(self) -> None:
         """
@@ -93,12 +142,7 @@ class Solve:
         if self.__is_value_used:  # does not give an approximate value if a value for a constant is used
             return
 
-        try:
-            self.__answer_exact = sy.simplify(self.__expression_solved)
-
-        except Exception as e:
-            self.__answer_exact = 'Error'
-            self.__error = e
+        self.__answer_exact = sy.simplify(self.__expression_solved)
 
     def __custom_approx(self, expression):
         if expression.is_Atom:
@@ -117,13 +161,8 @@ class Solve:
         Turns the answer into its approximate form.
         """
 
-        try:
-            expression = sy.simplify(self.__expression_solved)
-            self.__answer_approximate = self.__custom_approx(expression)
-
-        except Exception as e:
-            self.__answer_approximate = 'Error'
-            self.__error = e
+        expression = sy.simplify(self.__expression_solved)
+        self.__answer_approximate = self.__custom_approx(expression)
 
     def __format_before(self, variables: dict[str, str], constant_symbol_used: dict[str, bool]) -> None:
         """
@@ -150,22 +189,40 @@ class Solve:
 
         self.__expression_solved = expression
 
-    def __format_after(self) -> None:
+    def __format_after(self, expression: str) -> str:
         """
         Performs some final formatting to the answer in its exact and approximate form.
 
         Used for copying purposes.
         """
 
-        self.__answer_exact = str(self.__answer_exact)
-        self.__answer_approximate = str(self.__answer_approximate)
-
-        self.__answer_exact = self.__answer_exact.replace('**', '^')
-        self.__answer_approximate = self.__answer_approximate.replace('**', '^')
+        expression = str(expression)
+        expression = expression.replace('**', '^')
 
         for key in symbols.name_change_all_keys:
-            self.__answer_exact = self.__answer_exact.replace(key, symbols.name_change_all[key])
-            self.__answer_approximate = self.__answer_approximate.replace(key, symbols.name_change_all[key])
+            expression = expression.replace(key, symbols.name_change_all[key])
+
+        return expression
+
+    def __format_latex(self, expression: str) -> str:
+        """
+        Formats the answer to be in LaTeX form.
+        """
+
+        # converts to LaTeX form
+        expression = sy.latex(expression, fold_short_frac=False)
+
+        # replaces some symbols for proper latex formatting
+        for key in list(symbols.replace_latex.keys()):
+            expression = expression.replace(key, symbols.replace_latex[key])
+
+        # replaces some functions names
+        for key in symbols.name_change_all_keys:
+            expression = expression.replace(key, symbols.name_change_all[key])
+
+        expression = expression.replace(r'\bmod', r'\operatorname{mod}')  # fixes the latex formatting for mod
+
+        return expression
 
     def __result_simplification(self) -> None:
         """
