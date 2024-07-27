@@ -1516,8 +1516,8 @@ class SettingsWindow(ControlWindow):
 
         elif label == 'Blue':
             self._settings_user.color_background = 49, 89, 153
-            self._settings_user.color_text_highlight_active = 168, 171, 45
-            self._settings_user.color_text_highlight_inactive = 163, 71, 45
+            self._settings_user.color_text_highlight_active = 47, 111, 130
+            self._settings_user.color_text_highlight_inactive = 98, 151, 156
             self._settings_user.color_text_secondary = 40, 45, 46
             self._settings_user.color_title_bar = 23, 37, 51
             self._settings_user.color_title_bar_text = self._settings_user.color_text
@@ -1533,8 +1533,8 @@ class SettingsWindow(ControlWindow):
 
         else:
             self._settings_user.color_background = 206, 146, 141
-            self._settings_user.color_text_highlight_active = 70, 115, 156
-            self._settings_user.color_text_highlight_inactive = 176, 176, 176
+            self._settings_user.color_text_highlight_active = 191, 124, 119
+            self._settings_user.color_text_highlight_inactive = 215, 177, 168
             self._settings_user.color_text_secondary = 61, 55, 55
             self._settings_user.color_title_bar = 55, 33, 42
             self._settings_user.color_title_bar_text = 153, 100, 96
@@ -1652,6 +1652,7 @@ class MainWindow(ControlWindow):
         self._user_select = None
         self._box_text = QPlainTextEdit(self)
         self._box_text.textChanged.connect(self._text_update)
+        self._box_text.focusOutEvent = self.__box_text_focus_event
         self.__set_custom_context_menu(self._box_text)
         self._box_text.setStyleSheet(
             f'''
@@ -1664,6 +1665,14 @@ class MainWindow(ControlWindow):
                 border-top-right-radius: {self._settings_user.box_border_radius}px;
                 color: rgb{self._settings_user.color_text};
                 font-size: 15px;
+            }}
+            QPlainTextEdit:active {{
+                selection-background-color: rgb{self._settings_user.color_text_highlight_active};
+                selection-color: rgb{self._settings_user.color_text};
+            }}
+            QPlainTextEdit:!active {{
+                selection-background-color: rgb{self._settings_user.color_text_highlight_inactive};
+                selection-color: rgb{self._settings_user.color_text};
             }}
             QScrollBar:vertical {{
                 border-radius: 4px;
@@ -2092,6 +2101,14 @@ class MainWindow(ControlWindow):
                 color: rgb{self._settings_user.color_text};
                 font-size: 15px;
             }}
+            QPlainTextEdit:active {{
+                selection-background-color: rgb{self._settings_user.color_text_highlight_active};
+                selection-color: rgb{self._settings_user.color_text};
+            }}
+            QPlainTextEdit:!active {{
+                selection-background-color: rgb{self._settings_user.color_text_highlight_inactive};
+                selection-color: rgb{self._settings_user.color_text};
+            }}
             QScrollBar:vertical {{
                 border-radius: 4px;
                 background-color: rgb{self._settings_user.color_scrollbar_background};
@@ -2254,6 +2271,14 @@ class MainWindow(ControlWindow):
                 '''
             )
 
+    def __box_text_focus_event(self, event):
+        if event.reason() == Qt.FocusReason.MouseFocusReason:
+            if QApplication.activeWindow() is not None:
+                cursor = self._box_text.textCursor()
+                cursor.clearSelection()
+                self._box_text.setTextCursor(cursor)
+        QPlainTextEdit.focusOutEvent(self._box_text, event)  # Call the original focusOutEvent method
+
     def __copy(self) -> None:
         """
         Lets the user copy the answer by clicking the answer box.
@@ -2385,6 +2410,14 @@ class MultiBox(MainWindow):
 
             area.setStyleSheet(
                 f'''
+                QLineEdit:active {{
+                    selection-background-color: rgb{self._settings_user.color_text_highlight_active};
+                    selection-color: rgb{self._settings_user.color_text};
+                }}
+                QLineEdit:!active {{
+                    selection-background-color: rgb{self._settings_user.color_text_highlight_inactive};
+                    selection-color: rgb{self._settings_user.color_text};
+                }}
                 QWidget {{
                     border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
                     background-color: rgb{self._settings_user.color_box_background};
@@ -3124,21 +3157,6 @@ def main():
         app.setFont(font)
     else:
         print("Error: Font didn't load, default system font will be used instead.")
-
-    # default settings
-    settings = Settings()
-
-    # could not change inactive highlight color with style sheet a style sheet; a style sheet overrides the inactive highlight color
-    palette = app.palette()
-
-    color_text = settings.color_text
-    highlight_active = settings.color_text_highlight_active
-    highlight_inactive = settings.color_text_highlight_inactive
-
-    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.HighlightedText, QColor(*color_text))  # inactive highlight text color
-    palette.setColor(QPalette.ColorGroup.Active, QPalette.ColorRole.Highlight, QColor(*highlight_active))  # active highlight color
-    palette.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, QColor(*highlight_inactive))  # inactive highlight color
-    app.setPalette(palette)
 
     # starts the window
     window = RunWindow()  # set the window equal to RunWindow() to run without the test buttons, set it to TestButtons() to run it with them
