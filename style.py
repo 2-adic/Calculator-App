@@ -1,4 +1,5 @@
 from PyQt6.QtCore import Qt
+from files import file_path
 
 
 class Settings:
@@ -112,12 +113,62 @@ class Settings:
         self.__use_degrees = False
         self.__use_commas = False
 
-    def __load_defaults(self) -> None:
+    def save_settings(self, buttons, settings_list):
+        """
+        Saves the settings to a txt file.
+        """
+
+        # gets the buttons that are selected
+        selected_buttons = []
+        for button in buttons:
+            if button.isChecked():
+                selected_buttons.append(button)
+
+        # finds the button number for each setting and saves it to a string
+        i = 0
+        save = ''
+        for section in settings_list:
+            for function, default, setting_name, *options in section[1]:
+                button = selected_buttons[i]
+                text = button.text()
+                save += f'{options.index(text)} '
+
+                i += 1
+
+        save = save[:-1]  # removes the last space
+
+        # saves the settings to the txt file
+        with open('settings.txt', 'w') as file:
+            file.write(save)
+
+    def load_settings(self) -> list:
+        """
+        Loads the settings from a txt file. This is used when the program is launched.
+        """
+
+        try:
+            # gets the saved settings from the file
+            with open('settings.txt', 'r') as file:
+                line = file.readline()
+
+            # turns the string into a list of numbers
+            line = line.split(' ')
+            defaults = []
+            for num in line:
+                defaults.append(int(num))
+
+            return defaults
+
+        except Exception as error:
+            print('Error: could not load settings, default settings will be used instead.')
+            return self.__default_settings()
+
+    def __default_settings(self) -> list:
         """
         Converts all settings to their default values.
         """
 
-        self.__init__()
+        return [0, 0, 0, 2, 0, 0]
 
     @property
     def window_start_size_main(self) -> tuple[int, int, int, int]:

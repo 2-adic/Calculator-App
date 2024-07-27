@@ -489,29 +489,34 @@ class SettingsWindow(ControlWindow):
 
         # Settings Menu -----------------------------------------------------------------------------------------
 
+        defaults = self._settings_user.load_settings()
+        print(defaults)
+
         settings_list = (
             ('General', (
                 # function, default option number, setting label, option 1, option2, ... option n
-                (self.__degree_units, 0, 'Angle Unit', 'Radians', 'Degrees'),
-                (self.__formatting_commas, 0, 'Number Format', 'Standard', 'Commas'),
+                (self.__degree_units, defaults[0], 'Angle Unit', 'Radians', 'Degrees'),
+                (self.__formatting_commas, defaults[1], 'Number Format', 'Standard', 'Commas'),
             )),
 
             ('Answer', (
-                (self.__format_display, 0, 'Display Format', 'Image', 'LaTeX', 'Text'),
-                (self.__format_copy, 2, 'Copy Format', 'Image', 'LaTeX', 'Text'),
+                (self.__format_display, defaults[2], 'Display Format', 'Image', 'LaTeX', 'Text'),
+                (self.__format_copy, defaults[3], 'Copy Format', 'Image', 'LaTeX', 'Text'),
             )),
 
             ('Colors', (
-                (self.__color_preset, 2, 'Appearance', 'Gray', 'Blue', 'Pink'),
-                (self.__text_color, 0, 'Text Color', 'White', 'Black'),
+                (self.__color_preset, defaults[4], 'Appearance', 'Gray', 'Blue', 'Pink'),
+                (self.__text_color, defaults[5], 'Text Color', 'White', 'Black'),
             )),
         )
+
+        self.__settings_list = settings_list
+        self.__button_storage = []  # keeps track of buttons for future stylesheet changes
 
         self.__menu = QWidget(self)
 
         main_layout = QVBoxLayout(self.__menu)
         button_layout = QHBoxLayout()  # layout for the section buttons
-        self.__button_storage = []  # keeps track of buttons for future stylesheet changes
 
         # section button spacers
         top_spacer = QSpacerItem(0, 5, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
@@ -556,6 +561,12 @@ class SettingsWindow(ControlWindow):
         main_layout.addWidget(stacked_widget)
 
         main_layout.addLayout(layout)
+
+    def get_settings_list(self):
+        return self.__settings_list
+
+    def get_buttons(self):
+        return self.__button_storage
 
     def __sections_initialize(self, settings_list):
         """
@@ -1138,6 +1149,7 @@ class MainWindow(ControlWindow):
         """
 
         if self.window_settings is not None:
+            self._settings_user.save_settings(self.window_settings.get_buttons(), self.window_settings.get_settings_list())
             self.window_settings.close()
         event.accept()
 
