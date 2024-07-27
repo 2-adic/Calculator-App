@@ -77,6 +77,9 @@ Future Features:
 
     - Add more functions
 
+    - Double click to maximize
+        - The user should be able to double-click on the title bar to maximize the window
+
 Before Beta:
 
     - Change the caret color for QPlainTextEdit and QLineEdit
@@ -84,7 +87,6 @@ Before Beta:
         - Test if this fix can work for a QPlainTextEdit
 
     - Code organization and optimization is needed
-        - Add all stylesheets to another .py file
 
     - Implement a way for settings to be saved through a txt file
 
