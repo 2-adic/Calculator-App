@@ -774,8 +774,7 @@ class MainWindow(ControlWindow):
         # answer format label
         self._box_answer_format_label = QLabel('', self)
         self._box_answer_format_label.setFixedWidth(25)
-        self._box_answer_format_label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
-        self._box_answer_format_label.setMouseTracking(False)
+        self._box_answer_format_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
 
         # text box
         self._user_select = None
