@@ -10,7 +10,7 @@ constants = {
 
 accepted_variables = sorted([
     'a', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-    'θ'
+    'θ', 'λ', 'ω', 'σ'
 ])
 
 accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
@@ -81,7 +81,7 @@ name_change_function = {  # the function names to replace after the expression h
 }
 
 copy_notation = [
-    ['π', 'φ', 'γ', 'θ'],
+    ['π', 'φ', 'γ', 'θ', 'λ', 'ω', 'σ'],
     functions
 ]
 
