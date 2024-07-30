@@ -47,3 +47,13 @@ def all_is_int(array: tuple[str, ...], function_name: str) -> None:
             for char in element:
                 if char != '0':
                     raise Exception(f'{function_name}; a parameter is not an int')
+
+
+def circularly_defined(variables: dict[str, str]) -> None:
+    """
+    Raises an error if a variable is circularly defined.
+    """
+
+    for x in variables:
+        if x in variables[x] and f'({x})' != variables[x] and x != variables[x]:
+            raise Exception(f"'{x}' is circularly defined")
