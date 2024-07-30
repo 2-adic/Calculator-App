@@ -12,6 +12,8 @@ import misc_functions
 from functions import Solve
 import symbols
 from style import Settings, Colors
+import error_detection as error
+from elements import WrapTextButton
 
 
 class ControlWindow(QWidget):
@@ -285,6 +287,18 @@ class ControlWindow(QWidget):
         else:
             super().keyPressEvent(event)  # passes other key presses
 
+    def mouseDoubleClickEvent(self, event: QMouseEvent):
+        """
+        Runs this function if the user double-clicks anywhere in the window.
+
+        Used to maximize the window if the user double-clicks on the title bar.
+        """
+
+        if self.__widget_move.geometry().contains(event.pos()):  # checks if the user is in the title bar
+            self.__button_logic_maximize()
+        else:
+            super().mouseDoubleClickEvent(event)
+
     def mouseReleaseEvent(self, event: QMouseEvent | None) -> None:
         """
         Sets moving variables to false if the user stops hold left click.
@@ -490,7 +504,6 @@ class SettingsWindow(ControlWindow):
         # Settings Menu -----------------------------------------------------------------------------------------
 
         defaults = self._settings_user.load_settings()
-        print(defaults)
 
         settings_list = (
             ('General', (
@@ -751,9 +764,9 @@ class MainWindow(ControlWindow):
         self.__flip_type_toggle = False
         self._icon_aspect_ratio_inverse = None
 
-        self._box_answer = QPushButton(self._settings_user.answer_default, self)
+        self._box_answer = WrapTextButton(self._settings_user.answer_default, self, self._settings_user.box_answer_padding)
         self._box_answer.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._box_answer.clicked.connect(self.__copy)
+        self._box_answer.get_button().clicked.connect(self.__copy)
 
         self.__answer_image_path_exact = file_path('latex_exact.png')  # gets the path of the latex image
         self.__answer_image_path_approximate = file_path('latex_approximate.png')  # gets the path of the latex image
@@ -761,6 +774,8 @@ class MainWindow(ControlWindow):
         # answer format label
         self._box_answer_format_label = QLabel('', self)
         self._box_answer_format_label.setFixedWidth(25)
+        self._box_answer_format_label.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
+        self._box_answer_format_label.setMouseTracking(False)
 
         # text box
         self._user_select = None
@@ -812,7 +827,6 @@ class MainWindow(ControlWindow):
 
             if self.__is_constant_value_used:  # hides the format button if a constant value was used
                 self._style.set_button_format_visibility(self._bar_answer, self._bar_format, False)
-
 
             self._flip_type()
 
@@ -1029,7 +1043,7 @@ class MainWindow(ControlWindow):
         """
 
         # tells if an answer is being displayed or not
-        is_displaying_answer = not (self._box_answer.text() == self._settings_user.answer_default or self._box_answer.text()[5:] == 'Error:')
+        is_displaying_answer = not (self._box_answer.text() == self._settings_user.answer_default or self._box_answer.text()[:6] == 'Error:')
 
         self.__update_colors_main(is_displaying_answer)  # updates all colors for MainWindow
 
@@ -1091,13 +1105,7 @@ class MainWindow(ControlWindow):
 
                     temp1[z] = temp1[z].replace(y, f'({temp2[y]})')
 
-        # detects if a variable is circularly defined
-        for x in temp1:
-            if x in temp1[x] and f'({x})' != temp1[x] and x != temp1[x]:
-                print('Error: A variable is circularly defined.')
-                # add logic here to return an answer of 'Error'
-
-                break
+        error.circularly_defined(temp1)
 
         return temp1
 
@@ -1127,6 +1135,10 @@ class MainWindow(ControlWindow):
         """
         Lets the user copy the answer by clicking the answer box.
         """
+
+        if self.__answer_temp == self._settings_user.answer_default or self.__answer_temp[:6] == 'Error:':
+            pyperclip.copy(self.__answer_temp)
+            return
 
         if self.__flip_type_toggle:
             if self.window_settings.answer_copy == 'Image':
@@ -1389,6 +1401,8 @@ class MultiBox(MainWindow):
             # adds a scroll area
             self.__areas[1][2].append(QScrollArea())
             self.__areas[1][2][i].setWidgetResizable(True)
+            if i == 0:
+                self.__areas[1][2][0].setMinimumHeight(86)  # stops the top scroll area from becoming too collapsed
             self.__areas[1][2][i].setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
             # uses a QFrame to hold the grid layout
@@ -1571,7 +1585,7 @@ class RunWindow(MultiBox, MainWindow):
         box_answer_height = int(self._settings_user.box_answer_height_scale * (self.height() - self._settings_user.title_bar_height - (3 * self._settings_user.box_padding)))
 
         box_text_y1 = self._settings_user.box_padding + self._settings_user.title_bar_height
-        box_text_height = self.height() - box_answer_height - (self._settings_user.box_padding * 3) - self._settings_user.title_bar_height - self._settings_user.bar_button_height
+        box_text_height = self.height() - box_answer_height - (self._settings_user.box_padding * 3) - self._settings_user.title_bar_height - self._settings_user.bar_button_height + self._settings_user.box_border
         box_text_x1 = self._settings_user.box_padding
         box_text_width = int((self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5))
 
