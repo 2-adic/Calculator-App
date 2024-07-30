@@ -869,7 +869,10 @@ class Colors:
             '''
         )
 
-    def set_box_answer(self, button) -> None:
+    def set_box_answer(self, wrap_button) -> None:
+        button = wrap_button.get_button()
+        label = wrap_button.get_label()
+
         button.setStyleSheet(
             f'''
             QPushButton {{
@@ -885,6 +888,15 @@ class Colors:
             }}
             QPushButton:pressed {{
                 background-color: rgb{self.__settings.color_box_selected};
+            }}
+            '''
+        )
+
+        label.setStyleSheet(
+            f'''
+            QLabel {{
+                color: rgb{self.__settings.color_text};
+                font-size: 15px;
             }}
             '''
         )
