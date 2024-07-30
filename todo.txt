@@ -9,16 +9,6 @@ Bugs:
         - How it should work (in each step the user presses tab), it should loop as shown: text box -> variable 1 -> variable 2 -> variable n -> text box
         - Give the user a way to still type a tab in the text box (maybe mac: option + tab, Windows: 'not sure yet' + tab)
 
-    - App crashes from a lot of things
-        - Need to use more try except blocks
-        - More raises need to be used to account for common user errors
-        - Crashes when:
-            - User inputs ".." and clicks the answer button
-            - Integration is with respect to variable A, and A is also defined as a value
-                - Ex: integrate(x, x)   And the users sets x = 2
-                - Not sure what to do about this because this doesn't happen in mathematics
-                - Maybe make it if any value is entered for variable A, then an error pops up for the user
-
     - If the user is in a variable box while their mouse is on top of a variable text box, their mouse flashes between two different cursor shapes
         - Solution: when typing is detected, hide the cursor until the user moves their mouse again
 
@@ -44,11 +34,16 @@ Bugs:
     - Copying the answer as an image does not allow it to be pasted as a file in file explorer
         - Could not find a fix for this
 
+    - Word wrapping for the answer box only works if spaces are present
+        - Causes long instances of multiplication to not wrap
+            - Ex: a*b*c*d*e...
+            - May want to add spaces between multiplication symbols (not sure if functionality is wanted yet)
+                - Ex: a*b*c -> a * b * c
+                - string.replace('*', ' * ')
+
+
 Future Features:
     - Need shadowing for the sides of the window (for Windows)
-
-    - Add a settings section
-        - Option to toggle between radians and degrees
 
     - Add window's snap functionality
         - Based on research, it does not seem possible to enable
@@ -62,25 +57,25 @@ Future Features:
             - When in approximate form:  5x ± 1 -> 5x + 1 -> (5*2) + 1 -> 10 + 1 -> 11  (Displays both answers somehow)
                                                 -> 5x - 1 -> (5*2) - 1 -> 10 - 1 -> 9
 
-    - Represent functions like cos() with italics
-        - Might solve this problem another way without the use of color (not sure yet)
-        - Make the "cos" highlight if the program detects it may be a function
-            - If the user does an input (click + control, not sure), cos turns into italics and is considered a function instead of c*o*s
-        - May want a font where the italics are the same width as the normal characters
-
-    - Need to test if circularly defined variables are being detected every time
-        - Need to give error for all cases where this occurs (not giving an error at all atm)
+    - Represent functions somehow
+        - Visually distinguish functions from other symbols
+            - Current options:
+                - Use italics
+                - Use colored text
+            - This is to prevent confusion of mixing up implicit multiplication and function names
+                - Ex: if there was a function named "daf" the user may try to implicitly multiply "d*a*f" in an expression (due to not knowing it was a function), Ex: "daf + 2 - x"
 
     - Add pin feature for variables, so they don't get removed while its active
 
     - Change the font of the LaTeX image
 
-    - Add more functions
-
-    - Double click to maximize
-        - The user should be able to double-click on the title bar to maximize the window
+    - Add settings:
+        - Add rgb settings for changing the colors of text / background / borders / etc
 
 Before Beta:
+
+    - Fix bugs:
+        - Format label blocks the user from pressing the button
 
     - Change the caret color for QPlainTextEdit and QLineEdit
         - Use the fix shown in https://stackoverflow.com/questions/68769475/how-to-set-the-color-of-caret-blinking-cursor-in-qlineedit
@@ -88,20 +83,8 @@ Before Beta:
 
     - Code organization and optimization is needed
 
-    - Implement a way for settings to be saved through a txt file
-
-    - Fill the settings window with settings:
-        - Option to toggle between radians and degrees
-            - Currently it works, but the answer needs to be checked after the answer is solved. If degrees are used, then the angle needs to be changed to display degrees.
-
-        - Add rgb settings for changing the colors of text / background / borders / etc
-
-    - Add word wrapping to the answer button for when long errors / text answers are being displayed
-        - Since word wrapping cannot be added to a QPushButton, a QLabel is needed
-
-    - Fix the vertical spacing in the notations tab
-        - may not fix since the user cannot tell anything is wrong with it
-            - it looks normal due to the amount of math functions below the symbols section
+    - Angle Unit setting:
+        - Currently it works, but the answer needs to be checked after the expression is solved. If degrees are used, then the angle needs to be changed to display degrees.
 
     - Add more error detection
 
