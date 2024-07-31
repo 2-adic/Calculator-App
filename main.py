@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QStackedWidget, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout
+from PyQt6.QtWidgets import QApplication, QStackedWidget, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout, QFormLayout, QGroupBox
 from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QMouseEvent, QPixmap
 from PyQt6.QtCore import Qt, QPoint, QTimer, QSize, pyqtSignal, pyqtSlot
 import pyperclip
@@ -1293,49 +1293,48 @@ class MultiBox(MainWindow):
 
                 # scroll area setup
                 self.__areas[0][2][i].setWidgetResizable(True)
+                self.__areas[0][2][i].setMinimumHeight(90)
                 self.__areas[0][2][i].setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
                 self.__areas[0][2][i].setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum))
 
                 # inside the scroll areas
-                content_widget = QWidget()
-                layout = QVBoxLayout()
-                content_widget.setLayout(layout)
-                layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+                layout = QFormLayout()
+                layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
 
                 for key in sorted(self._symbols[i].keys()):
-                    h_layout = None
+                    row = []
                     if i == 0:
                         label, edit = self._symbols[0][key]
 
-                        # Use QHBoxLayout for each pair of label and line edit
-                        h_layout = QHBoxLayout()
-                        h_layout.addWidget(label)
-                        h_layout.addWidget(edit, 1)  # The 1 here allows the QLineEdit to expand
-
                         edit.textChanged.connect(self._text_update_lambda)
+                        edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
+                        row.append(label)
+                        row.append(edit)
 
                     if i == 1:
                         label, option1, option2 = self._symbols[1][key]
 
-                        h_layout = QHBoxLayout()
-                        h_layout.addWidget(label)
-
-                        h_layout.addWidget(option1)
+                        hbox = QHBoxLayout()
+                        hbox.addWidget(option1)
                         if key != 'i':  # 'i' doesn't need a second selector option
-                            h_layout.addWidget(option2)
-                        h_layout.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+                            hbox.addWidget(option2)
+                        hbox.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
 
-                    layout.addLayout(h_layout)
+                        row.append(label)
+                        row.append(hbox)
+
+                    layout.addRow(*row)
 
                     line = QFrame()
                     line.setFrameShape(QFrame.Shape.HLine)
                     line.setFrameShadow(QFrame.Shadow.Sunken)
                     self._style.set_line_secondary(line)
 
-                    layout.addWidget(line)
+                    layout.addRow(line)
 
-                    # Set minimum height based on number of labels and their heights
-                    content_widget.setMinimumHeight(len(self._symbols[i]) * (30 + 4))  # 30 is for the line and label, 4 is for the margin
+                content_widget = QWidget()
+                content_widget.setLayout(layout)
 
                 # inner content widget
                 self.__areas[0][2][i].setWidget(content_widget)
