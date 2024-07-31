@@ -70,6 +70,8 @@ class Settings:
         self.__select_height = 50  # height of the selector buttons
         self.__symbols_button_width = 50, 120  # width of the copy buttons within the symbols tab, a tuple is used for the width of different sections
         self.__symbols_button_height = 50  # height of the copy buttons, all buttons have the same height
+        self.__radio_button_radius = 13  # the radius of the radio buttons
+        self.__radio_button_border_radius = int(self.__radio_button_radius / 2) + 2  # the border radius of the radio buttons
 
         # buttons
         self.__button_text_hover_raise = 5  # the height text is raised when a button is being hovered
@@ -441,6 +443,22 @@ class Settings:
     @symbols_button_height.setter
     def symbols_button_height(self, value: int) -> None:
         self.__symbols_button_height = value
+
+    @property
+    def radio_button_radius(self) -> int:
+        return self.__radio_button_radius
+
+    @radio_button_radius.setter
+    def radio_button_radius(self, value: int) -> None:
+        self.__radio_button_radius = value
+
+    @property
+    def radio_button_border_radius(self) -> int:
+        return self.__radio_button_border_radius
+
+    @radio_button_border_radius.setter
+    def radio_button_border_radius(self, value: int) -> None:
+        self.__radio_button_border_radius = value
 
     @property
     def button_text_hover_raise(self) -> int:
@@ -1178,7 +1196,9 @@ class Colors:
         radio_button.setStyleSheet(
             f'''
             QRadioButton::indicator {{
-                border-radius: 6px;
+                width: {self.__settings.radio_button_radius}px;
+                height: {self.__settings.radio_button_radius}px;
+                border-radius: {self.__settings.radio_button_border_radius}px;
                 border: 2px solid rgb{self.__settings.color_box_border};
                 background-color: rgb{self.__settings.color_box_background};
             }}
