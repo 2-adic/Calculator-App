@@ -71,11 +71,17 @@ Future Features:
 
     - Add settings:
         - Add rgb settings for changing the colors of text / background / borders / etc
+        - Radio button border radius
+            - Option between a circle and a squircle
+
+    - Add a unit converter section
 
 Before Beta:
 
-    - Fix bugs:
-        - Format label blocks the user from pressing the button
+    - Add rounded window corners for macOS and window11
+
+    - Allow misc_functions.py file to use macOS when copying an image
+        - It crashes due to assuming the OS is windows10
 
     - Change the caret color for QPlainTextEdit and QLineEdit
         - Use the fix shown in https://stackoverflow.com/questions/68769475/how-to-set-the-color-of-caret-blinking-cursor-in-qlineedit
