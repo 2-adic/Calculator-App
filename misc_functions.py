@@ -1,9 +1,5 @@
 from PyQt6.QtWidgets import QLineEdit
 from random import randint
-import win32clipboard as clp
-from files import file_path
-from PIL import Image
-import io
 
 
 def get_position_change(key_list_prev: list, key_list_curr: list, string: str) -> int:
@@ -57,31 +53,6 @@ def get_constant_values(dictionary: dict, digits: int) -> dict:
         ans[key] = dictionary[key][1][:digits]
 
     return ans
-
-
-def copy_image(file_name):
-    """
-    Copies a png image to the clipboard.
-    """
-
-    image = Image.open(file_path(file_name))
-
-    # converts the image to a png
-    output_png = io.BytesIO()
-    image.save(output_png, format='PNG')
-    png_data = output_png.getvalue()
-
-    # convert the image to DIB
-    output_dib = io.BytesIO()
-    image.convert('RGB').save(output_dib, format='BMP')
-    dib_data = output_dib.getvalue()[14:]  # skips the first 14 bytes which removes the header
-
-    # copies the png to the clipboard
-    clp.OpenClipboard()
-    clp.EmptyClipboard()
-    clp.SetClipboardData(clp.RegisterClipboardFormat('PNG'), png_data)  # sets the PNG format
-    clp.SetClipboardData(clp.CF_DIB, dib_data)  # sets the DIB format
-    clp.CloseClipboard()
 
 
 def test_colors(settings) -> None:
@@ -153,7 +124,6 @@ def test_colors(settings) -> None:
     settings.color_scrollbar_background = 59, 63, 69
 
     settings.color_latex = settings.color_text
-
 
 
 def generate_new_colors() -> None:
