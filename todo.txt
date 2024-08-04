@@ -78,11 +78,6 @@ Future Features:
 
 Before Beta:
 
-    - Add rounded window corners for macOS and window11
-
-    - Allow misc_functions.py file to use macOS when copying an image
-        - It crashes due to assuming the OS is windows10
-
     - Change the caret color for QPlainTextEdit and QLineEdit
         - Use the fix shown in https://stackoverflow.com/questions/68769475/how-to-set-the-color-of-caret-blinking-cursor-in-qlineedit
         - Test if this fix can work for a QPlainTextEdit
