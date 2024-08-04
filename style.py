@@ -22,6 +22,7 @@ class Settings:
         self.__widget_resize_size = 5  # thickness of the resizing widgets
         self.__window_size_min_main = 650, 450  # min size of the main window
         self.__window_size_min_settings = int(self.window_size_min_main[0] * self.__window_settings_scale), int(self.window_size_min_main[1] * self.__window_settings_scale)  # min size of the settings window
+        self.__window_border_radius = 0
 
         # title bar
         self.__title_bar_height = 22  # height of the title bar
@@ -219,6 +220,14 @@ class Settings:
     @window_size_min_settings.setter
     def window_size_min_settings(self, value: tuple[int, int]) -> None:
         self.__window_size_min_settings = value
+
+    @property
+    def window_border_radius(self) -> int:
+        return self.__window_border_radius
+
+    @window_border_radius.setter
+    def window_border_radius(self, value: int) -> None:
+        self.__window_border_radius = value
 
     @property
     def title_bar_height(self) -> int:
@@ -716,6 +725,7 @@ class Colors:
             QPushButton {{
                 background-color: transparent;
                 border: none;
+                border-top-right-radius: {self.__settings.window_border_radius}px;
             }}
             QPushButton:hover {{
                 background-color: rgb{self.__settings.color_title_bar_button_exit_hover};
