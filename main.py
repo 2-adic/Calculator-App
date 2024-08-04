@@ -1,13 +1,13 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QStackedWidget, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout, QFormLayout, QGroupBox
-from PyQt6.QtGui import QColor, QPainter, QIcon, QFont, QMouseEvent, QPixmap
-from PyQt6.QtCore import Qt, QPoint, QTimer, QSize, pyqtSignal, pyqtSlot
+from PyQt6.QtGui import QColor, QPainter, QPainterPath, QIcon, QFont, QMouseEvent, QPixmap
+from PyQt6.QtCore import Qt, QPoint, QTimer, QSize, pyqtSignal, pyqtSlot, QRectF
 import pyperclip
 import fontcontrol
 from files import file_path
 from str_format import contains_substring, function_convert
 from PIL import Image
-import system_settings
+from system_settings import OperatingSystem
 import misc_functions
 from functions import Solve
 import symbols
@@ -29,7 +29,7 @@ class ControlWindow(QWidget):
             self._settings_user = settings
             self._style = colors
 
-        self.__op = system_settings.OperatingSystem()  # initializes settings depending on the operating system
+        self._op = OperatingSystem()  # initializes settings depending on the operating system
 
         # Window ------------------------------------------------------------------------------------------------
 
@@ -90,7 +90,7 @@ class ControlWindow(QWidget):
         # -------------------------------------------------------------------------------------------------------
 
         # configures transparency
-        if self.__op.system_name == 'Windows':
+        if self._op.get_system_name() == 'Windows':
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         # -------------------------------------------------------------------------------------------------------
@@ -207,7 +207,7 @@ class ControlWindow(QWidget):
         Maximizes the screem using the maximize button.
         """
 
-        if self.__op.system_name == 'Darwin':  # on macOS, the maximize button fullscreens the window
+        if self._op.get_system_name() == 'Darwin':  # on macOS, the maximize button fullscreens the window
             self.__logic_full_screen()
             return
 
@@ -260,6 +260,11 @@ class ControlWindow(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
+        # stops the painter from painting the corners
+        path = QPainterPath()
+        path.addRoundedRect(QRectF(0, 0, self.width(), self.height()), self._settings_user.window_border_radius, self._settings_user.window_border_radius)
+        painter.setClipPath(path)
+
         # title bar
         painter.fillRect(0, 0, self.width(), self._settings_user.title_bar_height, QColor(*self._settings_user.color_title_bar))
 
@@ -271,12 +276,12 @@ class ControlWindow(QWidget):
         super().showEvent(event)
 
         if self._settings_user.color_background_blurred:
-            self.__op.enable_blur(self)
+            self._op.enable_blur(self)
 
     def keyPressEvent(self, event) -> None:
 
         # maximizes the window based on the operating system's shortcut
-        if self.__op.is_maximize_shortcut(event):
+        if self._op.is_maximize_shortcut(event):
             self.__logic_full_screen()
 
             # focuses the window
@@ -498,6 +503,8 @@ class SettingsWindow(ControlWindow):
         self._set_title(self._settings_user.window_title_settings)
         self._set_geometry(position + self._settings_user.window_start_size_settings)
         self._set_size_min(self._settings_user.window_size_min_settings)
+
+        self._settings_user.window_border_radius = self._op.get_window_border_radius()  # sets the shape of the window corners
 
         self.answer_display = None
 
@@ -1141,13 +1148,13 @@ class MainWindow(ControlWindow):
 
         if self.__flip_type_toggle:
             if self.window_settings.answer_copy == 'Image':
-                misc_functions.copy_image('latex_exact.png')
+                self._op.copy_image('latex_exact.png')
                 return
             else:
                 string = self.__solution.get_exact_copy()
         else:
             if self.window_settings.answer_copy == 'Image':
-                misc_functions.copy_image('latex_approximate.png')
+                self._op.copy_image('latex_approximate.png')
                 return
             else:
                 string = self.__solution.get_approximate_copy()
