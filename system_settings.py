@@ -1,47 +1,96 @@
 import platform
 import ctypes
 from PyQt6.QtCore import Qt
+from PIL import Image
+import io
+import subprocess
 
 
 class OperatingSystem:
     def __init__(self):
-        self.system_name = platform.system()
 
-        if self.system_name == 'Windows':  # Windows
+        self.__set_system_name()
+        self.__print_system_name()
+        self.__show_taskbar_icon()
 
-            # configures Windows to show the taskbar icon
-            myappid = u'mycompany.myproduct.subproduct.version'  # arbitrary string
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    def get_system_name(self) -> str:
+        """
+        Returns the OS name that the user is using.
+        """
 
-            print('Operating system is Windows')
+        return self.__system_name
 
-        elif self.system_name == 'Darwin':  # macOS
-            print('Operating system is macOS')
+    def get_window_border_radius(self) -> int:
+        """
+        Returns how curved the windows should be depending on the OS.
+        """
 
-        elif self.system_name == 'Linux':  # Linux
-            print('Operating system is Linux')
+        if self.__system_name == 'Windows' and self.__system_version == '11':
+            radius = 10
+
+        elif self.__system_name == 'Darwin':
+            radius = 10
 
         else:
-            print('Operating system not recognized')
+            radius = 0
+
+        return radius
+
+    def copy_image(self, file_name):
+        """
+        Copies a png image to the clipboard.
+        """
+
+        if self.__system_name == 'Windows':
+
+            import win32clipboard as clp
+
+            image = Image.open(file_name)
+
+            # converts the image to a png
+            output_png = io.BytesIO()
+            image.save(output_png, format='PNG')
+            png_data = output_png.getvalue()
+
+            # convert the image to DIB
+            output_dib = io.BytesIO()
+            image.convert('RGB').save(output_dib, format='BMP')
+            dib_data = output_dib.getvalue()[14:]  # skips the first 14 bytes which removes the header
+
+            # copies the png to the clipboard
+            clp.OpenClipboard()
+            clp.EmptyClipboard()
+            clp.SetClipboardData(clp.RegisterClipboardFormat('PNG'), png_data)  # sets the PNG format
+            clp.SetClipboardData(clp.CF_DIB, dib_data)  # sets the DIB format
+            clp.CloseClipboard()
+
+        elif self.__system_name == 'Darwin':
+            image = Image.open(file_name)
+            output_path = '/tmp/temp_image.png'
+            image.save(output_path)
+
+            # uses AppleScript to copy the image to the clipboard as a file reference
+            script = f'set the clipboard to (read (POSIX file "{output_path}") as «class PNGf»)'
+            subprocess.run(['osascript', '-e', script])
 
     def is_maximize_shortcut(self, event):
 
-        if self.system_name == 'Windows':  # Windows
+        if self.__system_name == 'Windows':  # Windows
             return event.key() == Qt.Key.Key_F11
 
-        elif self.system_name == 'Darwin':  # macOS
+        elif self.__system_name == 'Darwin':  # macOS
             return event.modifiers() == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier) and event.key() == Qt.Key.Key_F
 
-        elif self.system_name == 'Linux':  # Linux
+        elif self.__system_name == 'Linux':  # Linux
             return False  # functionality not added yet
 
         else:
             return False  # operating system not recognized
 
     def enable_blur(self, window):
-        if self.system_name == 'Windows':
+        if self.__system_name == 'Windows':
 
-            hwnd = window.windowHandle().winId().__int__()  # Obtain the HWND
+            hwnd = window.windowHandle().winId().__int__()  # obtains the HWND
 
             class ACCENT_POLICY(ctypes.Structure):
                 _fields_ = [("AccentState", ctypes.c_int),
@@ -65,3 +114,58 @@ class OperatingSystem:
             data.Data = ctypes.pointer(accent)
             data.SizeOfData = ctypes.sizeof(accent)
             ctypes.windll.user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data))
+
+    def __set_system_name(self):
+        """
+        Finds the OS name that the user is using.
+        """
+
+        name = platform.system()
+        self.__system_version = None
+
+        # gets the version of Windows
+        if name == 'Windows':
+            version = platform.version()
+            build_number = int(version.split('.')[2])
+
+            if build_number >= 10240:
+                self.__system_version = '10'
+
+            elif build_number >= 22000:
+                self.__system_version = '11'
+
+        self.__system_name = name
+
+    def __print_system_name(self):
+        """
+        Prints the name of the OS. Used for testing purposes.
+        """
+
+        name = self.__system_name
+        version = self.__system_version
+
+        if name == 'Darwin':
+            name = 'macOS'
+
+        # adds the version if there is one
+        if version is None:
+            str_end = ''
+        else:
+            str_end = f' {version}'
+
+        print(f'Operating system is {name}{str_end}')
+
+    def __show_taskbar_icon(self):
+        """
+        Shows the app icon in the taskbar.
+        """
+
+        name = self.__system_name
+
+        if name == 'Windows':
+
+            # configures Windows to show the taskbar icon
+            myappid = u'mycompany.myproduct.subproduct.version'  # arbitrary string
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
+
