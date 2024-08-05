@@ -1,6 +1,7 @@
+from PyQt6.QtCore import Qt, QObject, QTimer
+from PyQt6.QtGui import QKeyEvent
 import platform
 import ctypes
-from PyQt6.QtCore import Qt
 from PIL import Image
 import io
 import subprocess
@@ -78,8 +79,7 @@ class OperatingSystem:
         if self.__system_name == 'Windows':  # Windows
             return event.key() == Qt.Key.Key_F11
 
-        elif self.__system_name == 'Darwin':  # macOS
-            return event.modifiers() == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier) and event.key() == Qt.Key.Key_F
+        # macOS's full screen shortcut is detected through the MacOSEventFilter class
 
         elif self.__system_name == 'Linux':  # Linux
             return False  # functionality not added yet
@@ -168,4 +168,34 @@ class OperatingSystem:
             myappid = u'mycompany.myproduct.subproduct.version'  # arbitrary string
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
+    def set_fullscreen_function(self, window, function):
+        if self.__system_name == 'Darwin':
+            self.filter = MacOSEventFilter()
+            self.filter.set_function_fullscreen(function)
+            window.installEventFilter(self.filter)
 
+class MacOSEventFilter(QObject):
+
+    def __init__(self):
+        super().__init__()
+        self.__trigger_fullscreen = True
+        self.__function_fullscreen = lambda: None  # function does nothing until its defined
+
+    def set_function_fullscreen(self, function) -> None:
+        self.__function_fullscreen = function
+
+    def __trigger_reset_fullscreen(self) -> None:
+        self.__trigger_fullscreen = True
+
+    def eventFilter(self, obj, event):
+
+        # detects if a macOS user presses "control + command + f" to fullscreen the window
+        if isinstance(event, QKeyEvent) and event.key() == 70 and event.modifiers() == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier):
+            if self.__trigger_fullscreen:  # uses a trigger as a cooldown before this can be activated again
+                self.__trigger_fullscreen = False
+                QTimer.singleShot(645, self.__trigger_reset_fullscreen)
+                self.__function_fullscreen()
+
+            return True  # event is handled
+
+        return super().eventFilter(obj, event)  # propagates other events normally
