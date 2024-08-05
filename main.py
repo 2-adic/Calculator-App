@@ -30,10 +30,12 @@ class ControlWindow(QWidget):
             self._style = colors
 
         self._op = OperatingSystem()  # initializes settings depending on the operating system
+        self._op.set_fullscreen_function(self, self.__button_logic_maximize)
 
         # Window ------------------------------------------------------------------------------------------------
 
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.FramelessWindowHint)  # removes default title bar
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)  # configures transparency
 
         # Title Bar ---------------------------------------------------------------------------------------------
 
@@ -86,12 +88,6 @@ class ControlWindow(QWidget):
 
         self.__widget_resize[3].setCursor(Qt.CursorShape.SizeFDiagCursor)  # top left
         self.__widget_resize[7].setCursor(Qt.CursorShape.SizeFDiagCursor)  # bottom right
-
-        # -------------------------------------------------------------------------------------------------------
-
-        # configures transparency
-        if self._op.get_system_name() == 'Windows':
-            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
 
         # -------------------------------------------------------------------------------------------------------
 
@@ -207,9 +203,16 @@ class ControlWindow(QWidget):
         Maximizes the screem using the maximize button.
         """
 
-        if self._op.get_system_name() == 'Darwin':  # on macOS, the maximize button fullscreens the window
+        if self._op.get_system_name() == 'Darwin':  # on macOS, the maximize button full screens the window
             self.__logic_full_screen()
             return
+
+        self.__logic_maximize()
+
+    def __logic_maximize(self):
+        """
+        Maximizes the window.
+        """
 
         if self.isMaximized():
             # return to state before maximized
@@ -231,13 +234,17 @@ class ControlWindow(QWidget):
 
     def __logic_full_screen(self) -> None:
         """
-        Fullscreens the window.
+        Full screens the window.
         """
 
         if self.isFullScreen():
-            # return to state before fullscreened
+            # return to state before full screened
             self.showNormal()
             self.__widget_resize_toggle = True
+
+            self._style.update_border_radius(False, self.__button_close)  # adds a border radius to the window
+
+            self.activateWindow()  # focuses the window
 
             for widget in self.__widget_resize:  # enables all resizing widgets
                 widget.setEnabled(True)
@@ -246,6 +253,8 @@ class ControlWindow(QWidget):
             # maximize window
             self.showFullScreen()
             self.__widget_resize_toggle = False
+
+            self._style.update_border_radius(True, self.__button_close)  # removes the border radius
 
             for widget in self.__widget_resize:  # disables all resizing widgets
                 widget.setEnabled(False)
@@ -299,8 +308,11 @@ class ControlWindow(QWidget):
         Used to maximize the window if the user double-clicks on the title bar.
         """
 
+        if self.isFullScreen():  # double-clicking does nothing when full screened
+            return
+
         if self.__widget_move.geometry().contains(event.pos()):  # checks if the user is in the title bar
-            self.__button_logic_maximize()
+            self.__logic_maximize()
         else:
             super().mouseDoubleClickEvent(event)
 
@@ -364,14 +376,8 @@ class ControlWindow(QWidget):
 
                 mouse_position = event.globalPosition().toPoint() - self.__offset
 
-            elif self.isFullScreen():
-
-                offset_x = min(int(self.normalGeometry().width() * (self.__offset.x() / self.width())), self.normalGeometry().width() - (3 * self._settings_user.title_bar_button_width))
-                self.__offset = QPoint(offset_x, self.__offset.y())
-
-                self.__logic_full_screen()
-
-                mouse_position = event.globalPosition().toPoint() - self.__offset
+            elif self.isFullScreen():  # stops the window from moving if it is full screened
+                return
 
             else:
                 mouse_position = event.globalPosition().toPoint() - self.__offset
@@ -504,7 +510,7 @@ class SettingsWindow(ControlWindow):
         self._set_geometry(position + self._settings_user.window_start_size_settings)
         self._set_size_min(self._settings_user.window_size_min_settings)
 
-        self._settings_user.window_border_radius = self._op.get_window_border_radius()  # sets the shape of the window corners
+        self._settings_user.window_border_radius_save = self._op.get_window_border_radius()  # sets the shape of the window corners
 
         self.answer_display = None
 
