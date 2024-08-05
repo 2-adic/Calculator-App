@@ -41,6 +41,13 @@ Bugs:
                 - Ex: a*b*c -> a * b * c
                 - string.replace('*', ' * ')
 
+    - macOS only bugs:
+
+        - Maximize button on macOS keeps its hovering color after it is pressed
+
+        - When opening the settings while he main window is full screened leads to glitchy behavior
+
+        - Cannot blur the window background
 
 Future Features:
     - Need shadowing for the sides of the window (for Windows)
