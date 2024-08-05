@@ -23,6 +23,7 @@ class Settings:
         self.__window_size_min_main = 650, 450  # min size of the main window
         self.__window_size_min_settings = int(self.window_size_min_main[0] * self.__window_settings_scale), int(self.window_size_min_main[1] * self.__window_settings_scale)  # min size of the settings window
         self.__window_border_radius = 0
+        self.__window_border_radius_save = self.__window_border_radius
 
         # title bar
         self.__title_bar_height = 22  # height of the title bar
@@ -228,6 +229,15 @@ class Settings:
     @window_border_radius.setter
     def window_border_radius(self, value: int) -> None:
         self.__window_border_radius = value
+
+    @property
+    def window_border_radius_save(self) -> int:
+        return self.__window_border_radius_save
+
+    @window_border_radius_save.setter
+    def window_border_radius_save(self, value: int) -> None:
+        self.window_border_radius = value  # sets this variable to the same value
+        self.__window_border_radius_save = value
 
     @property
     def title_bar_height(self) -> int:
@@ -779,6 +789,15 @@ class Colors:
             font-size: 11px;
             '''
         )
+
+    def update_border_radius(self, remove_radius: bool, button) -> None:
+        if remove_radius:
+            self.__settings.window_border_radius = 0
+
+        else:
+            self.__settings.window_border_radius = self.__settings.window_border_radius_save
+
+        self.set_button_close(button)
 
     # SettingWindow --------------------------------------------------------------------------------
 
