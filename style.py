@@ -1,5 +1,5 @@
 from PyQt6.QtCore import Qt
-from files import file_path
+from PyQt6.QtGui import QColor
 
 
 class Settings:
@@ -959,6 +959,10 @@ class Colors:
         )
 
     def set_box_text(self, text_box) -> None:
+        # changes the caret color
+        text_box.caret_color = QColor(*self.__settings.color_line_secondary)
+        text_box.background_color = QColor(*self.__settings.color_box_background)
+
         text_box.setStyleSheet(
             f'''
             QPlainTextEdit {{
@@ -1241,8 +1245,16 @@ class Colors:
         )
         
     def set_variable_radio_button(self, symbols) -> None:
-        # updates the colors for the constant's radio buttons
+
         for i, section in enumerate(symbols):
+            # updates the caret colors for the line edits
+            if i == 0:
+                for key in list(section.keys()):
+                    line_edit = section[key][1]
+                    line_edit.caret_color = QColor(*self.__settings.color_line_secondary)
+                    line_edit.background_color = QColor(*self.__settings.color_box_background)
+
+            # updates the colors for the constant's radio buttons
             if i == 1:
                 for key in list(section.keys()):
                     element = section[key]
