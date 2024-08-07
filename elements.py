@@ -72,6 +72,8 @@ class WrapTextButton:
         self.__button.resize(w, h)
 
 
+# custom caret code adapted from musicamante at https://stackoverflow.com/questions/68769475/how-to-set-the-color-of-caret-blinking-cursor-in-qlineedit
+# modified by removing default caret from the left of the new caret
 class CustomCaretLineEditStyle(QProxyStyle):
     def pixelMetric(self, pm, opt=None, widget=None):
         if (
