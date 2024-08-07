@@ -85,10 +85,6 @@ Future Features:
 
 Before Beta:
 
-    - Change the caret color for QPlainTextEdit and QLineEdit
-        - Use the fix shown in https://stackoverflow.com/questions/68769475/how-to-set-the-color-of-caret-blinking-cursor-in-qlineedit
-        - Test if this fix can work for a QPlainTextEdit
-
     - Code organization and optimization is needed
 
     - Angle Unit setting:
@@ -96,4 +92,4 @@ Before Beta:
 
     - Add more error detection
 
-    - Test on macOS
+    - Fix macOs bugs
