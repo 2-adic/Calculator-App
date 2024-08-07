@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QStackedWidget, QPushButton, QLabel, QWidget, QLineEdit, QVBoxLayout, QPlainTextEdit, QScrollArea, QHBoxLayout, QFrame, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout, QFormLayout, QGroupBox
+from PyQt6.QtWidgets import QApplication, QStackedWidget, QPushButton, QLabel, QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, QFrame, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout, QFormLayout
 from PyQt6.QtGui import QColor, QPainter, QPainterPath, QIcon, QFont, QMouseEvent, QPixmap
 from PyQt6.QtCore import Qt, QPoint, QTimer, QSize, pyqtSignal, pyqtSlot, QRectF
 import pyperclip
@@ -13,7 +13,7 @@ from functions import Solve
 import symbols
 from style import Settings, Colors
 import error_detection as error
-from elements import WrapTextButton
+from elements import WrapTextButton, CustomCaretLineEdit, CustomCaretTextEdit
 
 
 class ControlWindow(QWidget):
@@ -791,7 +791,7 @@ class MainWindow(ControlWindow):
 
         # text box
         self._user_select = None
-        self._box_text = QPlainTextEdit(self)
+        self._box_text = CustomCaretTextEdit(parent=self, caret_size=1)
         self._box_text.textChanged.connect(self._text_update)
         self._box_text.focusOutEvent = self.__box_text_focus_event
         self.__set_custom_context_menu(self._box_text)
@@ -913,7 +913,7 @@ class MainWindow(ControlWindow):
                 if index == 0:
                     label = QLabel(f'{x} =', self)
 
-                    text_box = QLineEdit(self)
+                    text_box = CustomCaretLineEdit(parent=self, caret_size=1, caret_color=QColor(*self._settings_user.color_line_secondary), background_color=QColor(*self._settings_user.color_box_background))
                     text_box.setPlaceholderText(f'{x}')
                     self.__set_custom_context_menu(text_box)
                     self._symbols[0][x] = (label, text_box)
@@ -961,7 +961,7 @@ class MainWindow(ControlWindow):
                     if index_2 == 0:
                         label = QLabel(f'{x} =', self)
 
-                        text_box = QLineEdit(self)
+                        text_box = CustomCaretLineEdit(parent=self, caret_size=1, caret_color=QColor(*self._settings_user.color_line_secondary), background_color=QColor(*self._settings_user.color_box_background))
                         text_box.setPlaceholderText(f'{x}')
                         self.__set_custom_context_menu(text_box)
                         self._symbols[0][x] = (label, text_box)
@@ -1065,8 +1065,6 @@ class MainWindow(ControlWindow):
     def __update_colors_main(self, is_displaying_answer) -> None:
         """
         Updates the stylesheets of everything in MainWindow.
-
-        Currently, this function is not fully implemented. Some widgets / buttons need to be automatically updated.
         """
 
         self.repaint()  # updates the colors for the title bar and background
@@ -1141,7 +1139,7 @@ class MainWindow(ControlWindow):
                 cursor = self._box_text.textCursor()
                 cursor.clearSelection()
                 self._box_text.setTextCursor(cursor)
-        QPlainTextEdit.focusOutEvent(self._box_text, event)  # Call the original focusOutEvent method
+        CustomCaretTextEdit.focusOutEvent(self._box_text, event)  # calls the original focusOutEvent method
 
     def __copy(self) -> None:
         """
