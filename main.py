@@ -765,6 +765,7 @@ class MultiBox(QPushButton):  # inherits QPushButton to prevent reference warnin
         self._box_text = None
         self._text_update_lambda = None
         self._symbols_prev_keys = None
+        self._op = None
 
         self._setup()
 
@@ -1105,7 +1106,7 @@ class MultiBox(QPushButton):  # inherits QPushButton to prevent reference warnin
 
         max_value = scroll_bar.maximum()
         if max_value != 0:
-            new = previous_scroll_amount + (new_items * 37)
+            new = previous_scroll_amount + (new_items * self._op.get_scroll_bar_variable_height())
             scroll_bar.setValue(min(max_value, new))
 
     def __clear_variables(self) -> None:

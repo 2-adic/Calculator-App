@@ -21,6 +21,23 @@ class OperatingSystem:
 
         return self.__system_name
 
+    def get_scroll_bar_variable_height(self) -> int:
+        """
+        Returns the scroll bar height created per variable in the variables tab. This depends on the OS the user is on.
+        """
+
+        if self.__system_name == 'Windows':
+            height = 37
+
+        elif self.__system_name == 'Darwin':
+            height = 49
+
+        else:
+            height = 40
+
+        return height
+
+
     def get_window_border_radius(self) -> int:
         """
         Returns how curved the windows should be depending on the OS.
