@@ -1,7 +1,7 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QStackedWidget, QPushButton, QLabel, QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, QFrame, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout, QFormLayout
+from PyQt6.QtWidgets import QApplication, QStackedWidget, QLayout, QPushButton, QLabel, QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, QFrame, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout, QFormLayout
 from PyQt6.QtGui import QColor, QPainter, QPainterPath, QIcon, QFont, QMouseEvent, QPixmap
-from PyQt6.QtCore import Qt, QPoint, QTimer, QSize, pyqtSignal, pyqtSlot, QRectF
+from PyQt6.QtCore import Qt, QPoint, QTimer, QSize, QRectF
 import pyperclip
 import fontcontrol
 from files import file_path
@@ -11,23 +11,18 @@ from system_settings import OperatingSystem
 import misc_functions
 from functions import Solve
 import symbols
-from style import Settings, Colors
+from style import Settings, Style
 import error_detection as error
 from elements import WrapTextButton, CustomCaretLineEdit, CustomCaretTextEdit
 
 
 class ControlWindow(QWidget):
-    def __init__(self, settings: Settings | None = None, colors: Colors | None = None):
-
+    def __init__(self, settings: Settings, style: Style):
         QWidget.__init__(self)
 
         # used to keep track of any settings the user changes within the window
-        if settings is None:
-            self._settings_user = Settings()
-            self._style = Colors(self._settings_user)
-        else:  # allows for the settings class object to be shared between multiple windows
-            self._settings_user = settings
-            self._style = colors
+        self._settings_user = settings
+        self._style = style
 
         self._op = OperatingSystem()  # initializes settings depending on the operating system
         self._op.set_fullscreen_function(self, self.__button_logic_maximize)
@@ -102,18 +97,21 @@ class ControlWindow(QWidget):
         self.__title_label = QLabel(title, self)
         self.__title_label.move(self._settings_user.window_title_position[0], self._settings_user.window_title_position[1])
 
-    def _set_geometry(self, size: tuple[int, int, int, int]):
+    def _set_geometry(self, x_position: int, y_position: int, width: int, height: int):
         """
         Sets the initial size of the window.
 
-        :param size: initial x position, initial y position, initial x size, initial y size.
+        :param x_position: The x position of the top left corner.
+        :param y_position: The y position of the top left corner.
+        :param width: The width of the window.
+        :param height: The height of the window.
         """
-        self.setGeometry(*size)  # initial window size / position
+        self.setGeometry(x_position, y_position, width, height)  # initial window size / position
 
-    def _set_size_min(self, size: tuple[int, int]):
-        self.setMinimumSize(*size)  # sets the minimum size of the window (used for macOS since the OS automatically controls the resizing)
+    def _set_size_min(self, min_width: int, min_height: int):
+        self.setMinimumSize(min_width, min_height)  # sets the minimum size of the window (used for macOS since the OS automatically controls the resizing)
 
-        self.size_min = size
+        self.size_min = min_width, min_height
 
     def _window_normal(self) -> None:
         """
@@ -501,14 +499,11 @@ class ControlWindow(QWidget):
 
 
 class SettingsWindow(ControlWindow):
+    def __init__(self, settings: Settings, style: Style):
+        ControlWindow.__init__(self, settings, style)
 
-    button_apply_signal = pyqtSignal()  # lets the apply button connect to the MainWindow class
-
-    def __init__(self, settings: Settings, style: Colors, position: tuple[int, int]):
-        super().__init__(settings, style)
         self._set_title(self._settings_user.window_title_settings)
-        self._set_geometry(position + self._settings_user.window_start_size_settings)
-        self._set_size_min(self._settings_user.window_size_min_settings)
+        self._set_size_min(*self._settings_user.window_size_min_settings)
 
         self._settings_user.window_border_radius_save = self._op.get_window_border_radius()  # sets the shape of the window corners
 
@@ -577,7 +572,6 @@ class SettingsWindow(ControlWindow):
         # adds the apply button
         self.__button_apply = QPushButton('Apply')  # keeps track of button for future stylesheet changes
         self.__button_apply.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.__button_apply.clicked.connect(self._apply_settings)
         layout = QHBoxLayout()
         layout.addWidget(self.__button_apply)
 
@@ -588,13 +582,34 @@ class SettingsWindow(ControlWindow):
 
         main_layout.addLayout(layout)
 
-    def get_settings_list(self):
-        return self.__settings_list
+    def open_window(self, position: tuple[int, int]) -> None:
+        """
+        Sets the position of the window on the user's screen.
+        """
+        self._set_geometry(*(position + self._settings_user.window_start_size_settings))
+        self._window_normal()  # takes the window out of its special states
+        self.raise_()  # focuses the window to the front
 
-    def get_buttons(self):
-        return self.__button_storage
+        self.show()
 
-    def __sections_initialize(self, settings_list):
+    def connect_button_apply(self, function) -> None:
+        self.__button_apply.clicked.connect(function)
+
+    def update_settings(self) -> None:
+        """
+        Refreshes the windows to apply the new settings.
+        """
+
+        # activates the functions for all selected buttons
+        for button in self.__button_storage:
+            if button.isChecked():
+                label = button.text()
+                function = self.__list_functions[button]
+                function(label)
+
+        self.__update_colors()
+
+    def __sections_initialize(self, settings_list) -> QWidget:
         """
         Creates the container for each section in the settings.
         """
@@ -644,22 +659,7 @@ class SettingsWindow(ControlWindow):
 
         return container_widget
 
-    def _apply_settings(self) -> None:
-        """
-        Refreshes the windows / rendered answer to apply the new settings.
-        """
-
-        # activates the functions for all selected buttons
-        for button in self.__button_storage:
-            if button.isChecked():
-                label = button.text()
-                function = self.__list_functions[button]
-                function(label)
-
-        self.button_apply_signal.emit()  # runs the _apply_settings_all function within the RunWindow class
-        self.__update_colors_settings()
-
-    def __update_colors_settings(self) -> None:
+    def __update_colors(self) -> None:
         """
         Updates the colors for the SettingWindow.
         """
@@ -700,19 +700,19 @@ class SettingsWindow(ControlWindow):
             # self._settings_user.use_degrees = True
             print('Degrees not enabled yet.')
 
-    def __format_display(self, label: str):
+    def __format_display(self, label: str) -> None:
         """
         Sets the format that the answer will display in.
         """
 
-        self.answer_display = label
+        self._settings_user.answer_display = label
 
-    def __format_copy(self, label: str):
+    def __format_copy(self, label: str) -> None:
         """
         Sets the format that the answer be copied as.
         """
 
-        self.answer_copy = label
+        self._settings_user.answer_copy = label
 
     def __color_preset(self, label: str) -> None:
         """
@@ -737,9 +737,9 @@ class SettingsWindow(ControlWindow):
 
         self._settings_user.color_latex = self._settings_user.color_text
 
-    def __update_setting(self) -> None:
+    def __update_self(self) -> None:
         """
-        Updates the position of everything in the settings window.
+        Updates the position of everything in SettingsWindow.
         """
 
         self.__menu.move(self._settings_user.box_padding, self._settings_user.title_bar_height + self._settings_user.box_padding)
@@ -747,25 +747,428 @@ class SettingsWindow(ControlWindow):
 
     def resizeEvent(self, event):
         self._update_control()
-        self.__update_setting()
+        self.__update_self()
+
+    def closeEvent(self, event):
+        self._settings_user.save_settings(self.__button_storage, self.__settings_list)
 
 
-class MainWindow(ControlWindow):
+class MultiBox(QPushButton):  # inherits QPushButton to prevent reference warnings
     def __init__(self):
         super().__init__()
 
-        # settings window
-        self.window_settings = None
-        self.__window_settings_open()
+        # pre-initializes variables to None (to prevent reference warnings); variables are defined by MainWindow
+        self._settings_user = None
+        self._style = None
+        self._symbols = None
+        self._user_select = None
+        self._box_text = None
+        self._text_update_lambda = None
+        self._symbols_prev_keys = None
+
+        self._setup()
+
+    def _setup(self) -> None:
+
+        # Scroll Area Setup -------------------------------------------------------------------------------------
+
+        self.__selector_names = ['Variables', 'Notation']  # include at least 2 names (these will most likely be images in the future, for example: a simple image of a graph for the graph tab)
+        self.__area_amount = len(self.__selector_names)  # amount of scroll areas, at least 2 are needed for correct formatting
+
+        # creates the scroll areas
+        self.__areas = []
+        for i in range(self.__area_amount):
+            area = QWidget(self)
+
+            layout = QVBoxLayout(area)
+            layout.setContentsMargins(self._settings_user.content_margin, self._settings_user.content_margin, self._settings_user.content_margin, self._settings_user.content_margin)
+
+            area.hide()
+            self.__areas.append([area, layout, []])
+
+        self.__areas[0][0].show()  # defaults to the variables tab
+
+        # Selectors ---------------------------------------------------------------------------------------------
+
+        self.__button_selected = 0  # the default selected button is the variables tab
+
+        self.__button_selectors = []
+        group = QButtonGroup(self)  # adds a button group to keep track of which selector is selected
+        for i in range(self.__area_amount):
+            button = QPushButton(self.__selector_names[i], self)
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.clicked.connect(self.__button_selector_logic)
+
+            button.setCheckable(True)  # allows the button to be selected instead of only pressed
+            group.addButton(button)
+            if i == 0:  # selects the first selector by default
+                button.setChecked(True)
+
+            self._style.set_button_selector(button, i, self.__area_amount)
+            self.__button_selectors.append(button)  # adds the button to a list
+
+        self.__areas[0][0].show()  # shows the default tab
+
+        # All Tabs ----------------------------------------------------------------------------------------------
+
+        # sets a default label for each page
+        for i, title in enumerate(self.__selector_names):
+
+            if i == 1:  # skips the notation tab since it is never empty
+                continue
+
+            label = QLabel(title)
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self._style.set_selector_label(label)
+            self.__areas[i][1].addStretch()
+            self.__areas[i][1].addWidget(label)
+            self.__areas[i][1].addStretch()
+
+        self.__fill_notation()  # initializes the symbols tab
+
+        # Variable Tab ------------------------------------------------------------------------------------------
+
+        # scroll area container alignment
+        self.__areas[0][1].setAlignment(Qt.AlignmentFlag.AlignTop)
+
+        # sections of the variable page
+        self.__titles = ['Variables', 'Constants', 'Arbitrary Constants']
+
+    def update_settings_multi(self) -> None:
+        """
+        Refreshes the windows to apply the new settings.
+        """
+
+        self.__update_colors_multi()
+
+    def _update_multi(self) -> None:
+        """
+        Updates the positions of all widgets in the multi class.
+        """
+
+        # selectors
+        # although this works perfectly, a lot of the math in this section is not optimized
+        selector_size = (1/len(self.__button_selectors)) * (self.width() * (1 - self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) + self._settings_user.box_border - (self._settings_user.box_border/len(self.__button_selectors))  # width of the selector buttons
+        for i, button in enumerate(self.__button_selectors):
+
+            # corrects for rounding errors which makes the borders between the buttons change size
+            correction = 0
+            if i != len(self.__button_selectors) - 1:
+                correction = (int(((selector_size - self._settings_user.box_border) * (i - 1)) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) + int(selector_size) - self._settings_user.box_border) - int(((selector_size - self._settings_user.box_border) * i) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5))
+
+                if correction == 0 and (int(((selector_size - self._settings_user.box_border) * i) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) + int(selector_size) - self._settings_user.box_border) - int(((selector_size - self._settings_user.box_border) * (i + 1)) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) == -1:
+                    correction -= 1
+
+            # makes sure the last selector and the box below line up
+            elif int(((selector_size - self._settings_user.box_border) * i) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) + int(selector_size) != (self._settings_user.box_padding * 2) + int((self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) + int((self.width() * (1 - self._settings_user.box_width_left)) - (self._settings_user.box_padding * 1.5)):
+                correction -= 1
+
+            # move the buttons to their correct place, while keeping the borders the same size
+            button.move(int(((selector_size - self._settings_user.box_border) * i) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)), self._settings_user.box_padding + self._settings_user.title_bar_height)
+            button.resize(int(selector_size) - correction, self._settings_user.select_height)
+
+        # multi box
+        for tup in self.__areas:
+            tup[0].move((self._settings_user.box_padding * 2) + int((self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)), self._settings_user.box_padding + self._settings_user.title_bar_height + self._settings_user.select_height - self._settings_user.box_border)
+            tup[0].resize(int((self.width() * (1 - self._settings_user.box_width_left)) - (self._settings_user.box_padding * 1.5)), self.height() - (self._settings_user.box_padding * 2) - self._settings_user.title_bar_height - self._settings_user.select_height + self._settings_user.box_border)
+
+        # symbols tab
+        if self.__button_selected == 1:
+            for i in range(2):
+                width = self.__areas[1][2][i].viewport().width()
+                column_count = max(1, width // self._settings_user.symbols_button_width[i])  # takes into account the gap between the buttons
+
+                # only rearranges if the column count changes
+                if column_count != self.__previous_column_count[i]:
+                    self.__previous_column_count[i] = column_count
+
+                    # re-arranges the buttons
+                    for x, button in enumerate(self.__button_symbols[i]):
+                        self.__grid_layout[i].addWidget(button, x // column_count, x % column_count)
+
+    def _fill_variables(self) -> None:
+        """
+        Displays widgets to the variable tab.
+
+        Adds: labels and text boxes for each variable, lines to separate each variable, and a stretch to push all widgets to the top.
+        """
+
+        if self._user_select != self._box_text:
+            scroll_area = self._user_select.parent().parent().parent()
+
+            scroll_bar = scroll_area.verticalScrollBar()
+            previous_scroll_amount = scroll_bar.value()
+
+        self.__clear_variables()  # deletes everything in the variable page
+
+        count = 0
+        self.__areas[0][2] = []
+        for index in range(len(self._symbols)):
+            self.__areas[0][2].append(QScrollArea())  # initializes the scroll areas
+            count += len(self._symbols[index].keys())
+
+        if count == 0:  # if there are no variables, the default text is generated
+            label = QLabel('Variables')
+            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self._style.set_selector_label(label)
+            self.__areas[0][1].addStretch()
+            self.__areas[0][1].addWidget(label)
+            self.__areas[0][1].addStretch()
+
+        else:  # if there are no variables, this does not run
+            for i, title in enumerate(self.__titles):
+                if i == 2:  # arbitrary constants are not implemented yet
+                    continue
+
+                if len(self._symbols[i]) == 0:  # skips individual sections if they are empty
+                    continue
+
+                if i > 0:  # adds spacing before each label
+                    self.__areas[0][1].addSpacing(5)
+
+                # label for each scroll area
+                label = QLabel(title)
+                self._style.set_multibox_label(label)
+                self.__areas[0][1].addWidget(label)
+
+                # scroll area setup
+                self.__areas[0][2][i].setWidgetResizable(True)
+                self.__areas[0][2][i].setMinimumHeight(90)
+                self.__areas[0][2][i].setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+                self.__areas[0][2][i].setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum))
+
+                # inside the scroll areas
+                layout = QFormLayout()
+                layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+
+                for key in sorted(self._symbols[i].keys()):
+                    row = []
+                    if i == 0:
+                        label, edit = self._symbols[0][key]
+
+                        edit.textChanged.connect(self._text_update_lambda)
+                        edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
+                        row.append(label)
+                        row.append(edit)
+
+                    if i == 1:
+                        label, option1, option2 = self._symbols[1][key]
+
+                        hbox = QHBoxLayout()
+                        hbox.addWidget(option1)
+                        if key != 'i':  # 'i' doesn't need a second selector option
+                            hbox.addWidget(option2)
+                        hbox.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
+
+                        row.append(label)
+                        row.append(hbox)
+
+                    layout.addRow(*row)
+
+                    line = QFrame()
+                    line.setFrameShape(QFrame.Shape.HLine)
+                    line.setFrameShadow(QFrame.Shadow.Sunken)
+                    self._style.set_line_secondary(line)
+
+                    layout.addRow(line)
+
+                content_widget = QWidget()
+                content_widget.setLayout(layout)
+
+                # inner content widget
+                self.__areas[0][2][i].setWidget(content_widget)
+
+                line = QFrame()
+                line.setFrameShape(QFrame.Shape.HLine)
+                line.setFrameShadow(QFrame.Shadow.Sunken)
+                self._style.set_line_primary(line)
+                self.__areas[0][1].addWidget(line)
+
+                self._style.set_scroll_area(self.__areas[0][2][i])
+
+                self.__areas[0][1].addWidget(self.__areas[0][2][i])
+
+        # focuses the user to the current textbox they are typing in
+        if self._user_select != self._box_text:
+
+            scroll_area = self._user_select.parent().parent().parent()
+
+            # finds the amount of variables inserted before the selected line edit
+            key = misc_functions.get_line_edit_key(self._symbols[0], self._user_select)
+            symbols_prev_keys = self._symbols_prev_keys
+            symbols_curr_keys = sorted(self._symbols[0].keys())
+            amount_inserted_before = misc_functions.get_position_change(symbols_prev_keys, symbols_curr_keys, key)
+
+            QTimer.singleShot(0, lambda: self.__set_scrollbar(scroll_area.verticalScrollBar(), previous_scroll_amount, amount_inserted_before))  # QTimer is used due to the max_scroll not being correctly calculated
+
+            self._user_select.setFocus()
+
+    def __update_colors_multi(self) -> None:
+
+        self._style.set_areas(self.__areas)
+        self._style.set_notation(self.__save_label, self.__save_line, self.__save_button)
+        self._style.set_variable_radio_button(self._symbols)
+        self._style.set_button_selectors(self.__button_selectors)
+
+    def __fill_notation(self) -> None:
+        """
+        Creates all buttons of hard to get symbols within the symbols tab.
+
+        Allows for the user to easily copy symbols to use in calculations.
+        """
+
+        label_titles = ['Symbols', 'Functions']
+
+        self.__grid_layout = []
+        self.__button_symbols = []
+        self.__previous_column_count = []
+
+        # saves specific elements for changing the stylesheets
+        self.__save_line = []
+        self.__save_label = []
+        self.__save_button = []
+
+        for i in range(2):
+
+            # adds a title for each section
+            label = QLabel(label_titles[i])
+            self.__save_label.append(label)  # saves for future stylesheet changes
+            self.__areas[1][1].addWidget(label)
+
+            # adds a line under the title
+            line = QFrame()
+            self.__save_line.append(line)  # saves for future stylesheet changes
+            line.setFrameShape(QFrame.Shape.HLine)
+            line.setFrameShadow(QFrame.Shadow.Sunken)
+            self.__areas[1][1].addWidget(line)
+
+            # adds a scroll area
+            self.__areas[1][2].append(QScrollArea())
+            self.__areas[1][2][i].setWidgetResizable(True)
+            if i == 0:
+                self.__areas[1][2][0].setMinimumHeight(86)  # stops the top scroll area from becoming too collapsed
+            self.__areas[1][2][i].setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+            # uses a QFrame to hold the grid layout
+            grid_widget = QFrame()
+            grid_widget.setFrameShape(QFrame.Shape.NoFrame)
+
+            # uses a QGridLayout to get the desired behavior
+            self.__grid_layout.append(QGridLayout())
+            grid_widget.setLayout(self.__grid_layout[i])
+
+            # creates a wrapper widget for the scroll area
+            wrapper_widget = QWidget()
+            wrapper_layout = QVBoxLayout(wrapper_widget)
+            wrapper_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+            wrapper_layout.addWidget(grid_widget)
+            self.__areas[1][2][i].setWidget(wrapper_widget)
+
+            # adds buttons to the grid layout
+            self.__button_symbols.append([])
+            for x, symbol in enumerate(symbols.copy_notation[i]):
+                button = QPushButton(symbol)
+                button.setCursor(Qt.CursorShape.PointingHandCursor)
+                self.__save_button.append(button)  # saves for future stylesheet changes
+                button.clicked.connect(self.__copy_button_label)
+                button.setFixedHeight(self._settings_user.symbols_button_height)
+                self.__button_symbols[i].append(button)
+                self.__grid_layout[i].addWidget(button, x // 4, x % 4)
+
+            self.__areas[1][1].addWidget(self.__areas[1][2][i])  # adds the scroll area to the layout
+
+            self.__previous_column_count.append(-1)  # initializes the column count
+
+    def __button_selector_logic(self) -> None:
+        """
+        Applies styles to the selector buttons and keeps track of which button was selected.
+        """
+
+        for i, scroll in enumerate(self.__areas):
+            button = self.__button_selectors[i]
+
+            if i == 1:
+                QTimer.singleShot(0, self._update_multi)  # the symbols section is not initialized correctly without this
+
+            if self.sender() == button:
+                scroll[0].show()
+                self.__button_selected = i
+
+            else:
+                scroll[0].hide()
+
+    def __set_scrollbar(self, scroll_bar, previous_scroll_amount, new_items) -> None:
+        """
+        Prevents the elements in the scroll bar from moving locations when variables are added in the line edits.
+        """
+
+        max_value = scroll_bar.maximum()
+        if max_value != 0:
+            new = previous_scroll_amount + (new_items * 37)
+            scroll_bar.setValue(min(max_value, new))
+
+    def __clear_variables(self) -> None:
+        """
+        Removes all widgets from the variable tab, disconnecting signals and clearing nested layouts.
+        """
+
+        # disconnects all LineEdits from their function
+        for index in range(len(self._symbols)):
+            keys = list(self._symbols[index].keys())
+            for key in keys:
+                try:
+                    self._symbols[index][key][1].textChanged.disconnect(self._text_update_lambda)
+                except:
+                    pass
+
+        # deletes all elements in the layout
+        layout = self.__areas[0][1]
+        while layout.count():
+            item = layout.takeAt(0)
+            if item.widget():
+                widget = item.widget()
+                widget.setParent(None)
+                widget.deleteLater()
+            elif item.layout():
+                self.__clear_inner_layout(item.layout())
+                item.layout().deleteLater()
+
+    def __clear_inner_layout(self, layout: QLayout) -> None:
+        """
+        Recursively removes all items from a given nested layout.
+        """
+
+        while layout.count():
+            item = layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+            elif item.layout():
+                self.__clear_inner_layout(item.layout())
+                item.layout().deleteLater()
+
+    def __copy_button_label(self) -> None:
+        button = self.sender()
+        text = button.text()
+
+        if text not in symbols.copy_notation[0]:  # adds parentheses to functions
+            text += '()'
+
+        pyperclip.copy(text)
+
+
+class MainWindow(MultiBox, ControlWindow):
+    def __init__(self, settings: Settings, style: Style):
+        ControlWindow.__init__(self, settings, style)
+        MultiBox._setup(self)
 
         self._set_title(self._settings_user.window_title_main)
-        self._set_geometry(self._settings_user.window_start_size_main)
-        self._set_size_min(self._settings_user.window_size_min_main)
+        self._set_geometry(*self._settings_user.window_start_size_main)
+        self._set_size_min(*self._settings_user.window_size_min_main)
 
         # settings button
         self.__button_settings = QPushButton('', self)
         self.__button_settings.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.__button_settings.clicked.connect(self.__window_settings_open)
         self.__button_settings.setIcon(QIcon(file_path('gear_icon.png', 'icons')))
         size = int(self._settings_user.title_bar_settings_icon_scale * (self._settings_user.title_bar_height - (2 * self._settings_user.title_bar_settings_spacing)))
         self.__button_settings.setIcon(QIcon(QPixmap(file_path('gear_icon.png', 'icons')).scaled(size, size)))
@@ -816,6 +1219,28 @@ class MainWindow(ControlWindow):
         # other
         self._text_update_lambda = lambda: self._text_update()  # used to keep track of the function for when it gets disconnected
 
+    def connect_button_settings(self, function) -> None:
+        """
+        Connects the settings button to a function.
+        """
+
+        self.__button_settings.clicked.connect(function)
+
+    def update_settings(self) -> None:
+        """
+        Refreshes the windows to apply the new settings.
+        """
+
+        # tells if an answer is being displayed or not
+        is_displaying_answer = not (self._box_answer.text() == self._settings_user.answer_default or self._box_answer.text()[:6] == 'Error:')
+
+        self.__update_colors(is_displaying_answer)  # updates all colors for MainWindow
+
+        if is_displaying_answer:
+            self._get_answer(self.__flip_type_toggle)
+
+        self.update_settings_multi()
+
     def _get_answer(self, stop_format_reset: bool | None = None) -> None:
         """
         Calculates the answer from the user input.
@@ -833,7 +1258,7 @@ class MainWindow(ControlWindow):
         text = self._box_text.toPlainText()  # gets the string from the text box
 
         try:
-            self.__solution = Solve(text, self.__variable_formatting(self._symbols), self.__generate_value_used_bool(), self.window_settings.answer_display, self.window_settings.answer_copy, self._settings_user.use_degrees, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
+            self.__solution = Solve(text, self.__variable_formatting(self._symbols), self.__generate_value_used_bool(), self._settings_user.answer_display, self._settings_user.answer_copy, self._settings_user.use_degrees, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
             self.__solution.print()  # shows the before and after expressions (for testing purposes)
             self.__answer = self.__solution.get_exact()
 
@@ -999,597 +1424,13 @@ class MainWindow(ControlWindow):
         if not activated:
             self.__box_answer_set(self._settings_user.answer_default)  # clears the previous answer
 
-    def _update_main(self) -> None:
+    def __update_self(self) -> None:
+        """
+        Updates the position of everything in MainWindow.
+        """
+
         self.__button_settings.move(self.width() - self._settings_user.title_bar_settings_width - self._settings_user.title_bar_settings_separate - (3 * self._settings_user.title_bar_button_width), self._settings_user.title_bar_settings_spacing)
         self.__button_settings.resize(self._settings_user.title_bar_settings_width, self._settings_user.title_bar_height - (2 * self._settings_user.title_bar_settings_spacing))
-
-    def __box_answer_set(self, text: str, displayed_text: str = None) -> None:
-        """
-        Sets the answer button to the display the given text.
-
-        Used for displaying errors and the default answer.
-        """
-
-        if displayed_text is None:
-            displayed_text = text
-
-        self._box_answer.setIcon(QIcon())  # removes the image
-        self._box_answer_format_label.setText('')  # removes the format icon
-        self._box_answer.setText(displayed_text)  # sets the text of the button
-
-        self._style.set_button_format_visibility(self._bar_answer, self._bar_format, False)
-
-        self.__answer = text
-        self.__answer_temp = text
-
-    def __set_custom_context_menu(self, widget):
-        """
-        Sets the context menu stylesheet.
-        """
-
-        def context_menu_event(event):
-            menu = widget.createStandardContextMenu()
-            self._style.set_context_menu(menu)
-            menu.exec(event.globalPos())
-
-        widget.contextMenuEvent = context_menu_event
-
-    def __window_settings_open(self) -> None:
-        position = self.pos().x() + 40, self.pos().y() + 30
-
-        if self.window_settings is None:  # creates the setting window
-            self.window_settings = SettingsWindow(self._settings_user, self._style, position)
-            self.window_settings.button_apply_signal.connect(self._apply_settings_all)  # lets the apply button connect to the RunWindow class
-
-        else:  # the settings window already exists, it is showed and repositioned
-            self.window_settings.show()  # shows the window if the user closed it
-            new_position = position + self._settings_user.window_start_size_settings
-            self.window_settings.setGeometry(*new_position)
-
-            self.window_settings._window_normal()  # takes the window out of its special states
-            self.window_settings.raise_()  # focuses the window to the front
-
-    def _apply_settings_main(self) -> None:
-        """
-        Applies user settings from SettingsWindow to MainWindow.
-        """
-
-        # tells if an answer is being displayed or not
-        is_displaying_answer = not (self._box_answer.text() == self._settings_user.answer_default or self._box_answer.text()[:6] == 'Error:')
-
-        self.__update_colors_main(is_displaying_answer)  # updates all colors for MainWindow
-
-        if is_displaying_answer:
-            self._get_answer(self.__flip_type_toggle)
-
-    def __update_colors_main(self, is_displaying_answer) -> None:
-        """
-        Updates the stylesheets of everything in MainWindow.
-        """
-
-        self.repaint()  # updates the colors for the title bar and background
-        self._text_update(True)  # updates the colors in the variables tab
-
-        self._update_colors_control()  # updates the colors of stuff in the title bar
-        self._style.set_button_format_visibility(self._bar_answer, self._bar_format, is_displaying_answer)  # updates the color for the answer button
-
-        self._style.set_button_settings(self.__button_settings)
-        self._style.set_box_answer(self._box_answer)
-        self._style.set_box_answer_format_label(self._box_answer_format_label)
-        self._style.set_box_text(self._box_text)
-        self._style.set_bar_blank(self._bar_blank)
-        self._style.set_bar_format(self._bar_format)
-
-    def __variable_formatting(self, symbols: tuple[dict, dict, dict]) -> dict:
-
-        self.__is_constant_value_used = False  # resets if a constant value was used
-
-        temp1 = {}
-        # adds all keys with their text to a new dict
-        for index in range(len(symbols)):
-            keys = list(symbols[index].keys())
-            for key in keys:
-
-                if index == 0:
-                    temp1[key] = function_convert(symbols[index][key][1].text())
-
-                    if temp1[key] == '':  # if the user did not define a variable, then it is equal to itself
-                        temp1[key] = key
-
-                elif index == 1:
-                    if symbols[index][key][2].isChecked():
-                        self.__is_constant_value_used = True  # keeps track if a constant value was used
-
-        # performs chained variable substitution: a=b and b=5 -> a=5
-        for x in temp1:
-
-            if temp1[x] == x or not contains_substring(temp1[x], list(self._symbols[0].keys()) + list(self._symbols[1].keys())):
-                continue
-
-            temp2 = temp1.copy()
-            for y in temp2:
-                for z in temp2:
-
-                    if temp2[z] == z or not contains_substring(temp2[z], list(self._symbols[0].keys()) + list(self._symbols[1].keys())):
-                        continue
-
-                    temp1[z] = temp1[z].replace(y, f'({temp2[y]})')
-
-        error.circularly_defined(temp1)
-
-        return temp1
-
-    def __generate_value_used_bool(self) -> dict[str, bool]:
-        """
-        Returns a dictionary of True or False values depending on if the constant's value was used
-        """
-
-        constant_symbol_used = {}
-        for key in list(self._symbols[1].keys()):
-            if self._symbols[1][key][1].isChecked():  # checks if a constant value was used
-                constant_symbol_used[key] = True
-            else:
-                constant_symbol_used[key] = False
-
-        return constant_symbol_used
-
-    def __box_text_focus_event(self, event):
-        if event.reason() == Qt.FocusReason.MouseFocusReason:
-            if QApplication.activeWindow() is not None:
-                cursor = self._box_text.textCursor()
-                cursor.clearSelection()
-                self._box_text.setTextCursor(cursor)
-        CustomCaretTextEdit.focusOutEvent(self._box_text, event)  # calls the original focusOutEvent method
-
-    def __copy(self) -> None:
-        """
-        Lets the user copy the answer by clicking the answer box.
-        """
-
-        if self.__answer_temp == self._settings_user.answer_default or self.__answer_temp[:6] == 'Error:':
-            pyperclip.copy(self.__answer_temp)
-            return
-
-        if self.__flip_type_toggle:
-            if self.window_settings.answer_copy == 'Image':
-                self._op.copy_image('latex_exact.png')
-                return
-            else:
-                string = self.__solution.get_exact_copy()
-        else:
-            if self.window_settings.answer_copy == 'Image':
-                self._op.copy_image('latex_approximate.png')
-                return
-            else:
-                string = self.__solution.get_approximate_copy()
-
-        pyperclip.copy(string)  # copies answer to clipboard
-
-    def closeEvent(self, event):
-        """
-        Closes all windows if the main window is closed.
-        """
-
-        if self.window_settings is not None:
-            self._settings_user.save_settings(self.window_settings.get_buttons(), self.window_settings.get_settings_list())
-            self.window_settings.close()
-        event.accept()
-
-
-class MultiBox(MainWindow):
-    def __init__(self):
-        super().__init__()
-        self._setup()
-
-    def _setup(self) -> None:
-
-        # Scroll Area Setup -------------------------------------------------------------------------------------
-
-        self.__selector_names = ['Variables', 'Notation']  # include at least 2 names (these will most likely be images in the future, for example: a simple image of a graph for the graph tab)
-        self.__area_amount = len(self.__selector_names)  # amount of scroll areas, at least 2 are needed for correct formatting
-
-        # creates the scroll areas
-        self.__areas = []
-        for i in range(self.__area_amount):
-            area = QWidget(self)
-
-            layout = QVBoxLayout(area)
-            layout.setContentsMargins(self._settings_user.content_margin, self._settings_user.content_margin, self._settings_user.content_margin, self._settings_user.content_margin)
-
-            area.hide()
-            self.__areas.append([area, layout, []])
-
-        self.__areas[0][0].show()  # defaults to the variables tab
-
-        # Selectors ---------------------------------------------------------------------------------------------
-
-        self.__button_selected = 0  # the default selected button is the variables tab
-
-        self.__button_selectors = []
-        group = QButtonGroup(self)  # adds a button group to keep track of which selector is selected
-        for i in range(self.__area_amount):
-            button = QPushButton(self.__selector_names[i], self)
-            button.setCursor(Qt.CursorShape.PointingHandCursor)
-            button.clicked.connect(self.__button_selector_logic)
-
-            button.setCheckable(True)  # allows the button to be selected instead of only pressed
-            group.addButton(button)
-            if i == 0:  # selects the first selector by default
-                button.setChecked(True)
-
-            self._style.set_button_selector(button, i, self.__area_amount)
-            self.__button_selectors.append(button)  # adds the button to a list
-
-        self.__areas[0][0].show()  # shows the default tab
-
-        # All Tabs ----------------------------------------------------------------------------------------------
-
-        # sets a default label for each page
-        for i, title in enumerate(self.__selector_names):
-
-            if i == 1:  # skips the notation tab since it is never empty
-                continue
-
-            label = QLabel(title)
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self._style.set_selector_label(label)
-            self.__areas[i][1].addStretch()
-            self.__areas[i][1].addWidget(label)
-            self.__areas[i][1].addStretch()
-
-        self.__fill_notation()  # initializes the symbols tab
-
-        # Variable Tab ------------------------------------------------------------------------------------------
-
-        # scroll area container alignment
-        self.__areas[0][1].setAlignment(Qt.AlignmentFlag.AlignTop)
-
-        # sections of the variable page
-        self.__titles = ['Variables', 'Constants', 'Arbitrary Constants']
-
-    def _apply_settings_multi(self) -> None:
-        self.__update_colors_multi()
-
-    def __update_colors_multi(self) -> None:
-
-        self._style.set_areas(self.__areas)
-        self._style.set_notation(self.__save_label, self.__save_line, self.__save_button)
-        self._style.set_variable_radio_button(self._symbols)
-        self._style.set_button_selectors(self.__button_selectors)
-
-    def _fill_variables(self) -> None:
-        """
-        Displays widgets to the variable tab.
-
-        Adds: labels and text boxes for each variable, lines to separate each variable, and a stretch to push all widgets to the top.
-        """
-
-        if self._user_select != self._box_text:
-            scroll_area = self._user_select.parent().parent().parent()
-
-            scroll_bar = scroll_area.verticalScrollBar()
-            previous_scroll_amount = scroll_bar.value()
-
-        self.__clear_variables()  # deletes everything in the variable page
-
-        count = 0
-        self.__areas[0][2] = []
-        for index in range(len(self._symbols)):
-            self.__areas[0][2].append(QScrollArea())  # initializes the scroll areas
-            count += len(self._symbols[index].keys())
-
-        if count == 0:  # if there are no variables, the default text is generated
-            label = QLabel('Variables')
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self._style.set_selector_label(label)
-            self.__areas[0][1].addStretch()
-            self.__areas[0][1].addWidget(label)
-            self.__areas[0][1].addStretch()
-
-        else:  # if there are no variables, this does not run
-            for i, title in enumerate(self.__titles):
-                if i == 2:  # arbitrary constants are not implemented yet
-                    continue
-
-                if len(self._symbols[i]) == 0:  # skips individual sections if they are empty
-                    continue
-
-                if i > 0:  # adds spacing before each label
-                    self.__areas[0][1].addSpacing(5)
-
-                # label for each scroll area
-                label = QLabel(title)
-                self._style.set_multibox_label(label)
-                self.__areas[0][1].addWidget(label)
-
-                # scroll area setup
-                self.__areas[0][2][i].setWidgetResizable(True)
-                self.__areas[0][2][i].setMinimumHeight(90)
-                self.__areas[0][2][i].setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-                self.__areas[0][2][i].setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum))
-
-                # inside the scroll areas
-                layout = QFormLayout()
-                layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
-
-                for key in sorted(self._symbols[i].keys()):
-                    row = []
-                    if i == 0:
-                        label, edit = self._symbols[0][key]
-
-                        edit.textChanged.connect(self._text_update_lambda)
-                        edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-
-                        row.append(label)
-                        row.append(edit)
-
-                    if i == 1:
-                        label, option1, option2 = self._symbols[1][key]
-
-                        hbox = QHBoxLayout()
-                        hbox.addWidget(option1)
-                        if key != 'i':  # 'i' doesn't need a second selector option
-                            hbox.addWidget(option2)
-                        hbox.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
-
-                        row.append(label)
-                        row.append(hbox)
-
-                    layout.addRow(*row)
-
-                    line = QFrame()
-                    line.setFrameShape(QFrame.Shape.HLine)
-                    line.setFrameShadow(QFrame.Shadow.Sunken)
-                    self._style.set_line_secondary(line)
-
-                    layout.addRow(line)
-
-                content_widget = QWidget()
-                content_widget.setLayout(layout)
-
-                # inner content widget
-                self.__areas[0][2][i].setWidget(content_widget)
-
-                line = QFrame()
-                line.setFrameShape(QFrame.Shape.HLine)
-                line.setFrameShadow(QFrame.Shadow.Sunken)
-                self._style.set_line_primary(line)
-                self.__areas[0][1].addWidget(line)
-
-                self._style.set_scroll_area(self.__areas[0][2][i])
-
-                self.__areas[0][1].addWidget(self.__areas[0][2][i])
-
-        # focuses the user to the current textbox they are typing in
-        if self._user_select != self._box_text:
-
-            scroll_area = self._user_select.parent().parent().parent()
-
-            # finds the amount of variables inserted before the selected line edit
-            key = misc_functions.get_line_edit_key(self._symbols[0], self._user_select)
-            symbols_prev_keys = self._symbols_prev_keys
-            symbols_curr_keys = sorted(self._symbols[0].keys())
-            amount_inserted_before = misc_functions.get_position_change(symbols_prev_keys, symbols_curr_keys, key)
-
-            QTimer.singleShot(0, lambda: self.__set_scrollbar(scroll_area.verticalScrollBar(), previous_scroll_amount, amount_inserted_before))  # QTimer is used due to the max_scroll not being correctly calculated
-
-            self._user_select.setFocus()
-
-    def __fill_notation(self) -> None:
-        """
-        Creates all buttons of hard to get symbols within the symbols tab.
-
-        Allows for the user to easily copy symbols to use in calculations.
-        """
-
-        label_titles = ['Symbols', 'Functions']
-
-        self.__grid_layout = []
-        self.__button_symbols = []
-        self.__previous_column_count = []
-
-        # saves specific elements for changing the stylesheets
-        self.__save_line = []
-        self.__save_label = []
-        self.__save_button = []
-
-        for i in range(2):
-
-            # adds a title for each section
-            label = QLabel(label_titles[i])
-            self.__save_label.append(label)  # saves for future stylesheet changes
-            self.__areas[1][1].addWidget(label)
-
-            # adds a line under the title
-            line = QFrame()
-            self.__save_line.append(line)  # saves for future stylesheet changes
-            line.setFrameShape(QFrame.Shape.HLine)
-            line.setFrameShadow(QFrame.Shadow.Sunken)
-            self.__areas[1][1].addWidget(line)
-
-            # adds a scroll area
-            self.__areas[1][2].append(QScrollArea())
-            self.__areas[1][2][i].setWidgetResizable(True)
-            if i == 0:
-                self.__areas[1][2][0].setMinimumHeight(86)  # stops the top scroll area from becoming too collapsed
-            self.__areas[1][2][i].setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-
-            # uses a QFrame to hold the grid layout
-            grid_widget = QFrame()
-            grid_widget.setFrameShape(QFrame.Shape.NoFrame)
-
-            # uses a QGridLayout to get the desired behavior
-            self.__grid_layout.append(QGridLayout())
-            grid_widget.setLayout(self.__grid_layout[i])
-
-            # creates a wrapper widget for the scroll area
-            wrapper_widget = QWidget()
-            wrapper_layout = QVBoxLayout(wrapper_widget)
-            wrapper_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-            wrapper_layout.addWidget(grid_widget)
-            self.__areas[1][2][i].setWidget(wrapper_widget)
-
-            # adds buttons to the grid layout
-            self.__button_symbols.append([])
-            for x, symbol in enumerate(symbols.copy_notation[i]):
-                button = QPushButton(symbol)
-                button.setCursor(Qt.CursorShape.PointingHandCursor)
-                self.__save_button.append(button)  # saves for future stylesheet changes
-                button.clicked.connect(self.__copy_button_label)
-                button.setFixedHeight(self._settings_user.symbols_button_height)
-                self.__button_symbols[i].append(button)
-                self.__grid_layout[i].addWidget(button, x // 4, x % 4)
-
-            self.__areas[1][1].addWidget(self.__areas[1][2][i])  # adds the scroll area to the layout
-
-            self.__previous_column_count.append(-1)  # initializes the column count
-
-    def _update_multi(self) -> None:
-        """
-        Updates the positions of all widgets in the multi class.
-        """
-
-        # selectors
-        # although this works perfectly, a lot of the math in this section is not optimized
-        selector_size = (1/len(self.__button_selectors)) * (self.width() * (1 - self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) + self._settings_user.box_border - (self._settings_user.box_border/len(self.__button_selectors))  # width of the selector buttons
-        for i, button in enumerate(self.__button_selectors):
-
-            # corrects for rounding errors which makes the borders between the buttons change size
-            correction = 0
-            if i != len(self.__button_selectors) - 1:
-                correction = (int(((selector_size - self._settings_user.box_border) * (i - 1)) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) + int(selector_size) - self._settings_user.box_border) - int(((selector_size - self._settings_user.box_border) * i) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5))
-
-                if correction == 0 and (int(((selector_size - self._settings_user.box_border) * i) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) + int(selector_size) - self._settings_user.box_border) - int(((selector_size - self._settings_user.box_border) * (i + 1)) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) == -1:
-                    correction -= 1
-
-            # makes sure the last selector and the box below line up
-            elif int(((selector_size - self._settings_user.box_border) * i) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) + int(selector_size) != (self._settings_user.box_padding * 2) + int((self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)) + int((self.width() * (1 - self._settings_user.box_width_left)) - (self._settings_user.box_padding * 1.5)):
-                correction -= 1
-
-            # move the buttons to their correct place, while keeping the borders the same size
-            button.move(int(((selector_size - self._settings_user.box_border) * i) + (self._settings_user.box_padding * 2) + (self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)), self._settings_user.box_padding + self._settings_user.title_bar_height)
-            button.resize(int(selector_size) - correction, self._settings_user.select_height)
-
-        # multi box
-        for tup in self.__areas:
-            tup[0].move((self._settings_user.box_padding * 2) + int((self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)), self._settings_user.box_padding + self._settings_user.title_bar_height + self._settings_user.select_height - self._settings_user.box_border)
-            tup[0].resize(int((self.width() * (1 - self._settings_user.box_width_left)) - (self._settings_user.box_padding * 1.5)), self.height() - (self._settings_user.box_padding * 2) - self._settings_user.title_bar_height - self._settings_user.select_height + self._settings_user.box_border)
-
-        # symbols tab
-        if self.__button_selected == 1:
-            for i in range(2):
-                width = self.__areas[1][2][i].viewport().width()
-                column_count = max(1, width // self._settings_user.symbols_button_width[i])  # takes into account the gap between the buttons
-
-                # only rearranges if the column count changes
-                if column_count != self.__previous_column_count[i]:
-                    self.__previous_column_count[i] = column_count
-
-                    # re-arranges the buttons
-                    for x, button in enumerate(self.__button_symbols[i]):
-                        self.__grid_layout[i].addWidget(button, x // column_count, x % column_count)
-
-    def __button_selector_logic(self) -> None:
-        """
-        Applies styles to the selector buttons and keeps track of which button was selected.
-        """
-
-        for i, scroll in enumerate(self.__areas):
-            button = self.__button_selectors[i]
-
-            if i == 1:
-                QTimer.singleShot(0, self._update_multi)  # the symbols section is not initialized correctly without this
-
-            if self.sender() == button:
-                scroll[0].show()
-                self.__button_selected = i
-
-            else:
-                scroll[0].hide()
-
-    def __set_scrollbar(self, scroll_bar, previous_scroll_amount, new_items):
-        max_value = scroll_bar.maximum()
-        if max_value != 0:
-            new = previous_scroll_amount + (new_items * 34)
-            scroll_bar.setValue(min(max_value, new))
-
-    def __clear_variables(self) -> None:
-        """
-        Removes all widgets from the variable tab, disconnecting signals and clearing nested layouts.
-        """
-
-        # disconnects all LineEdits from their function
-        for index in range(len(self._symbols)):
-            keys = list(self._symbols[index].keys())
-            for key in keys:
-                try:
-                    self._symbols[index][key][1].textChanged.disconnect(self._text_update_lambda)
-                except:
-                    pass
-
-        # deletes all elements in the layout
-        layout = self.__areas[0][1]
-        while layout.count():
-            item = layout.takeAt(0)
-            if item.widget():
-                widget = item.widget()
-                widget.setParent(None)
-                widget.deleteLater()
-            elif item.layout():
-                self.__clear_inner_layout(item.layout())
-                item.layout().deleteLater()
-
-    def __clear_inner_layout(self, layout):
-        """
-        Recursively removes all items from a given nested layout.
-        """
-
-        while layout.count():
-            item = layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
-            elif item.layout():
-                self.__clear_inner_layout(item.layout())
-                item.layout().deleteLater()
-
-    def __copy_button_label(self) -> None:
-        button = self.sender()
-        text = button.text()
-
-        if text not in symbols.copy_notation[0]:  # adds parentheses to functions
-            text += '()'
-
-        pyperclip.copy(text)
-
-
-class RunWindow(MultiBox, MainWindow):
-    def __init__(self):  # initialize all children here
-        MainWindow.__init__(self)
-        MultiBox._setup(self)
-
-        self.window_settings._apply_settings()
-
-    def resizeEvent(self, event):
-        self.__update()
-        self._update_main()
-        self._update_control()
-        self._update_multi()
-
-    @pyqtSlot()
-    def _apply_settings_all(self) -> None:
-        """
-        Applies changed settings to all classes.
-        """
-
-        self._apply_settings_main()
-        self._apply_settings_multi()
-
-    def __update(self) -> None:
-        """
-        Updates the positions of all widgets that need their positions updated.
-
-        May also be used to update other stuff in the future.
-        """
 
         box_answer_height = int(self._settings_user.box_answer_height_scale * (self.height() - self._settings_user.title_bar_height - (3 * self._settings_user.box_padding)))
 
@@ -1630,30 +1471,224 @@ class RunWindow(MultiBox, MainWindow):
         # answer format label
         self._box_answer_format_label.move(self._settings_user.box_padding + self._settings_user.box_answer_padding, self.height() - self._settings_user.box_padding - box_answer_height)
 
+    def __box_answer_set(self, text: str, displayed_text: str = None) -> None:
+        """
+        Sets the answer button to the display the given text.
 
-class TestWindow(RunWindow):  # buttons, and functions for testing purposes
-    def __init__(self):
-        super().__init__()
-        self.__setup_test()
+        Used for displaying errors and the default answer.
+        """
 
-    def __setup_test(self) -> None:
+        if displayed_text is None:
+            displayed_text = text
 
-        self.__button_hook = []  # holds all testing buttons
+        self._box_answer.setIcon(QIcon())  # removes the image
+        self._box_answer_format_label.setText('')  # removes the format icon
+        self._box_answer.setText(displayed_text)  # sets the text of the button
+
+        self._style.set_button_format_visibility(self._bar_answer, self._bar_format, False)
+
+        self.__answer = text
+        self.__answer_temp = text
+
+    def __set_custom_context_menu(self, widget) -> None:
+        """
+        Sets the context menu stylesheet.
+        """
+
+        def context_menu_event(event):
+            menu = widget.createStandardContextMenu()
+            self._style.set_context_menu(menu)
+            menu.exec(event.globalPos())
+
+        widget.contextMenuEvent = context_menu_event
+
+    def __update_colors(self, is_displaying_answer) -> None:
+        """
+        Updates the stylesheets of everything in MainWindow.
+        """
+
+        self.repaint()  # updates the colors for the title bar and background
+        self._text_update(True)  # updates the colors in the variables tab
+
+        self._update_colors_control()  # updates the colors of stuff in the title bar
+        self._style.set_button_format_visibility(self._bar_answer, self._bar_format, is_displaying_answer)  # updates the color for the answer button
+
+        self._style.set_button_settings(self.__button_settings)
+        self._style.set_box_answer(self._box_answer)
+        self._style.set_box_answer_format_label(self._box_answer_format_label)
+        self._style.set_box_text(self._box_text)
+        self._style.set_bar_blank(self._bar_blank)
+        self._style.set_bar_format(self._bar_format)
+
+    def __variable_formatting(self, symbols: tuple[dict, dict, dict]) -> dict:
+        """
+        Performs variable substitution, and checks for circularly defined variables.
+        """
+
+        self.__is_constant_value_used = False  # resets if a constant value was used
+
+        temp1 = {}
+        # adds all keys with their text to a new dict
+        for index in range(len(symbols)):
+            keys = list(symbols[index].keys())
+            for key in keys:
+
+                if index == 0:
+                    temp1[key] = function_convert(symbols[index][key][1].text())
+
+                    if temp1[key] == '':  # if the user did not define a variable, then it is equal to itself
+                        temp1[key] = key
+
+                elif index == 1:
+                    if symbols[index][key][2].isChecked():
+                        self.__is_constant_value_used = True  # keeps track if a constant value was used
+
+        # performs chained variable substitution: a=b and b=5 -> a=5
+        for x in temp1:
+
+            if temp1[x] == x or not contains_substring(temp1[x], list(self._symbols[0].keys()) + list(self._symbols[1].keys())):
+                continue
+
+            temp2 = temp1.copy()
+            for y in temp2:
+                for z in temp2:
+
+                    if temp2[z] == z or not contains_substring(temp2[z], list(self._symbols[0].keys()) + list(self._symbols[1].keys())):
+                        continue
+
+                    temp1[z] = temp1[z].replace(y, f'({temp2[y]})')
+
+        error.circularly_defined(temp1)  # checks for circularly defined variables
+
+        return temp1
+
+    def __generate_value_used_bool(self) -> dict[str, bool]:
+        """
+        Returns a dictionary of True or False values depending on if the constant's value was used.
+        """
+
+        constant_symbol_used = {}
+        for key in list(self._symbols[1].keys()):
+            if self._symbols[1][key][1].isChecked():  # checks if a constant value was used
+                constant_symbol_used[key] = True
+            else:
+                constant_symbol_used[key] = False
+
+        return constant_symbol_used
+
+    def __box_text_focus_event(self, event):
+        if event.reason() == Qt.FocusReason.MouseFocusReason:
+            if QApplication.activeWindow() is not None:
+                cursor = self._box_text.textCursor()
+                cursor.clearSelection()
+                self._box_text.setTextCursor(cursor)
+        CustomCaretTextEdit.focusOutEvent(self._box_text, event)  # calls the original focusOutEvent method
+
+    def __copy(self) -> None:
+        """
+        Lets the user copy the answer by clicking the answer box.
+        """
+
+        if self.__answer_temp == self._settings_user.answer_default or self.__answer_temp[:6] == 'Error:':
+            pyperclip.copy(self.__answer_temp)
+            return
+
+        if self.__flip_type_toggle:
+            if self._settings_user.answer_copy == 'Image':
+                self._op.copy_image('latex_exact.png')
+                return
+            else:
+                string = self.__solution.get_exact_copy()
+        else:
+            if self._settings_user.answer_copy == 'Image':
+                self._op.copy_image('latex_approximate.png')
+                return
+            else:
+                string = self.__solution.get_approximate_copy()
+
+        pyperclip.copy(string)  # copies answer to clipboard
+
+    def resizeEvent(self, event):
+        self._update_control()
+        self.__update_self()
+        self._update_multi()
+
+    def closeEvent(self, event):
+        """
+        Closes all windows if the main window is closed.
+        """
+
+
+class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
+    def __init__(self, settings: Settings, style: Style):
+        ControlWindow.__init__(self, settings, style)
+        self.__setup()
+
+    def update_settings(self) -> None:
+        """
+        Refreshes the windows to apply the new settings.
+        """
+
+        self.__update_colors()
+
+    def connect_button_update(self, function) -> None:
+        """
+        Used to connect the update button to a function outside the class.
+        """
+
+        self.__buttons[0].clicked.connect(function)
+
+    def __setup(self) -> None:
+
+        self._set_title('Testing')
+
+        size_start = self._settings_user.window_start_size_main[0] + self._settings_user.window_start_size_main[2] + 50, self._settings_user.window_start_size_main[1] + 70, 455, 169
+        self._set_geometry(*size_start)
+        self._set_size_min(350, 130)
+
+        # Layout ------------------------------------------------------------------------------------------------
+
+        self.__box_buttons = QWidget(self)
+        layout = QHBoxLayout(self.__box_buttons)
+
+        # Buttons -----------------------------------------------------------------------------------------------
+
+        self.__buttons = []  # holds all testing buttons
 
         # update button
-        self.__button_hook.append(QPushButton('Update', self))
-        self.__button_hook[-1].clicked.connect(self.__get_update)
+        self.__buttons.append(QPushButton('Update'))
+        layout.addWidget(self.__buttons[-1])
 
         # size button
-        self.__button_hook.append(QPushButton('Size', self))
-        self.__button_hook[-1].clicked.connect(self.__get_info)
+        self.__buttons.append(QPushButton('Size'))
+        self.__buttons[-1].clicked.connect(self.__get_info)
+        layout.addWidget(self.__buttons[-1])
 
         # test button
         self.__button_test_toggle = False
-        self.__button_hook.append(QPushButton('Test', self))
-        self.__button_hook[-1].clicked.connect(self.__test)
+        self.__buttons.append(QPushButton('Test'))
+        self.__buttons[-1].clicked.connect(self.__test)
+        layout.addWidget(self.__buttons[-1])
 
-        self._style.set_hooks(self.__button_hook)
+        self._style.init_test_buttons(self.__buttons)  # initializes all buttons
+
+    def __update_colors(self) -> None:
+        """
+        Updates the stylesheets of everything in TestWindow.
+        """
+
+        self.repaint()  # updates the colors for the title bar and background
+        self._update_colors_control()
+
+        self._style.set_test_box_buttons(self.__box_buttons)
+
+    def __update_self(self) -> None:
+        """
+        Updates the position of everything in TestWindow.
+        """
+
+        self.__box_buttons.move(self._settings_user.box_padding, self._settings_user.title_bar_height + self._settings_user.box_padding)
+        self.__box_buttons.resize(self.width() - (self._settings_user.box_padding * 2), self.height() - self._settings_user.title_bar_height - (self._settings_user.box_padding * 2))
 
     def __test(self) -> None:
         """
@@ -1669,35 +1704,91 @@ class TestWindow(RunWindow):  # buttons, and functions for testing purposes
 
         print(f'Width: {self.width()}, Height: {self.height()}')
 
-    def __get_update(self) -> None:
+    def resizeEvent(self, event):
+        self._update_control()
+        self.__update_self()
+
+
+class RunWindow:
+    def __init__(self, is_test_included: bool = False):
+        self.__is_test_included = is_test_included  # excludes the test window by default
+        self.__init_app()
+
+    def start(self) -> None:
+        sys.exit(self.__app.exec())
+
+    def __init_app(self) -> None:
+        self.__app = QApplication(sys.argv)
+        self.__init_icons()
+        self.__init_font()
+        self.__init_windows()
+
+    def __init_icons(self) -> None:
+        # sets the icon for the app
+        self.__app.setWindowIcon(QIcon(file_path('taskbar_icon_16px.png', 'icons')))
+
+    def __init_font(self) -> None:
+        # sets the default font
+        font_family = fontcontrol.font_load(fontcontrol.font_files[0])
+        if font_family:
+            font = QFont(font_family, fontcontrol.font_size)
+            self.__app.setFont(font)
+        else:
+            print("Error: Font didn't load, default system font will be used instead.")
+
+    def __init_windows(self) -> None:
         """
-        For manually updating the window with a button.
+        Initializes the windows and their settings.
         """
 
-        self.resizeEvent(None)
-        print('Manually Updated')
+        # initializes classes that are shared between the windows
+        settings = Settings()
+        style = Style(settings)
 
+        # initializes the windows
+        self.__window_settings = SettingsWindow(settings, style)
+        self.__window_main = MainWindow(settings, style)
+        if self.__is_test_included:
+            self.__window_test = TestWindow(settings, style)
 
-def main():
+        # initializes connections / settings
+        self.__init_buttons()
+        self.__update_settings()
 
-    app = QApplication(sys.argv)
+        # displays the windows
+        self.__window_main.show()
+        if self.__is_test_included:
+            self.__window_test.show()
 
-    # sets the icon for the app
-    app.setWindowIcon(QIcon(file_path('taskbar_icon_16px.png', 'icons')))
+    def __init_buttons(self) -> None:
+        """
+        Initializes buttons that are used to control multiple windows.
+        """
 
-    # sets the default font
-    font_family = fontcontrol.font_load(fontcontrol.font_files[0])
-    if font_family:
-        font = QFont(font_family, fontcontrol.font_size)
-        app.setFont(font)
-    else:
-        print("Error: Font didn't load, default system font will be used instead.")
+        self.__window_main.connect_button_settings(self.__open_settings)
+        self.__window_settings.connect_button_apply(self.__update_settings)
+        if self.__is_test_included:
+            self.__window_test.connect_button_update(self.__update_settings)
 
-    # starts the window
-    window = RunWindow()  # set the window to 'RunWindow()' to run without the test buttons, set it to 'TestWindow()' to run it with them
-    window.show()
-    sys.exit(app.exec())
+    def __open_settings(self) -> None:
+        """
+        Opens the settings window in front of the main window.
+        """
+
+        position = self.__window_main.pos().x() + 40, self.__window_main.pos().y() + 30
+        self.__window_settings.open_window(position)
+
+    def __update_settings(self) -> None:
+        """
+        Updates the settings for all windows.
+        """
+
+        self.__window_settings.update_settings()
+        self.__window_main.update_settings()
+        if self.__is_test_included:
+            self.__window_test.update_settings()
 
 
 if __name__ == "__main__":
-    main()
+    app = RunWindow()
+    app.start()
