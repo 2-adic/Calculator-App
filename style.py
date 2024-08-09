@@ -42,10 +42,8 @@ class Settings:
 
         # Testing Buttons ---------------------------------------------------------------------------------------
 
-        self.__test_padding = 2  # starts after this one
-        self.__test_between_spacing = 10
-        self.__test_horizontal_offset = 90
-        self.__test_button_width = 50
+        self.__test_button_width = 80  # width of the buttons
+        self.__test_button_height = 40  # height of the buttons
 
         # Boxes -------------------------------------------------------------------------------------------------
 
@@ -116,6 +114,8 @@ class Settings:
 
         self.__use_degrees = False
         self.__use_commas = False
+        self.__answer_display = None
+        self.__answer_copy = None
 
     def save_settings(self, buttons, settings_list):
         """
@@ -312,36 +312,20 @@ class Settings:
         self.__window_title_position = value
 
     @property
-    def test_padding(self) -> int:
-        return self.__test_padding
-
-    @test_padding.setter
-    def test_padding(self, value: int) -> None:
-        self.__test_padding = value
-
-    @property
-    def test_between_spacing(self) -> int:
-        return self.__test_between_spacing
-
-    @test_between_spacing.setter
-    def test_between_spacing(self, value: int) -> None:
-        self.__test_between_spacing = value
-
-    @property
-    def test_horizontal_offset(self) -> int:
-        return self.__test_horizontal_offset
-
-    @test_horizontal_offset.setter
-    def test_horizontal_offset(self, value: int) -> None:
-        self.__test_horizontal_offset = value
-
-    @property
     def test_button_width(self) -> int:
         return self.__test_button_width
 
     @test_button_width.setter
     def test_button_width(self, value: int) -> None:
         self.__test_button_width = value
+
+    @property
+    def test_button_height(self) -> int:
+        return self.__test_button_height
+
+    @test_button_height.setter
+    def test_button_height(self, value: int) -> None:
+        self.__test_button_height = value
 
     @property
     def box_width_left(self) -> float:
@@ -671,9 +655,25 @@ class Settings:
     def use_commas(self, value: bool) -> None:
         self.__use_commas = value
 
+    @property
+    def answer_display(self) -> str:
+        return self.__answer_display
 
-class Colors:
-    def __init__(self, settings):
+    @answer_display.setter
+    def answer_display(self, value: str) -> None:
+        self.__answer_display = value
+
+    @property
+    def answer_copy(self) -> str:
+        return self.__answer_copy
+
+    @answer_copy.setter
+    def answer_copy(self, value: str) -> None:
+        self.__answer_copy = value
+
+
+class Style:
+    def __init__(self, settings: Settings):
         self.__settings = settings
 
     def set_gray(self) -> None:
@@ -1345,25 +1345,32 @@ class Colors:
             self.set_button_selector(button, i, total)
 
     # TestWindow ----------------------------------------------------------------------------------
-    
-    def set_hooks(self, hooks) -> None:
-        for i, hook in enumerate(hooks):  # sets the button hook parameters
-            hook.setGeometry(self.__settings.test_horizontal_offset + (i * (self.__settings.test_between_spacing + self.__settings.test_button_width)), self.__settings.test_padding, self.__settings.test_button_width - (2 * self.__settings.test_padding), self.__settings.title_bar_height - (2 * self.__settings.test_padding))
-            hook.setCursor(Qt.CursorShape.PointingHandCursor)
-            hook.setStyleSheet(
-                f'''
-                QPushButton {{
-                    background-color: None;
-                    color: white;
-                    border: 1px solid white;
-                    border-radius: 4px;
-                }}
-                QPushButton:hover {{
-                    padding-top: -2px;
-                    background-color: rgba(135, 135, 135, 100);
-                }}
-                QPushButton:pressed {{
-                    background-color: rgba(135, 135, 135, 200);
-                }}
-                '''
-            )
+
+    def init_test_buttons(self, buttons):
+        for i, button in enumerate(buttons):  # sets the button parameters
+            button.setFixedSize(self.__settings.test_button_width, self.__settings.test_button_height)
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def set_test_box_buttons(self, widget) -> None:
+        widget.setStyleSheet(
+            f'''
+            QWidget {{
+                border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                background-color: rgb{self.__settings.color_box_background};
+                border-radius: {self.__settings.box_border_radius}px;
+                color: rgb{self.__settings.color_text};
+                font-size: 15px;
+            }}
+            QPushButton {{
+                border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                border-radius: {self.__settings.box_border_radius}px;
+            }}
+            QPushButton:hover {{
+                background-color: rgb{self.__settings.color_box_hover};
+                padding-top: -{self.__settings.button_text_hover_raise}px;
+            }}
+            QPushButton:pressed {{
+                background-color: rgb{self.__settings.color_box_selected};
+            }}
+            '''
+        )
