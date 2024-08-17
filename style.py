@@ -52,6 +52,7 @@ class Settings:
         self.__box_padding = 20  # amount of spacing between the boxes
         self.__box_border = 4  # the border thickness for all widgets
         self.__box_border_radius = self.__box_border * 2  # the curvature of the border corners
+        self.__caret_size = 2
 
         # text box
         self.__bar_button_width = 80  # width of the bar buttons under the text box
@@ -358,6 +359,14 @@ class Settings:
     @box_border_radius.setter
     def box_border_radius(self, value: int) -> None:
         self.__box_border_radius = value
+
+    @property
+    def caret_size(self) -> int:
+        return self.__caret_size
+
+    @caret_size.setter
+    def caret_size(self, value: int) -> None:
+        self.__caret_size = value
 
     @property
     def bar_button_width(self) -> int:
