@@ -516,18 +516,17 @@ class SettingsWindow(ControlWindow):
         settings_list = (
             ('General', (
                 # function, default option number, setting label, option 1, option2, ... option n
-                (self.__degree_units, defaults[0], 'Angle Unit', 'Radians', 'Degrees'),
-                (self.__formatting_commas, defaults[1], 'Number Format', 'Standard', 'Commas'),
+                (self.__formatting_commas, defaults[0], 'Number Format', 'Standard', 'Commas'),
             )),
 
             ('Answer', (
-                (self.__format_display, defaults[2], 'Display Format', 'Image', 'LaTeX', 'Text'),
-                (self.__format_copy, defaults[3], 'Copy Format', 'Image', 'LaTeX', 'Text'),
+                (self.__format_display, defaults[1], 'Display Format', 'Image', 'LaTeX', 'Text'),
+                (self.__format_copy, defaults[2], 'Copy Format', 'Image', 'LaTeX', 'Text'),
             )),
 
             ('Colors', (
-                (self.__color_preset, defaults[4], 'Appearance', 'Gray', 'Blue', 'Pink'),
-                (self.__text_color, defaults[5], 'Text Color', 'White', 'Black'),
+                (self.__color_preset, defaults[3], 'Appearance', 'Gray', 'Blue', 'Pink'),
+                (self.__text_color, defaults[4], 'Text Color', 'White', 'Black'),
             )),
         )
 
@@ -688,17 +687,6 @@ class SettingsWindow(ControlWindow):
             self._settings_user.use_commas = False
         else:
             self._settings_user.use_commas = True
-
-    def __degree_units(self, label: str) -> None:
-        """
-        Changes the angle unit between degrees or radians.
-        """
-
-        if label == 'Radians':
-            self._settings_user.use_degrees = False
-        else:
-            # self._settings_user.use_degrees = True
-            print('Degrees not enabled yet.')
 
     def __format_display(self, label: str) -> None:
         """
@@ -1195,7 +1183,7 @@ class MainWindow(MultiBox, ControlWindow):
 
         # text box
         self._user_select = None
-        self._box_text = CustomCaretTextEdit(parent=self, caret_size=1)
+        self._box_text = CustomCaretTextEdit(parent=self, caret_size=self._settings_user.caret_size)
         self._box_text.textChanged.connect(self._text_update)
         self._box_text.focusOutEvent = self.__box_text_focus_event
         self.__set_custom_context_menu(self._box_text)
@@ -1259,7 +1247,7 @@ class MainWindow(MultiBox, ControlWindow):
         text = self._box_text.toPlainText()  # gets the string from the text box
 
         try:
-            self.__solution = Solve(text, self.__variable_formatting(self._symbols), self.__generate_value_used_bool(), self._settings_user.answer_display, self._settings_user.answer_copy, self._settings_user.use_degrees, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
+            self.__solution = Solve(text, self.__variable_formatting(self._symbols), self.__generate_value_used_bool(), self._settings_user.answer_display, self._settings_user.answer_copy, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
             self.__solution.print()  # shows the before and after expressions (for testing purposes)
             self.__answer = self.__solution.get_exact()
 
@@ -1339,7 +1327,7 @@ class MainWindow(MultiBox, ControlWindow):
                 if index == 0:
                     label = QLabel(f'{x} =', self)
 
-                    text_box = CustomCaretLineEdit(parent=self, caret_size=1, caret_color=QColor(*self._settings_user.color_line_secondary), background_color=QColor(*self._settings_user.color_box_background))
+                    text_box = CustomCaretLineEdit(parent=self, caret_size=self._settings_user.caret_size, caret_color=QColor(*self._settings_user.color_line_secondary), background_color=QColor(*self._settings_user.color_box_background))
                     text_box.setPlaceholderText(f'{x}')
                     self.__set_custom_context_menu(text_box)
                     self._symbols[0][x] = (label, text_box)
@@ -1387,7 +1375,7 @@ class MainWindow(MultiBox, ControlWindow):
                     if index_2 == 0:
                         label = QLabel(f'{x} =', self)
 
-                        text_box = CustomCaretLineEdit(parent=self, caret_size=1, caret_color=QColor(*self._settings_user.color_line_secondary), background_color=QColor(*self._settings_user.color_box_background))
+                        text_box = CustomCaretLineEdit(parent=self, caret_size=self._settings_user.caret_size, caret_color=QColor(*self._settings_user.color_line_secondary), background_color=QColor(*self._settings_user.color_box_background))
                         text_box.setPlaceholderText(f'{x}')
                         self.__set_custom_context_menu(text_box)
                         self._symbols[0][x] = (label, text_box)
