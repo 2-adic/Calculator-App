@@ -21,6 +21,33 @@ accepted_misc = [
     '+', '*', '-', '/', '^', '!', '%'
 ]
 
+angle_functions = [  # contains all functions that require an angle input
+    'sin',
+    'cos',
+    'tan',
+    'csc',
+    'sec',
+    'cot',
+    'asin',
+    'acos',
+    'atan',
+    'acsc',
+    'asec',
+    'acot',
+    'sinh',
+    'cosh',
+    'tanh',
+    'csch',
+    'sech',
+    'coth',
+    'asinh',
+    'acosh',
+    'atanh',
+    'acsch',
+    'asech',
+    'acoth'
+]
+
 functions = [
     'diff',
     'integrate',
@@ -29,36 +56,14 @@ functions = [
     'exp',
     'pow',
     'root',
+    'sqrt',
     'abs',
     'mod',
     'floor',
     'ceil',
     'sign',
     'random',
-    'sin',
-    'cos',
-    'tan',
-    'csc',
-    'sec',
-    'cot',
-    'arcsin',
-    'arccos',
-    'arctan',
-    'arccsc',
-    'arcsec',
-    'arccot',
-    'sinh',
-    'cosh',
-    'tanh',
-    'csch',
-    'sech',
-    'coth',
-    'arcsinh',
-    'arccosh',
-    'arctanh',
-    'arccsch',
-    'arcsech',
-    'arccoth'
+    *angle_functions
 ]
 
 name_change_function = {  # the function names to replace after the expression has been solved
@@ -66,18 +71,6 @@ name_change_function = {  # the function names to replace after the expression h
     'Abs': 'abs',
     'Mod': 'mod',
     'ceiling': 'ceil',
-    'asin': 'arcsin',
-    'acos': 'arccos',
-    'atan': 'arctan',
-    'acsc': 'arccsc',
-    'asec': 'arcsec',
-    'acot': 'arccot',
-    'asinh': 'arcsinh',
-    'acosh': 'arccosh',
-    'atanh': 'arctanh',
-    'acsch': 'arccsch',
-    'asech': 'arcsech',
-    'acoth': 'arccoth'
 }
 
 copy_notation = [
