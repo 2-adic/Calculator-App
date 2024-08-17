@@ -10,17 +10,16 @@ from inspect import currentframe
 
 
 class Solve:
-    def __init__(self, expression: str, variables: dict[str, str] = dict(), constant_symbol_used: dict[str, bool] = dict(), answer_display: str = 'Image', answer_copy: str = 'Text', use_degrees: bool = False, use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
+    def __init__(self, expression: str, variables: dict[str, str] = dict(), constant_symbol_used: dict[str, bool] = dict(), answer_display: str = 'Image', answer_copy: str = 'Text', use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
 
         self.__funct = tuple(getattr(self, f'_{self.__class__.__name__}__{name.lower()}') for name in symbols.accepted_functions)  # gets a list of all the functions
 
         self.__answer_display = answer_display
         self.__answer_copy = answer_copy
-        self.__use_degrees = use_degrees
         self.__use_commas = use_commas
 
         self.__constant_counter = 0  # keeps track of the amount of constants used
-        self.__expression_save = self.__remove_white_spaces(expression)
+        self.__expression_save = str_format.remove_white_spaces(expression)
 
         self.__is_value_used = not all(constant_symbol_used.values())  # gets a bool for if a constant value was used
         self.__answer_exact = None
@@ -234,17 +233,6 @@ class Solve:
 
         self.__answer_approximate = sy.expand_log(self.__answer_approximate, force=True)  # ln(e^x) -> x, ln(x^n) -> nln(x), etc
 
-    def __remove_white_spaces(self, string) -> str:
-        """
-        Removes all white spaces.
-        """
-
-        string = string.replace(' ', '')
-        string = string.replace('\n', '')
-        string = string.replace('\t', '')
-
-        return string
-
     def __implicit_to_explicit(self, string: str) -> str:
         """
         Reformats the expression from implicit multiplication to explicit multiplication.
@@ -280,19 +268,19 @@ class Solve:
 
         return string
 
-    def __solve(self, string: str) -> str:
+    def __solve(self, expression: str) -> str:
         """
         Solves all math functions within the string.
 
-        :param string: The string to be solved.
+        :param expression: The string to be solved.
         :return: The solved string.
         """
 
         # solves a function with all of its inner functions and loops until all functions are solved
-        while '§' in string:
-            string = self.__function_check(string)
+        while '§' in expression:
+            expression = self.__function_check(expression)
 
-        return string
+        return expression
 
     def __function_check(self, expression: str) -> str:
         """
@@ -355,10 +343,13 @@ class Solve:
         return f'exp({x})'
 
     def __pow(self, x: str, y: str) -> str:
-        return f'({x})**{y}'
+        return f'({x})**({y})'
 
     def __root(self, x: str, y: str) -> str:
         return f'({x})**(1/{y})'
+
+    def __sqrt(self, x: str) -> str:
+        return f'sqrt({x})'
 
     def __floor(self, x: str) -> str:
         return f'floor({x})'
@@ -385,10 +376,6 @@ class Solve:
         return f'Mod({x},{y})'
 
     def __sin(self, x: str) -> str:
-        '''
-        if self.__use_degrees:
-            x = f'({x})*(pi/180)'
-        '''
         return f'sin({x})'
 
     def __cos(self, x: str) -> str:
@@ -406,22 +393,22 @@ class Solve:
     def __cot(self, x: str) -> str:
         return f'cot({x})'
 
-    def __arcsin(self, x: str) -> str:
+    def __asin(self, x: str) -> str:
         return f'asin({x})'
 
-    def __arccos(self, x: str) -> str:
+    def __acos(self, x: str) -> str:
         return f'acos({x})'
 
-    def __arctan(self, x: str) -> str:
+    def __atan(self, x: str) -> str:
         return f'atan({x})'
 
-    def __arccsc(self, x: str) -> str:
+    def __acsc(self, x: str) -> str:
         return f'acsc({x})'
 
-    def __arcsec(self, x: str) -> str:
+    def __asec(self, x: str) -> str:
         return f'asec({x})'
 
-    def __arccot(self, x: str) -> str:
+    def __acot(self, x: str) -> str:
         return f'acot({x})'
 
     def __sinh(self, x: str) -> str:
@@ -442,20 +429,20 @@ class Solve:
     def __coth(self, x: str) -> str:
         return f'coth({x})'
 
-    def __arcsinh(self, x: str) -> str:
+    def __asinh(self, x: str) -> str:
         return f'asinh({x})'
 
-    def __arccosh(self, x: str) -> str:
+    def __acosh(self, x: str) -> str:
         return f'acosh({x})'
 
-    def __arctanh(self, x: str) -> str:
+    def __atanh(self, x: str) -> str:
         return f'atanh({x})'
 
-    def __arccsch(self, x: str) -> str:
+    def __acsch(self, x: str) -> str:
         return f'acsch({x})'
 
-    def __arcsech(self, x: str) -> str:
+    def __asech(self, x: str) -> str:
         return f'asech({x})'
 
-    def __arccoth(self, x: str) -> str:
+    def __acoth(self, x: str) -> str:
         return f'acoth({x})'
