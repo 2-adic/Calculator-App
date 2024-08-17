@@ -112,6 +112,18 @@ def contains_substring(string: str, array: list) -> bool:
     return False  # if none were found, a substring is not in the string
 
 
+def remove_white_spaces(string: str) -> str:
+    """
+    Removes all white spaces.
+    """
+
+    string = string.replace(' ', '')
+    string = string.replace('\n', '')
+    string = string.replace('\t', '')
+
+    return string
+
+
 # --------------------------------------------------------------------------------------------------------
 
 
