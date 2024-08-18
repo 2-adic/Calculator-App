@@ -144,6 +144,7 @@ class Solve:
         self.__answer_exact = sy.simplify(self.__expression_solved)
 
     def __custom_approx(self, expression):
+
         if expression.is_Atom:
             # if the expression is a number, evaluates it numerically
             if expression.is_Number:
@@ -151,6 +152,12 @@ class Solve:
             # if the expression is a symbol, returns it as is
             else:
                 return expression
+
+        # prevents exp from being evaluated
+        elif expression.func == sy.exp:
+            arg = expression.args[0]
+            return sy.exp(self.__custom_approx(arg), evaluate=False)
+
         else:
             # recursively applies custom_approx to all arguments of the expression
             return expression.func(*[self.__custom_approx(arg) for arg in expression.args])
