@@ -25,9 +25,6 @@ Bugs:
     - Variable labels become too compacted and blocks each other's view
         - Only happens on macOS
 
-    - e^n for n != 1 gives a decimal value when the symbol is supposed to be used
-        - This is caused by the __custom_approx function
-
     - Fix the rendering of mod
         - Ex: mod(x, y) renders as xmody
 
@@ -85,11 +82,9 @@ Future Features:
 
 Before Beta:
 
-    - Code organization and optimization is needed
-
     - Angle Unit setting:
         - Currently it works, but the answer needs to be checked after the expression is solved. If degrees are used, then the angle needs to be changed to display degrees.
 
     - Add more error detection
 
-    - Fix macOs bugs
+    - Fix macOS bugs
