@@ -1036,7 +1036,7 @@ class MultiBox(QPushButton):  # inherits QPushButton to prevent reference warnin
             self.__areas[1][2].append(QScrollArea())
             self.__areas[1][2][i].setWidgetResizable(True)
             if i == 0:
-                self.__areas[1][2][0].setMinimumHeight(86)  # stops the top scroll area from becoming too collapsed
+                self.__areas[1][2][0].setMinimumHeight(self._op.get_notation_symbols_min_height())  # stops the top scroll area from becoming too collapsed
             self.__areas[1][2][i].setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
             # uses a QFrame to hold the grid layout

@@ -37,6 +37,21 @@ class OperatingSystem:
 
         return height
 
+    def get_notation_symbols_min_height(self) -> int:
+        """
+        Returns the minimum height of the symbols scroll area in the notations tab.
+        """
+
+        if self.__system_name == 'Windows':
+            height = 86
+
+        elif self.__system_name == 'Darwin':
+            height = 98
+
+        else:
+            height = 86
+
+        return height
 
     def get_window_border_radius(self) -> int:
         """
