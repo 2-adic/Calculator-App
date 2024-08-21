@@ -1167,11 +1167,10 @@ class MainWindow(MultiBox, ControlWindow):
         self.__answer_temp = self._settings_user.answer_default
         self.__solution = None
         self.__flip_type_toggle = False
-        self._icon_aspect_ratio_inverse = None
 
         self._box_answer = WrapTextButton(self._settings_user.answer_default, self, self._settings_user.box_answer_padding)
         self._box_answer.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._box_answer.get_button().clicked.connect(self.__copy)
+        self._box_answer.button().clicked.connect(self.__copy)
 
         self.__answer_image_path_exact = file_path('latex_exact.png')  # gets the path of the latex image
         self.__answer_image_path_approximate = file_path('latex_approximate.png')  # gets the path of the latex image
@@ -1284,9 +1283,9 @@ class MainWindow(MultiBox, ControlWindow):
             self._box_answer.setText(self.__answer_temp)
 
         else:
-            self._box_answer.setIcon(QIcon(image_path))
             image = Image.open(image_path)
-            self._icon_aspect_ratio_inverse = image.size[1] / image.size[0]
+            icon = QIcon(image_path)
+            self._box_answer.setIcon(icon, image.width / image.height)
 
         self.resizeEvent(None)
 
@@ -1444,21 +1443,10 @@ class MainWindow(MultiBox, ControlWindow):
         # answer box
         self._box_answer.move(self._settings_user.box_padding, self.height() - self._settings_user.box_padding - box_answer_height)
         self._box_answer.resize(int((self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)), box_answer_height)
-
-        # answer box icon
-        adjust = 8
-        # moves the image a bit more away from the format symbol
-        icon_new_width = int((self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5) - (self._settings_user.box_answer_padding * 4) - (adjust * 2))
-        if self._icon_aspect_ratio_inverse is not None:
-            if self._icon_aspect_ratio_inverse * icon_new_width < box_answer_height - (self._settings_user.box_answer_padding * 2):
-                self._box_answer.setIconSize(QSize(icon_new_width, self.height() - self._settings_user.box_padding - box_answer_height - (self._settings_user.box_answer_padding * 2)))
-            else:
-                icon_aspect_ratio = self._icon_aspect_ratio_inverse ** -1
-                icon_new_width = int(icon_aspect_ratio * box_answer_height - (self._settings_user.box_answer_padding * 2))
-                self._box_answer.setIconSize(QSize(icon_new_width, box_answer_height - (self._settings_user.box_answer_padding * 2)))
+        self._box_answer.updateIcon()
 
         # answer format label
-        self._box_answer_format_label.move(self._settings_user.box_padding + self._settings_user.box_answer_padding, self.height() - self._settings_user.box_padding - box_answer_height)
+        self._box_answer_format_label.move(self._settings_user.box_padding + self._settings_user.answer_format_indent, self.height() - self._settings_user.box_padding - box_answer_height)
 
     def __box_answer_set(self, text: str, displayed_text: str = None) -> None:
         """
