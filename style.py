@@ -61,9 +61,10 @@ class Settings:
         # answer box
         self.__answer_default = 'Answer'
         self.__answer_format_size = 20  # the size of the symbol that shows the current selected answer format
+        self.__answer_format_indent = 10  # the distance from the format symbol and the left side of the answer box
 
         self.__box_answer_height_scale = 2 / 5  # fraction of screen height
-        self.__box_answer_padding = 12  # distance from the image to the border of the answer box
+        self.__box_answer_padding = 20  # distance from the image to the border of the answer box
         self.__latex_image_dpi = 800
 
         # multi box
@@ -399,6 +400,14 @@ class Settings:
     @answer_format_size.setter
     def answer_format_size(self, value: int) -> None:
         self.__answer_format_size = value
+
+    @property
+    def answer_format_indent(self) -> int:
+        return self.__answer_format_indent
+
+    @answer_format_indent.setter
+    def answer_format_indent(self, value: int) -> None:
+        self.__answer_format_indent = value
 
     @property
     def box_answer_height_scale(self) -> float:
@@ -926,8 +935,8 @@ class Style:
         )
 
     def set_box_answer(self, wrap_button) -> None:
-        button = wrap_button.get_button()
-        label = wrap_button.get_label()
+        button = wrap_button.button()
+        label = wrap_button.label()
 
         button.setStyleSheet(
             f'''
