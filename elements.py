@@ -4,7 +4,14 @@ from PyQt6.QtCore import Qt, QSize, QTimer, QRect, pyqtProperty
 
 
 class WrapTextButton:
-    def __init__(self, text, parent=None, gap: int = 8):
+    def __init__(self, text: str | None = None, parent = None, gap: int = 8):
+        """
+        A button with the ability to textwrap.
+
+        :param text: The text to be displayed on the button.
+        :param parent: The parent of the button.
+        :param gap: The gap between the icon and the edges of the button.
+        """
 
         self.__button = QPushButton()
         self.__button.setParent(parent)
@@ -19,15 +26,18 @@ class WrapTextButton:
         self.__button.setLayout(QVBoxLayout())
         self.__button.layout().setContentsMargins(gap, gap, gap, gap)
         self.__button.layout().addWidget(self.__label)
+        
+        self.__gap = gap
+        self.__icon_aspect_ratio = None
 
-    def get_button(self) -> QPushButton:
+    def button(self) -> QPushButton:
         """
         Returns the QPushButton.
         """
 
         return self.__button
 
-    def get_label(self) -> QLabel:
+    def label(self) -> QLabel:
         """
         Returns the QLabel.
         """
@@ -41,6 +51,27 @@ class WrapTextButton:
 
         return self.__label.text()
 
+    def width(self) -> int:
+        """
+        Returns the button's width.
+        """
+
+        return self.__button.width()
+
+    def height(self) -> int:
+        """
+        Returns the button's height.
+        """
+
+        return self.__button.height()
+
+    def iconSize(self) -> QSize:
+        """
+        Returns the button's icon size.
+        """
+
+        return self.__button.iconSize()
+
     def setText(self, new_string: str) -> None:
         """
         Changes the text of the button.
@@ -48,14 +79,26 @@ class WrapTextButton:
 
         self.__label.setText(new_string)
 
-    def setIcon(self, icon: QIcon) -> None:
+    def setIcon(self, icon: QIcon, aspect_ratio: float | None = None) -> None:
         """
         Sets the icon of the button to the given QIcon.
         """
 
         self.__button.setIcon(icon)
 
-    def setIconSize(self, size: QSize):
+        if aspect_ratio is None:
+            icon_size = self.__button.iconSize()
+            self.__icon_aspect_ratio = icon_size.width() / icon_size.height()
+
+        else:  # this is needed since on macOS the aspect ratio changes to 1:1
+            self.__icon_aspect_ratio = aspect_ratio
+
+
+    def setIconSize(self, size: QSize) -> None:
+        """
+        Changes the size of the icon.
+        """
+        
         self.__button.setIconSize(size)
 
     def setCursor(self, cursor: Qt.CursorShape) -> None:
@@ -66,10 +109,39 @@ class WrapTextButton:
         self.__button.setCursor(cursor)
 
     def move(self, x: int, y: int) -> None:
+        """
+        Moves the buttons to the given x and y position.
+        """
+        
         self.__button.move(x, y)
 
     def resize(self, w: int, h: int) -> None:
+        """
+        Resizes the button to the given width and height.
+        """
+        
         self.__button.resize(w, h)
+        
+    def updateIcon(self) -> None:
+        """
+        Updates the size of the icon based on the button's current size.
+        """
+
+        gap = self.__gap * 2
+
+        button_aspect_ratio = (self.width() - gap) / (self.height() - gap)
+        icon_aspect_ratio = self.__icon_aspect_ratio
+
+        if icon_aspect_ratio is not None:
+            if icon_aspect_ratio > button_aspect_ratio:  # changes the size based on max width size
+                width = self.width() - gap
+                height = int((icon_aspect_ratio ** -1) * width)
+
+            else:  # changes the size based on max height size
+                height = self.height() - gap
+                width = int(icon_aspect_ratio * height)
+
+            self.__button.setIconSize(QSize(width, height))
 
 
 # custom caret code adapted from musicamante at https://stackoverflow.com/questions/68769475/how-to-set-the-color-of-caret-blinking-cursor-in-qlineedit
