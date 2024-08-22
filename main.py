@@ -17,14 +17,14 @@ from elements import WrapTextButton, CustomCaretLineEdit, CustomCaretTextEdit
 
 
 class ControlWindow(QWidget):
-    def __init__(self, settings: Settings, style: Style):
+    def __init__(self, settings: Settings, style: Style, op: OperatingSystem):
         QWidget.__init__(self)
 
         # used to keep track of any settings the user changes within the window
         self._settings_user = settings
         self._style = style
+        self._op = op
 
-        self._op = OperatingSystem()  # initializes settings depending on the operating system
         self._op.set_fullscreen_function(self, self.__button_logic_maximize)
 
         # Window ------------------------------------------------------------------------------------------------
@@ -499,8 +499,8 @@ class ControlWindow(QWidget):
 
 
 class SettingsWindow(ControlWindow):
-    def __init__(self, settings: Settings, style: Style):
-        ControlWindow.__init__(self, settings, style)
+    def __init__(self, settings: Settings, style: Style, op: OperatingSystem):
+        ControlWindow.__init__(self, settings, style, op)
 
         self._set_title(self._settings_user.window_title_settings)
         self._set_size_min(*self._settings_user.window_size_min_settings)
@@ -1147,8 +1147,8 @@ class MultiBox(QPushButton):  # inherits QPushButton to prevent reference warnin
 
 
 class MainWindow(MultiBox, ControlWindow):
-    def __init__(self, settings: Settings, style: Style):
-        ControlWindow.__init__(self, settings, style)
+    def __init__(self, settings: Settings, style: Style, op: OperatingSystem):
+        ControlWindow.__init__(self, settings, style, op)
         MultiBox._setup(self)
 
         self._set_title(self._settings_user.window_title_main)
@@ -1597,8 +1597,8 @@ class MainWindow(MultiBox, ControlWindow):
 
 
 class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
-    def __init__(self, settings: Settings, style: Style):
-        ControlWindow.__init__(self, settings, style)
+    def __init__(self, settings: Settings, style: Style, op: OperatingSystem):
+        ControlWindow.__init__(self, settings, style, op)
         self.__setup()
 
     def update_settings(self) -> None:
@@ -1721,12 +1721,13 @@ class RunWindow:
         # initializes classes that are shared between the windows
         settings = Settings()
         style = Style(settings)
+        op = OperatingSystem()
 
         # initializes the windows
-        self.__window_settings = SettingsWindow(settings, style)
-        self.__window_main = MainWindow(settings, style)
+        self.__window_settings = SettingsWindow(settings, style, op)
+        self.__window_main = MainWindow(settings, style, op)
         if self.__is_test_included:
-            self.__window_test = TestWindow(settings, style)
+            self.__window_test = TestWindow(settings, style, op)
 
         # initializes connections / settings
         self.__init_buttons()
