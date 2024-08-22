@@ -1696,6 +1696,7 @@ class RunWindow:
 
     def __init_app(self) -> None:
         self.__app = QApplication(sys.argv)
+        self.__app.setQuitOnLastWindowClosed(True)
         self.__init_icons()
         self.__init_font()
         self.__init_windows()
