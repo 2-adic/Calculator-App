@@ -1,5 +1,6 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
+from files import file_path
 
 
 class Settings:
@@ -144,7 +145,7 @@ class Settings:
         save = save[:-1]  # removes the last space
 
         # saves the settings to the txt file
-        with open('settings.txt', 'w') as file:
+        with open(file_path('settings.txt'), 'w') as file:
             file.write(save)
 
     def load_settings(self) -> list:
@@ -154,7 +155,7 @@ class Settings:
 
         try:
             # gets the saved settings from the file
-            with open('settings.txt', 'r') as file:
+            with open(file_path('settings.txt'), 'r') as file:
                 line = file.readline()
 
             # turns the string into a list of numbers
