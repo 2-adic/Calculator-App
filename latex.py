@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import sympy as sy
 from PIL import Image
-from files import file_path
+from system_settings import get_data_path
 from symbols import name_change_function, name_change_function_keys
 import re
 
@@ -41,7 +41,7 @@ def render_latex(latex_str, filename, dpi=300, text_color=(1, 1, 1)):
 
 def crop_image(filename):
 
-    image_path = file_path(filename)
+    image_path = get_data_path(filename)
     with Image.open(image_path) as img:
         # Get image data
         img_data = img.getdata()

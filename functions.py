@@ -2,11 +2,11 @@ import sympy as sy
 import symbols
 import str_format as form
 from latex import convert_render_latex
-from files import file_path
 import str_format
 from random import randint
 import error_detection as error
 from inspect import currentframe
+from system_settings import get_data_path
 
 
 class Solve:
@@ -68,7 +68,7 @@ class Solve:
             return self.__answer_exact_copy
 
         else:
-            return file_path('latex_exact.png')
+            return get_data_path('latex_exact.png')
 
     def get_approximate_copy(self) -> str:
         """
@@ -79,7 +79,7 @@ class Solve:
             return self.__answer_approximate_copy
 
         else:
-            return file_path('latex_approximate.png')
+            return get_data_path('latex_approximate.png')
 
     def is_text_used(self) -> bool:
         """
@@ -124,8 +124,8 @@ class Solve:
         :param dpi: The quality of the image (also affects how much it can be expanded).
         """
 
-        exact = file_path('latex_exact.png')
-        approximate = file_path('latex_approximate.png')
+        exact = get_data_path('latex_exact.png')
+        approximate = get_data_path('latex_approximate.png')
 
         if self.__answer_exact is not None:  # answer is not rendered if it is none
             convert_render_latex(self.__answer_exact, use_commas, color, dpi, exact, self.__constant_counter)

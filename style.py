@@ -1,12 +1,10 @@
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
-from files import file_path
+from system_settings import get_data_path
 
 
 class Settings:
-    def __init__(self, op):
-
-        self._op = op
+    def __init__(self):
 
         # Window ------------------------------------------------------------------------------------------------
 
@@ -148,7 +146,7 @@ class Settings:
         save = save[:-1]  # removes the last space
 
         # saves the settings to the txt file
-        path = self._op.get_data_path('settings.txt')
+        path = get_data_path('settings.txt')
         with open(path, 'w') as file:
             file.write(save)
 
@@ -159,7 +157,7 @@ class Settings:
 
         try:
             # gets the saved settings from the file
-            path = self._op.get_data_path('settings.txt')
+            path = get_data_path('settings.txt')
             with open(path, 'r') as file:
                 line = file.readline()
 

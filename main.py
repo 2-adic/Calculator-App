@@ -1,13 +1,13 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QStackedWidget, QLayout, QPushButton, QLabel, QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, QFrame, QSizePolicy, QRadioButton, QButtonGroup, QSpacerItem, QGridLayout, QFormLayout
 from PyQt6.QtGui import QColor, QPainter, QPainterPath, QIcon, QFont, QMouseEvent, QPixmap
-from PyQt6.QtCore import Qt, QPoint, QTimer, QSize, QRectF
+from PyQt6.QtCore import Qt, QPoint, QTimer, QRectF
 import pyperclip
 import fontcontrol
 from files import file_path
 from str_format import contains_substring, function_convert
 from PIL import Image
-from system_settings import OperatingSystem
+from system_settings import OperatingSystem, get_data_path
 import misc_functions
 from functions import Solve
 import symbols
@@ -1172,8 +1172,8 @@ class MainWindow(MultiBox, ControlWindow):
         self._box_answer.setCursor(Qt.CursorShape.PointingHandCursor)
         self._box_answer.button().clicked.connect(self.__copy)
 
-        self.__answer_image_path_exact = file_path('latex_exact.png')  # gets the path of the latex image
-        self.__answer_image_path_approximate = file_path('latex_approximate.png')  # gets the path of the latex image
+        self.__answer_image_path_exact = get_data_path('latex_exact.png')  # gets the path of the latex image
+        self.__answer_image_path_approximate = get_data_path('latex_approximate.png')  # gets the path of the latex image
 
         # answer format label
         self._box_answer_format_label = QLabel('', self)
@@ -1572,13 +1572,13 @@ class MainWindow(MultiBox, ControlWindow):
 
         if self.__flip_type_toggle:
             if self._settings_user.answer_copy == 'Image':
-                self._op.copy_image('latex_exact.png')
+                self._op.copy_image(get_data_path('latex_exact.png'))
                 return
             else:
                 string = self.__solution.get_exact_copy()
         else:
             if self._settings_user.answer_copy == 'Image':
-                self._op.copy_image('latex_approximate.png')
+                self._op.copy_image(get_data_path('latex_approximate.png'))
                 return
             else:
                 string = self.__solution.get_approximate_copy()
@@ -1720,9 +1720,9 @@ class RunWindow:
         """
 
         # initializes classes that are shared between the windows
-        op = OperatingSystem()
-        settings = Settings(op)
+        settings = Settings()
         style = Style(settings)
+        op = OperatingSystem()
 
         # initializes the windows
         self.__window_settings = SettingsWindow(settings, style, op)
