@@ -1720,9 +1720,9 @@ class RunWindow:
         """
 
         # initializes classes that are shared between the windows
-        settings = Settings()
-        style = Style(settings)
         op = OperatingSystem()
+        settings = Settings(op)
+        style = Style(settings)
 
         # initializes the windows
         self.__window_settings = SettingsWindow(settings, style, op)

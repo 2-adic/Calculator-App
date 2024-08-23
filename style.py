@@ -4,7 +4,10 @@ from files import file_path
 
 
 class Settings:
-    def __init__(self):
+    def __init__(self, op):
+
+        self._op = op
+
         # Window ------------------------------------------------------------------------------------------------
 
         self.__window_start_size_main = (
@@ -145,7 +148,8 @@ class Settings:
         save = save[:-1]  # removes the last space
 
         # saves the settings to the txt file
-        with open(file_path('settings.txt'), 'w') as file:
+        path = self._op.get_data_path('settings.txt')
+        with open(path, 'w') as file:
             file.write(save)
 
     def load_settings(self) -> list:
@@ -155,7 +159,8 @@ class Settings:
 
         try:
             # gets the saved settings from the file
-            with open(file_path('settings.txt'), 'r') as file:
+            path = self._op.get_data_path('settings.txt')
+            with open(path, 'r') as file:
                 line = file.readline()
 
             # turns the string into a list of numbers

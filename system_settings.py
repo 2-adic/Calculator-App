@@ -5,6 +5,7 @@ import ctypes
 from PIL import Image
 import io
 import subprocess
+import os
 
 
 class OperatingSystem:
@@ -68,6 +69,26 @@ class OperatingSystem:
             radius = 0
 
         return radius
+
+    def get_data_path(self, file_name: str):
+        """
+        Used to get the path to files which need permissions to use.
+        """
+
+        app_name = 'Calculator App'
+
+        if self.__system_name == 'Windows':
+            app_data_folder = os.path.join(os.environ['APPDATA'], app_name)
+            if not os.path.exists(app_data_folder):
+                os.makedirs(app_data_folder)
+            return os.path.join(app_data_folder, file_name)
+
+        elif self.__system_name == 'Darwin':
+            home = os.path.expanduser('~')
+            app_support_folder = os.path.join(home, 'Library', 'Application Support', app_name)
+            if not os.path.exists(app_support_folder):
+                os.makedirs(app_support_folder)
+            return os.path.join(app_support_folder, file_name)
 
     def copy_image(self, file_name):
         """
