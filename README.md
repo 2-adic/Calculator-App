@@ -7,7 +7,21 @@ Calculator App is a plain text expression simplifier.
 
 # How to use:
 
-[Download the app](https://github.com/2-adic/Calculator-App/releases/latest)
+Download the latest release [here](https://github.com/2-adic/Calculator-App/releases/latest).
+
+Follow the steps provided through the installer.
+
+Start typing an expression in the top left text box. Be sure to use the correct [syntax](#syntax).
+
+![typing_expression](https://github.com/user-attachments/assets/ee3b6552-ef8f-4b1f-9895-97fe06cf78de)
+
+Click the answer button to simplify the expression.
+
+{Image}
+
+The format button is used to toggle between the exact and approximate answer.
+
+{Image}
 
 # Syntax:
 
@@ -34,3 +48,31 @@ Exponents can be expressed using either the '^' symbol or '**' operator.
 Comparisons are performed by using the '==' operator.
 - ````sin(x)cos(x) == cos(x)sin(x)````&emsp;→&emsp;True
 - ````2x + y == y````&emsp;→&emsp;False
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
