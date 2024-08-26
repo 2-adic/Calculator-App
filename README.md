@@ -1,9 +1,7 @@
 # Calculator App:
-Calculator App is a plain text expression simplifier. 
+Calculator App is a plain text expression simplifier.
 
-**Features:**
-- Variables can be defined as expressions.
-
+![example](https://github.com/user-attachments/assets/63c7ff34-3a8d-4066-afbd-995be43806e1)
 
 # How to use:
 
@@ -17,11 +15,15 @@ Start typing an expression in the top left text box. Be sure to use the correct 
 
 Click the answer button to simplify the expression.
 
-{Image}
+![answer_button](https://github.com/user-attachments/assets/dfbfbfd4-7467-4d95-9bea-ce78af995753)
 
-The format button is used to toggle between the exact and approximate answer.
+The format button is used to switch between the exact and approximate answer.
 
-{Image}
+![changing_format](https://github.com/user-attachments/assets/458e0b2e-9b52-4546-833c-63cd998057f1)
+
+Variables can be defined as expressions containing functions, constants, and other variables. Functions and constants can be copied from the notation tab.
+
+![variable_expressions](https://github.com/user-attachments/assets/7d14f8c2-a7b3-4cf0-b297-81e291bbe3c1)
 
 # Syntax:
 
