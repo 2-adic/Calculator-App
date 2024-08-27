@@ -53,18 +53,21 @@ Comparisons are performed by using the '==' operator.
 
 # How to Build
 
+Python 3.11+ is required.
+
+### Clone the repo:
 ````
 git clone https://github.com/2-adic/Calculator-App.git
 ````
 
-````
-python3 -m venv env
-source env/bin/activate
-````
+It is suggested to use a [virtual environment](https://docs.python.org/3/library/venv.html).
 
+### Install the required libraries:
 ````
 pip install -r requirements.txt
 ````
+
+Run main.py to start the app.
 
 
 
