@@ -3,7 +3,7 @@ Calculator App is a plain text expression simplifier.
 
 ![example](https://github.com/user-attachments/assets/63c7ff34-3a8d-4066-afbd-995be43806e1)
 
-# How to use:
+# How to Use:
 
 Download the latest release [here](https://github.com/2-adic/Calculator-App/releases/latest).
 
@@ -51,6 +51,20 @@ Comparisons are performed by using the '==' operator.
 - ````sin(x)cos(x) == cos(x)sin(x)````&emsp;→&emsp;True
 - ````2x + y == y````&emsp;→&emsp;False
 
+# How to Build
+
+````
+git clone https://github.com/2-adic/Calculator-App.git
+````
+
+````
+python3 -m venv env
+source env/bin/activate
+````
+
+````
+pip install -r requirements.txt
+````
 
 
 
