@@ -1,9 +1,9 @@
-# Calculator App:
+# Calculator App
 Calculator App is a plain text expression simplifier.
 
 ![example](https://github.com/user-attachments/assets/63c7ff34-3a8d-4066-afbd-995be43806e1)
 
-# How to Use:
+# How to Use
 
 Download the latest release [here](https://github.com/2-adic/Calculator-App/releases/latest).
 
@@ -25,7 +25,7 @@ Variables can be defined as expressions containing functions, constants, and oth
 
 ![variable_expressions](https://github.com/user-attachments/assets/7d14f8c2-a7b3-4cf0-b297-81e291bbe3c1)
 
-# Syntax:
+# Syntax
 
 Functions can be typed manually or copied from the notations tab. Some functions require two or more parameters.
 - ````sin(π/2 - x)````&emsp;→&emsp;cos(x)
@@ -55,19 +55,26 @@ Comparisons are performed by using the '==' operator.
 
 Python 3.11+ is required.
 
-### Clone the repo:
+### Clone the Repo:
 ````
 git clone https://github.com/2-adic/Calculator-App.git
 ````
 
+### Install the Required Libraries:
+
 It is suggested to use a [virtual environment](https://docs.python.org/3/library/venv.html).
 
-### Install the required libraries:
 ````
 pip install -r requirements.txt
 ````
 
-Run main.py to start the app.
+### Run the Program:
+
+Run main.py to start the app. This can be done through an IDE, or directly through the terminal.
+
+````
+python main.py
+````
 
 
 
