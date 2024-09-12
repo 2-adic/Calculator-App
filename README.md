@@ -56,13 +56,14 @@ Comparisons are performed by using the '==' operator.
 Python 3.11+ is required.
 
 ### Clone the Repo:
+
 ````
 git clone https://github.com/2-adic/Calculator-App.git
 ````
 
 ### Install the Required Libraries:
 
-It is suggested to use a [virtual environment](https://docs.python.org/3/library/venv.html).
+It is suggested to use a [virtual environment](https://github.com/2-adic/Calculator-App/blob/documentation/virtual_environment.md).
 
 ````
 pip install -r requirements.txt
@@ -73,7 +74,7 @@ pip install -r requirements.txt
 Run main.py to start the app. This can be done through an IDE, or directly through the terminal.
 
 ````
-python main.py
+python3 main.py
 ````
 
 
