@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import QApplication, QStackedWidget, QLayout, QPushButton, 
 from PyQt6.QtGui import QColor, QPainter, QPainterPath, QIcon, QFont, QMouseEvent, QPixmap
 from PyQt6.QtCore import Qt, QPoint, QTimer, QRectF
 import pyperclip
-import fontcontrol
+import font_control
 from files import file_path
 from str_format import contains_substring, function_convert
 from PIL import Image
@@ -1707,9 +1707,9 @@ class RunWindow:
 
     def __init_font(self) -> None:
         # sets the default font
-        font_family = fontcontrol.font_load(fontcontrol.font_files[0])
+        font_family = font_control.font_load(font_control.font_files[0])
         if font_family:
-            font = QFont(font_family, fontcontrol.font_size)
+            font = QFont(font_family, font_control.font_size)
             self.__app.setFont(font)
         else:
             print("Error: Font didn't load, default system font will be used instead.")
