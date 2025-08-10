@@ -8,7 +8,7 @@ import files
 
 def font_load(file_name):
 
-    font_path = files.file_path(file_name, 'fonts')  # gets the font file path
+    font_path = files.file_path(file_name, '../assets/fonts')  # gets the font file path
 
     # loads the font and return the family name
     font_id = QFontDatabase.addApplicationFont(font_path)
