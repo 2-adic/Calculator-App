@@ -71,35 +71,8 @@ pip install -r requirements.txt
 
 ### Run the Program:
 
-Run main.py to start the app. This can be done through an IDE, or directly through the terminal.
+To start the app, run the `main.py` script located in the `src` directory. This can be done through an IDE, or directly through the terminal.
 
 ````
-python3 main.py
+python3 ./src/main.py
 ````
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
