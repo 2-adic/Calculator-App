@@ -1187,7 +1187,7 @@ class MainWindow(MultiBox, ControlWindow):
         self._box_text.focusOutEvent = self.__box_text_focus_event
         self.__set_custom_context_menu(self._box_text)
 
-        self._bar_blank = QWidget(self)  # adds a blank space to the right of the bar buttons
+        self._bar_spacer = QWidget(self)  # adds a blank space to the right of the bar buttons
 
         self._bar_answer = QPushButton('Answer', self)  # the button that lets the user compute the answer
         self._bar_answer.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -1437,13 +1437,12 @@ class MainWindow(MultiBox, ControlWindow):
         self._bar_format.move(self._settings_user.box_padding + self._settings_user.bar_button_width - self._settings_user.box_border, box_text_y1 + box_text_height - self._settings_user.box_border)
         self._bar_format.resize(self._settings_user.bar_button_width, self._settings_user.bar_button_height)
 
-        self._bar_blank.move(self._settings_user.box_padding + self._settings_user.bar_button_width - self._settings_user.box_border, box_text_y1 + box_text_height - self._settings_user.box_border)
-        self._bar_blank.resize(box_text_x1 + box_text_width - (self._settings_user.box_padding + self._settings_user.bar_button_width - self._settings_user.box_border), self._settings_user.bar_button_height)
+        self._bar_spacer.move(self._settings_user.box_padding + self._settings_user.bar_button_width - self._settings_user.box_border, box_text_y1 + box_text_height - self._settings_user.box_border)
+        self._bar_spacer.resize(box_text_x1 + box_text_width - (self._settings_user.box_padding + self._settings_user.bar_button_width - self._settings_user.box_border), self._settings_user.bar_button_height)
 
         # answer box
         self._box_answer.move(self._settings_user.box_padding, self.height() - self._settings_user.box_padding - box_answer_height)
         self._box_answer.resize(int((self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)), box_answer_height)
-        self._box_answer.updateIcon()
 
         # answer format label
         self._box_answer_format_label.move(self._settings_user.box_padding + self._settings_user.answer_format_indent, self.height() - self._settings_user.box_padding - box_answer_height)
@@ -1494,7 +1493,7 @@ class MainWindow(MultiBox, ControlWindow):
         self._style.set_box_answer(self._box_answer)
         self._style.set_box_answer_format_label(self._box_answer_format_label)
         self._style.set_box_text(self._box_text)
-        self._style.set_bar_blank(self._bar_blank)
+        self._style.set_bar_blank(self._bar_spacer)
         self._style.set_bar_format(self._bar_format)
 
     def __variable_formatting(self, symbols: tuple[dict, dict, dict]) -> dict:
@@ -1706,14 +1705,16 @@ class RunWindow:
         self.__app.setWindowIcon(QIcon(file_path('taskbar_icon_16px.png', '../assets/icons')))
 
     def __init_font(self) -> None:
-        # sets the default font
-        font_family = font_control.font_load(font_control.font_files[0])
-        if font_family:
-            font = QFont(font_family, font_control.font_size)
-            self.__app.setFont(font)
-        else:
-            print("Error: Font didn't load, default system font will be used instead.")
+        """
+        Initializes the default font.
+        """
 
+        # attempts to find font, default system font used if none was found
+        try:
+            font_control.font_set(self.__app, font_control.font_default, font_control.font_size_default)
+        except Exception as e:
+            print(f"{e}")
+            
     def __init_windows(self) -> None:
         """
         Initializes the windows and their settings.
