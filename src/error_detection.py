@@ -21,7 +21,7 @@ def char_is_variable(char: str, function_name: str) -> None:
     function_name = function_name[2:]  # removes the underscores from the function name
 
     if len(char) != 1:
-        raise Exception(f'{function_name}; second parameter can only include one variable')
+        raise Exception(f"{function_name}; second parameter can only include one variable")
 
     if char not in accepted_variables:
         raise Exception(f"{function_name}; '{char}' is not an accepted variable")
@@ -38,7 +38,7 @@ def all_is_int(array: tuple[str, ...], function_name: str) -> None:
 
     for element in array:
         if '/' in element:  # number is a fraction (not an int since fractions are simplified)
-            raise Exception(f'{function_name}; a parameter is not an int')
+            raise Exception(f"{function_name}; a parameter is not an int")
 
         if '.' in element:  # if a non 0 appears after a decimal point, it is not an int
 
@@ -46,7 +46,7 @@ def all_is_int(array: tuple[str, ...], function_name: str) -> None:
 
             for char in element:
                 if char != '0':
-                    raise Exception(f'{function_name}; a parameter is not an int')
+                    raise Exception(f"{function_name}; a parameter is not an int")
 
 
 def circularly_defined(variables: dict[str, str]) -> None:
@@ -55,5 +55,5 @@ def circularly_defined(variables: dict[str, str]) -> None:
     """
 
     for x in variables:
-        if x in variables[x] and f'({x})' != variables[x] and x != variables[x]:
+        if x in variables[x] and f"({x})" != variables[x] and x != variables[x]:
             raise Exception(f"'{x}' is circularly defined")

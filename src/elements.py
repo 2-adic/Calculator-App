@@ -151,7 +151,7 @@ class CustomCaretLineEditStyle(QProxyStyle):
         if (
             pm == QStyle.PixelMetric.PM_TextCursorWidth and opt
             and isinstance(opt.styleObject, CustomCaretLineEdit)
-            and opt.styleObject.property('customCaret')
+            and opt.styleObject.property("customCaret")
         ):
             return 0
         return super().pixelMetric(pm, opt, widget)
@@ -242,7 +242,7 @@ class CustomCaretTextEditStyle(QProxyStyle):
         if (
             pm == QStyle.PixelMetric.PM_TextCursorWidth and opt
             and isinstance(opt.styleObject, CustomCaretTextEdit)
-            and opt.styleObject.property('customCaret')
+            and opt.styleObject.property("customCaret")
         ):
             return 0
         return super().pixelMetric(pm, opt, widget)

@@ -7,7 +7,9 @@ import re
 
 
 def render_latex(latex_str, filename, dpi=300, text_color=(1, 1, 1)):
-    """Renders a LaTex string into an image without clipping issues."""
+    """
+    Renders a LaTex string into an image without clipping issues.
+    """
 
     text_color = text_color[0] / 255, text_color[1] / 255, text_color[2] / 255
 
@@ -15,7 +17,7 @@ def render_latex(latex_str, filename, dpi=300, text_color=(1, 1, 1)):
     fig = plt.figure()
 
     # dynamically adjust the figsize based on text content
-    text = fig.text(0, 0, f'${latex_str}$', fontsize=12, color=text_color)
+    text = fig.text(0, 0, f"${latex_str}$", fontsize=12, color=text_color)
     renderer = fig.canvas.get_renderer()
     bbox = text.get_window_extent(renderer=renderer)
 
@@ -30,10 +32,10 @@ def render_latex(latex_str, filename, dpi=300, text_color=(1, 1, 1)):
     fig.set_size_inches(figsize)
 
     # remove axes and other plot elements
-    plt.axis('off')
+    plt.axis("off")
 
     # save the plot with tight bounding box
-    plt.savefig(filename, dpi=dpi, bbox_inches='tight', pad_inches=padding, transparent=True)
+    plt.savefig(filename, dpi=dpi, bbox_inches="tight", pad_inches=padding, transparent=True)
 
     # close the figure
     plt.close(fig)
@@ -66,7 +68,7 @@ def crop_image(filename):
         cropped_img.save(image_path)
 
 
-def convert_render_latex(string: str, use_commas: bool = False, color: tuple[int, int, int] = (255, 255, 255), dpi: int = 300, filename: str = 'Untitled.png', constant_amount: int = 0) -> str:
+def convert_render_latex(string: str, use_commas: bool = False, color: tuple[int, int, int] = (255, 255, 255), dpi: int = 300, filename: str = "Untitled.png", constant_amount: int = 0) -> str:
     """
     Takes a math expression as a string, and converts it into the LaTeX format.
     Also renders the image of the LaTeX string as a png named "latex_answer.png".
@@ -88,7 +90,7 @@ def convert_render_latex(string: str, use_commas: bool = False, color: tuple[int
     for key in name_change_function_keys:  # changes the names of some of the functions
         latex = latex.replace(key, name_change_function[key])
 
-    latex = latex.replace(r'\bmod', r'\operatorname{mod}')  # stops mod from crashing the program when Ex: mod(x, y)
+    latex = latex.replace(r"\bmod", r"\operatorname{mod}")  # stops mod from crashing the program when Ex: mod(x, y)
 
     render_latex(latex, filename, text_color=color, dpi=dpi)
     crop_image(filename)
@@ -112,5 +114,5 @@ def format_with_commas(latex_str):
             return "{:,}".format(int(number))
 
     # Replace numbers in the LaTeX string with formatted numbers
-    formatted_str = re.sub(r'\b\d+(\.\d+)?\b', insert_commas, latex_str)
+    formatted_str = re.sub(r"\b\d+(\.\d+)?\b", insert_commas, latex_str)
     return formatted_str

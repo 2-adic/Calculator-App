@@ -65,7 +65,7 @@ def get_elements_in_parentheses(string: str, index: int) -> tuple[list, int]:
 
             # checks if teh element is empty
             if element == '':
-                print('Error: String not formatted properly; an element is empty.')
+                print("Error: String not formatted properly; an element is empty.")
 
             element_array.append(element)
             element = ''
@@ -75,7 +75,7 @@ def get_elements_in_parentheses(string: str, index: int) -> tuple[list, int]:
             element += char
 
     # if no last parenthesis is found, the string is formatted incorrectly
-    raise 'Error: String not formatted properly; No final parenthesis found.'
+    raise "Error: String not formatted properly; No final parenthesis found."
 
 
 def replace_substring(original: str, start: int, end: int, replacement: str) -> str:
@@ -133,7 +133,7 @@ def function_convert(string: str) -> str:
     """
 
     for i in range(len(symbols.accepted_functions)):
-        string = string.replace(symbols.accepted_functions[i], f'§{i}¦')  # adds the '¦' character to prevent implicit multiplication
+        string = string.replace(symbols.accepted_functions[i], f"§{i}¦")  # adds the '¦' character to prevent implicit multiplication
 
     return string
 
@@ -144,7 +144,7 @@ def function_unconvert(string: str) -> str:
     """
 
     for i in range(len(symbols.accepted_functions)):
-        string = string.replace(f'§{i}', symbols.accepted_functions[i])
+        string = string.replace(f"§{i}", symbols.accepted_functions[i])
 
     return string
 

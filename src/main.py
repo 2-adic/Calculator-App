@@ -43,7 +43,7 @@ class ControlWindow(QWidget):
         # close button
         self.__button_close = QPushButton('', self)
         self.__button_close.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.__button_close.setIcon(QIcon(file_path('button_close_icon.png', '../assets/icons')))
+        self.__button_close.setIcon(QIcon(file_path("button_close_icon.png", "../assets/icons")))
         self.__button_close.clicked.connect(self.__button_logic_close)
         self.__button_close.pressed.connect(self.__button_close_press)
         self.__button_close.released.connect(self.__button_close_release)
@@ -51,13 +51,13 @@ class ControlWindow(QWidget):
         # maximize button
         self.__button_maximize = QPushButton('', self)
         self.__button_maximize.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.__button_maximize.setIcon(QIcon(file_path('button_maximize_icon.png', '../assets/icons')))
+        self.__button_maximize.setIcon(QIcon(file_path("button_maximize_icon.png", "../assets/icons")))
         self.__button_maximize.clicked.connect(self.__button_logic_maximize)
 
         # minimize button
         self.__button_minimize = QPushButton('', self)
         self.__button_minimize.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.__button_minimize.setIcon(QIcon(file_path('button_minimize_icon.png', '../assets/icons')))
+        self.__button_minimize.setIcon(QIcon(file_path("button_minimize_icon.png", "../assets/icons")))
         self.__button_minimize.clicked.connect(self.showMinimized)
 
         # Resizing Widgets --------------------------------------------------------------------------------------
@@ -177,10 +177,10 @@ class ControlWindow(QWidget):
         self._style.set_title_label(self.__title_label)
 
     def __button_close_press(self) -> None:
-        self.__button_close.setIcon(QIcon(file_path('button_close_press_icon.png', '../assets/icons')))
+        self.__button_close.setIcon(QIcon(file_path("button_close_press_icon.png", "../assets/icons")))
 
     def __button_close_release(self) -> None:
-        self.__button_close.setIcon(QIcon(file_path('button_close_icon.png', '../assets/icons')))
+        self.__button_close.setIcon(QIcon(file_path("button_close_icon.png", "../assets/icons")))
 
     def __window_resize_enable(self) -> None:
         """
@@ -201,7 +201,7 @@ class ControlWindow(QWidget):
         Maximizes the screem using the maximize button.
         """
 
-        if self._op.get_system_name() == 'Darwin':  # on macOS, the maximize button full screens the window
+        if self._op.get_system_name() == "Darwin":  # on macOS, the maximize button full screens the window
             self.__logic_full_screen()
             return
 
@@ -514,19 +514,19 @@ class SettingsWindow(ControlWindow):
         defaults = self._settings_user.load_settings()
 
         settings_list = (
-            ('General', (
+            ("General", (
                 # function, default option number, setting label, option 1, option2, ... option n
-                (self.__formatting_commas, defaults[0], 'Number Format', 'Standard', 'Commas'),
+                (self.__formatting_commas, defaults[0], "Number Format", "Standard", "Commas"),
             )),
 
-            ('Answer', (
-                (self.__format_display, defaults[1], 'Display Format', 'Image', 'LaTeX', 'Text'),
-                (self.__format_copy, defaults[2], 'Copy Format', 'Image', 'LaTeX', 'Text'),
+            ("Answer", (
+                (self.__format_display, defaults[1], "Display Format", "Image", "LaTeX", "Text"),
+                (self.__format_copy, defaults[2], "Copy Format", "Image", "LaTeX", "Text"),
             )),
 
-            ('Colors', (
-                (self.__color_preset, defaults[3], 'Appearance', 'Gray', 'Blue', 'Pink'),
-                (self.__text_color, defaults[4], 'Text Color', 'White', 'Black'),
+            ("Colors", (
+                (self.__color_preset, defaults[3], "Appearance", "Gray", "Blue", "Pink"),
+                (self.__text_color, defaults[4], "Text Color", "White", "Black"),
             )),
         )
 
@@ -569,7 +569,7 @@ class SettingsWindow(ControlWindow):
         button_layout.addItem(right_spacer)  # adds spacing to the right of the top section buttons
 
         # adds the apply button
-        self.__button_apply = QPushButton('Apply')  # keeps track of button for future stylesheet changes
+        self.__button_apply = QPushButton("Apply")  # keeps track of button for future stylesheet changes
         self.__button_apply.setCursor(Qt.CursorShape.PointingHandCursor)
         layout = QHBoxLayout()
         layout.addWidget(self.__button_apply)
@@ -676,14 +676,14 @@ class SettingsWindow(ControlWindow):
         Used to test if the settings buttons work.
         """
 
-        # print('This setting currently does nothing')
+        # print("This setting currently does nothing")
 
     def __formatting_commas(self, label: str) -> None:
         """
         Toggles the comma formatting for numbers.
         """
 
-        if label == 'Standard':
+        if label == "Standard":
             self._settings_user.use_commas = False
         else:
             self._settings_user.use_commas = True
@@ -707,17 +707,17 @@ class SettingsWindow(ControlWindow):
         Lets the user choose between multiple color themes.
         """
 
-        if label == 'Gray':
+        if label == "Gray":
             self._style.set_gray()
 
-        elif label == 'Blue':
+        elif label == "Blue":
             self._style.set_blue()
 
         else:
             self._style.set_pink()
 
     def __text_color(self, label: str) -> None:
-        if label == 'White':
+        if label == "White":
             self._settings_user.color_text = 255, 255, 255
 
         else:
@@ -761,7 +761,7 @@ class MultiBox(QPushButton):  # inherits QPushButton to prevent reference warnin
 
         # Scroll Area Setup -------------------------------------------------------------------------------------
 
-        self.__selector_names = ['Variables', 'Notation']  # include at least 2 names (these will most likely be images in the future, for example: a simple image of a graph for the graph tab)
+        self.__selector_names = ["Variables", "Notation"]  # include at least 2 names (these will most likely be images in the future, for example: a simple image of a graph for the graph tab)
         self.__area_amount = len(self.__selector_names)  # amount of scroll areas, at least 2 are needed for correct formatting
 
         # creates the scroll areas
@@ -821,7 +821,7 @@ class MultiBox(QPushButton):  # inherits QPushButton to prevent reference warnin
         self.__areas[0][1].setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # sections of the variable page
-        self.__titles = ['Variables', 'Constants', 'Arbitrary Constants']
+        self.__titles = ["Variables", "Constants", "Arbitrary Constants"]
 
     def update_settings_multi(self) -> None:
         """
@@ -897,7 +897,7 @@ class MultiBox(QPushButton):  # inherits QPushButton to prevent reference warnin
             count += len(self._symbols[index].keys())
 
         if count == 0:  # if there are no variables, the default text is generated
-            label = QLabel('Variables')
+            label = QLabel("Variables")
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self._style.set_selector_label(label)
             self.__areas[0][1].addStretch()
@@ -1007,7 +1007,7 @@ class MultiBox(QPushButton):  # inherits QPushButton to prevent reference warnin
         Allows for the user to easily copy symbols to use in calculations.
         """
 
-        label_titles = ['Symbols', 'Functions']
+        label_titles = ["Symbols", "Functions"]
 
         self.__grid_layout = []
         self.__button_symbols = []
@@ -1141,7 +1141,7 @@ class MultiBox(QPushButton):  # inherits QPushButton to prevent reference warnin
         text = button.text()
 
         if text not in symbols.copy_notation[0]:  # adds parentheses to functions
-            text += '()'
+            text += "()"
 
         pyperclip.copy(text)
 
@@ -1158,9 +1158,9 @@ class MainWindow(MultiBox, ControlWindow):
         # settings button
         self.__button_settings = QPushButton('', self)
         self.__button_settings.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.__button_settings.setIcon(QIcon(file_path('gear_icon.png', '../assets/icons')))
+        self.__button_settings.setIcon(QIcon(file_path("gear_icon.png", "../assets/icons")))
         size = int(self._settings_user.title_bar_settings_icon_scale * (self._settings_user.title_bar_height - (2 * self._settings_user.title_bar_settings_spacing)))
-        self.__button_settings.setIcon(QIcon(QPixmap(file_path('gear_icon.png', '../assets/icons')).scaled(size, size)))
+        self.__button_settings.setIcon(QIcon(QPixmap(file_path("gear_icon.png", "../assets/icons")).scaled(size, size)))
 
         # answer box
         self.__answer = None  # user shouldn't be able to access this string yet
@@ -1172,8 +1172,8 @@ class MainWindow(MultiBox, ControlWindow):
         self._box_answer.setCursor(Qt.CursorShape.PointingHandCursor)
         self._box_answer.button().clicked.connect(self.__copy)
 
-        self.__answer_image_path_exact = get_data_path('latex_exact.png')  # gets the path of the latex image
-        self.__answer_image_path_approximate = get_data_path('latex_approximate.png')  # gets the path of the latex image
+        self.__answer_image_path_exact = get_data_path("latex_exact.png")  # gets the path of the latex image
+        self.__answer_image_path_approximate = get_data_path("latex_approximate.png")  # gets the path of the latex image
 
         # answer format label
         self._box_answer_format_label = QLabel('', self)
@@ -1189,11 +1189,11 @@ class MainWindow(MultiBox, ControlWindow):
 
         self._bar_spacer = QWidget(self)  # adds a blank space to the right of the bar buttons
 
-        self._bar_answer = QPushButton('Answer', self)  # the button that lets the user compute the answer
+        self._bar_answer = QPushButton("Answer", self)  # the button that lets the user compute the answer
         self._bar_answer.setCursor(Qt.CursorShape.PointingHandCursor)
         self._bar_answer.clicked.connect(lambda: self._get_answer())
 
-        self._bar_format = QPushButton('Format', self)  # the button that changes the format of the answer
+        self._bar_format = QPushButton("Format", self)  # the button that changes the format of the answer
         self._bar_format.setCursor(Qt.CursorShape.PointingHandCursor)
         self._bar_format.clicked.connect(self._flip_type)
         self._style.set_button_format_visibility(self._bar_answer, self._bar_format, False)
@@ -1220,7 +1220,7 @@ class MainWindow(MultiBox, ControlWindow):
         """
 
         # tells if an answer is being displayed or not
-        is_displaying_answer = not (self._box_answer.text() == self._settings_user.answer_default or self._box_answer.text()[:6] == 'Error:')
+        is_displaying_answer = not (self._box_answer.text() == self._settings_user.answer_default or self._box_answer.text()[:6] == "Error:")
 
         self.__update_colors(is_displaying_answer)  # updates all colors for MainWindow
 
@@ -1256,8 +1256,8 @@ class MainWindow(MultiBox, ControlWindow):
             self._flip_type()
 
         except Exception as error:
-            self.__box_answer_set(f'Error: {error}', f'Error:\n{error}')  # displays the error
-            print(f'Error: {error}')
+            self.__box_answer_set(f"Error: {error}", f"Error:\n{error}")  # displays the error
+            print(f"Error: {error}")
 
     def _flip_type(self) -> None:
         """
@@ -1324,19 +1324,19 @@ class MainWindow(MultiBox, ControlWindow):
             # adds the character's label and line edit to the correct dictionary in symbols
             if x not in self._symbols[index]:
                 if index == 0:
-                    label = QLabel(f'{x} =', self)
+                    label = QLabel(f"{x} =", self)
 
                     text_box = CustomCaretLineEdit(parent=self, caret_size=self._settings_user.caret_size, caret_color=QColor(*self._settings_user.color_line_secondary), background_color=QColor(*self._settings_user.color_box_background))
-                    text_box.setPlaceholderText(f'{x}')
+                    text_box.setPlaceholderText(f"{x}")
                     self.__set_custom_context_menu(text_box)
                     self._symbols[0][x] = (label, text_box)
 
                 elif index == 1:
-                    label = QLabel(f'{x}:', self)
+                    label = QLabel(f"{x}:", self)
 
-                    option1 = QRadioButton(f'{x}')
+                    option1 = QRadioButton(f"{x}")
                     option1.setCursor(Qt.CursorShape.PointingHandCursor)
-                    option2 = QRadioButton(symbols.constant_preview[x] + '...')
+                    option2 = QRadioButton(symbols.constant_preview[x] + "...")
                     option2.setCursor(Qt.CursorShape.PointingHandCursor)
                     option1.setChecked(True)
 
@@ -1372,19 +1372,19 @@ class MainWindow(MultiBox, ControlWindow):
                 if x not in self._symbols[index_2].keys():
 
                     if index_2 == 0:
-                        label = QLabel(f'{x} =', self)
+                        label = QLabel(f"{x} =", self)
 
                         text_box = CustomCaretLineEdit(parent=self, caret_size=self._settings_user.caret_size, caret_color=QColor(*self._settings_user.color_line_secondary), background_color=QColor(*self._settings_user.color_box_background))
-                        text_box.setPlaceholderText(f'{x}')
+                        text_box.setPlaceholderText(f"{x}")
                         self.__set_custom_context_menu(text_box)
                         self._symbols[0][x] = (label, text_box)
 
                     elif index_2 == 1:
-                        label = QLabel(f'{x}:', self)
+                        label = QLabel(f"{x}:", self)
 
-                        option1 = QRadioButton(f'{x}')
+                        option1 = QRadioButton(f"{x}")
                         option1.setCursor(Qt.CursorShape.PointingHandCursor)
-                        option2 = QRadioButton(symbols.constant_preview[x] + '...')
+                        option2 = QRadioButton(symbols.constant_preview[x] + "...")
                         option2.setCursor(Qt.CursorShape.PointingHandCursor)
                         option1.setChecked(True)
 
@@ -1532,7 +1532,7 @@ class MainWindow(MultiBox, ControlWindow):
                     if temp2[z] == z or not contains_substring(temp2[z], list(self._symbols[0].keys()) + list(self._symbols[1].keys())):
                         continue
 
-                    temp1[z] = temp1[z].replace(y, f'({temp2[y]})')
+                    temp1[z] = temp1[z].replace(y, f"({temp2[y]})")
 
         error.circularly_defined(temp1)  # checks for circularly defined variables
 
@@ -1565,19 +1565,19 @@ class MainWindow(MultiBox, ControlWindow):
         Lets the user copy the answer by clicking the answer box.
         """
 
-        if self.__answer_temp == self._settings_user.answer_default or self.__answer_temp[:6] == 'Error:':
+        if self.__answer_temp == self._settings_user.answer_default or self.__answer_temp[:6] == "Error:":
             pyperclip.copy(self.__answer_temp)
             return
 
         if self.__flip_type_toggle:
-            if self._settings_user.answer_copy == 'Image':
-                self._op.copy_image(get_data_path('latex_exact.png'))
+            if self._settings_user.answer_copy == "Image":
+                self._op.copy_image(get_data_path("latex_exact.png"))
                 return
             else:
                 string = self.__solution.get_exact_copy()
         else:
-            if self._settings_user.answer_copy == 'Image':
-                self._op.copy_image(get_data_path('latex_approximate.png'))
+            if self._settings_user.answer_copy == "Image":
+                self._op.copy_image(get_data_path("latex_approximate.png"))
                 return
             else:
                 string = self.__solution.get_approximate_copy()
@@ -1616,7 +1616,7 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
 
     def __setup(self) -> None:
 
-        self._set_title('Testing')
+        self._set_title("Testing")
 
         size_start = self._settings_user.window_start_size_main[0] + self._settings_user.window_start_size_main[2] + 50, self._settings_user.window_start_size_main[1] + 70, 455, 169
         self._set_geometry(*size_start)
@@ -1632,17 +1632,17 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
         self.__buttons = []  # holds all testing buttons
 
         # update button
-        self.__buttons.append(QPushButton('Update'))
+        self.__buttons.append(QPushButton("Update"))
         layout.addWidget(self.__buttons[-1])
 
         # size button
-        self.__buttons.append(QPushButton('Size'))
+        self.__buttons.append(QPushButton("Size"))
         self.__buttons[-1].clicked.connect(self.__get_info)
         layout.addWidget(self.__buttons[-1])
 
         # test button
         self.__button_test_toggle = False
-        self.__buttons.append(QPushButton('Test'))
+        self.__buttons.append(QPushButton("Test"))
         self.__buttons[-1].clicked.connect(self.__test)
         layout.addWidget(self.__buttons[-1])
 
@@ -1671,14 +1671,14 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
         Used for testing anything in the window.
         """
 
-        print('Test Button')
+        print("Test Button")
 
     def __get_info(self) -> None:
         """
         Prints the current width and height of the window with the use of a button.
         """
 
-        print(f'Width: {self.width()}, Height: {self.height()}')
+        print(f"Width: {self.width()}, Height: {self.height()}")
 
     def resizeEvent(self, event):
         self._update_control()
@@ -1702,7 +1702,7 @@ class RunWindow:
 
     def __init_icons(self) -> None:
         # sets the icon for the app
-        self.__app.setWindowIcon(QIcon(file_path('taskbar_icon_16px.png', '../assets/icons')))
+        self.__app.setWindowIcon(QIcon(file_path("taskbar_icon_16px.png", "../assets/icons")))
 
     def __init_font(self) -> None:
         """
