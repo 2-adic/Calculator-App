@@ -1,18 +1,22 @@
-# Virtual Environment
+## Virtual Environment
+
+A virtual environment isolates project-specific dependencies from the global Python installation.
 
 ## Setup
 
-Creating a virtual environment is different depending on the OS:
+*All commands shown below are run from the project's root directory.*
+
+### Creating the Virtual Environment:
+
+````
+python -m venv .venv
+````
+
+### Activating the Virtual Environment:
+
+*This step is a bit different depending on the OS.*
 
 <details><summary>macOS</summary>
-
-#### Creating the Virtual Environment:
-
-````
-python3 -m venv "project_path/.venv"
-````
-
-#### Activating the Virtual Environment:
 
 ````
 source .venv/bin/activate
@@ -22,21 +26,13 @@ source .venv/bin/activate
 
 <details><summary>Windows</summary>
 
-#### Creating the Virtual Environment:
-
-````
-python3 -m venv "project_path\.venv"
-````
-
-#### Activating the Virtual Environment:
-
 ````
 .venv\Scripts\activate
 ````
 
 </details>
 
-#### Deactivating the Virtual Environment:
+### Deactivating the Virtual Environment:
 
 ````
 deactivate
