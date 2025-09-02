@@ -1,11 +1,11 @@
+from inspect import currentframe
+from random import randint
 import sympy as sy
-import core.symbols as symbols
-import core.str_format as form
+
+import core.error_detection as error
 from core.latex import convert_render_latex
 import core.str_format as str_format
-from random import randint
-import core.error_detection as error
-from inspect import currentframe
+import core.symbols as symbols
 from core.system_settings import get_data_path
 
 
@@ -297,10 +297,10 @@ class Solve:
         :return: The expression with the solved function.
         """
 
-        function_id, parameters, index_start, index_end = form.get_function_parameters(expression)
+        function_id, parameters, index_start, index_end = str_format.get_function_parameters(expression)
         ans = self.__funct[int(function_id)](*parameters)
 
-        expression = form.replace_substring(expression, index_start - len(f"§{function_id}"), index_end, ans)
+        expression = str_format.replace_substring(expression, index_start - len(f"§{function_id}"), index_end, ans)
 
         return expression
 
@@ -334,7 +334,7 @@ class Solve:
         f = self.__solve(f)  # solves functions within this function before solving it
 
         # adds a unique constant
-        new_constant = 'C' + form.to_subscript(str(self.__constant_counter))
+        new_constant = 'C' + str_format.to_subscript(str(self.__constant_counter))
         self.__constant_counter += 1
 
         # solves the integration

@@ -1,5 +1,5 @@
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
+from PyQt6 import QtCore, QtGui
+
 from core.system_settings import get_data_path
 
 
@@ -982,7 +982,7 @@ class Style:
 
     def set_box_text(self, text_box) -> None:
         # changes the caret color
-        text_box.caretColor = QColor(*self.__settings.color_line_secondary)
+        text_box.caretColor = QtGui.QColor(*self.__settings.color_line_secondary)
 
         text_box.setStyleSheet(
             f"""
@@ -1272,7 +1272,7 @@ class Style:
             if i == 0:
                 for key in list(section.keys()):
                     line_edit = section[key][1]
-                    line_edit.caretColor = QColor(*self.__settings.color_line_secondary)
+                    line_edit.caretColor = QtGui.QColor(*self.__settings.color_line_secondary)
 
             # updates the colors for the constant's radio buttons
             if i == 1:
@@ -1369,7 +1369,7 @@ class Style:
     def init_test_buttons(self, buttons):
         for i, button in enumerate(buttons):  # sets the button parameters
             button.setFixedSize(self.__settings.test_button_width, self.__settings.test_button_height)
-            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
 
     def set_test_box_buttons(self, widget) -> None:
         widget.setStyleSheet(

@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QLineEdit
+from PyQt6 import QtWidgets
 from random import randint
 
 
@@ -20,7 +20,7 @@ def get_position_change(key_list_prev: list, key_list_curr: list, string: str) -
     return i_curr - i_prev
 
 
-def get_line_edit_key(dictionary: dict, line_edit: QLineEdit) -> str:
+def get_line_edit_key(dictionary: dict, line_edit: QtWidgets.QLineEdit) -> str:
 
     for i, key in enumerate(sorted(dictionary.keys())):
         if dictionary[key][1] == line_edit:

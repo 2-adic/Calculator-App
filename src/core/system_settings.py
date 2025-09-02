@@ -1,11 +1,10 @@
-from PyQt6.QtCore import Qt, QObject, QTimer
-from PyQt6.QtGui import QKeyEvent
-import platform
 import ctypes
-from PIL import Image
 import io
-import subprocess
 import os
+from PIL import Image
+import platform
+from PyQt6 import QtCore, QtGui
+import subprocess
 
 
 def get_system_info() -> tuple[str, str]:
@@ -160,7 +159,7 @@ class OperatingSystem:
     def is_maximize_shortcut(self, event):
 
         if self.__system_name == "Windows":  # Windows
-            return event.key() == Qt.Key.Key_F11
+            return event.key() == QtCore.Qt.Key.Key_F11
 
         # macOS's full screen shortcut is detected through the MacOSEventFilter class
 
@@ -244,7 +243,7 @@ class OperatingSystem:
             self.filter.set_function_fullscreen(function)
             window.installEventFilter(self.filter)
 
-class MacOSEventFilter(QObject):
+class MacOSEventFilter(QtCore.QObject):
 
     def __init__(self):
         super().__init__()
@@ -260,10 +259,10 @@ class MacOSEventFilter(QObject):
     def eventFilter(self, obj, event):
 
         # detects if a macOS user presses "control + command + f" to fullscreen the window
-        if isinstance(event, QKeyEvent) and event.key() == 70 and event.modifiers() == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier):
+        if isinstance(event, QtGui.QKeyEvent) and event.key() == 70 and event.modifiers() == (QtCore.Qt.KeyboardModifier.ControlModifier | QtCore.Qt.KeyboardModifier.MetaModifier):
             if self.__trigger_fullscreen:  # uses a trigger as a cooldown before this can be activated again
                 self.__trigger_fullscreen = False
-                QTimer.singleShot(645, self.__trigger_reset_fullscreen)
+                QtCore.QTimer.singleShot(645, self.__trigger_reset_fullscreen)
                 self.__function_fullscreen()
 
             return True  # event is handled

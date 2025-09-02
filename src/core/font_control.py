@@ -1,9 +1,9 @@
-from PyQt6.QtGui import QFontDatabase, QFont
-from PyQt6.QtWidgets import QApplication
+from PyQt6 import QtGui, QtWidgets
+
 from core.files import path
 
 
-def font_set(app: QApplication, font: str, font_size: int):
+def font_set(app: QtWidgets.QApplication, font: str, font_size: int):
     """
     Sets the font for the application.
     """
@@ -13,7 +13,7 @@ def font_set(app: QApplication, font: str, font_size: int):
     if not font_family:
         raise Exception(f"Font was not found: \"{font}\"")
     
-    font = QFont(font_family, font_size)
+    font = QtGui.QFont(font_family, font_size)
     app.setFont(font)
 
 
@@ -22,11 +22,11 @@ def font_load(file_name: str):
     font_path = path("assets/fonts/" + file_name)  # gets the font file path
 
     # loads the font and return the family name
-    font_id = QFontDatabase.addApplicationFont(font_path)
+    font_id = QtGui.QFontDatabase.addApplicationFont(font_path)
     if font_id == -1:
         print(f"Failed to load font from {font_path}")
         return None
-    return QFontDatabase.applicationFontFamilies(font_id)[0]
+    return QtGui.QFontDatabase.applicationFontFamilies(font_id)[0]
 
 
 font_default = "RobotoMono/RobotoMono-VariableFont_wght.ttf"

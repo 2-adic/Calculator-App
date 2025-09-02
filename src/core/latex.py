@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
-import sympy as sy
 from PIL import Image
-from core.system_settings import get_data_path
-from core.symbols import name_change_function, name_change_function_keys
 import re
+import sympy as sy
+
+from core.symbols import name_change_function, name_change_function_keys
+from core.system_settings import get_data_path
 
 
 def render_latex(latex_str, filename, dpi=300, text_color=(1, 1, 1)):
