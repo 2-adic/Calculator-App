@@ -1,6 +1,6 @@
 from PyQt6.QtGui import QFontDatabase, QFont
 from PyQt6.QtWidgets import QApplication
-import files
+from core.files import path
 
 
 def font_set(app: QApplication, font: str, font_size: int):
@@ -19,7 +19,7 @@ def font_set(app: QApplication, font: str, font_size: int):
 
 def font_load(file_name: str):
 
-    font_path = files.file_path(file_name, "../assets/fonts")  # gets the font file path
+    font_path = path("assets/fonts/" + file_name)  # gets the font file path
 
     # loads the font and return the family name
     font_id = QFontDatabase.addApplicationFont(font_path)

@@ -1,4 +1,4 @@
-from misc_functions import get_constant_values
+from core.misc_functions import get_constant_values
 
 constants = {
     'i': ('I',              'i'),

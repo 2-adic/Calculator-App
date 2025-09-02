@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import sympy as sy
 from PIL import Image
-from system_settings import get_data_path
-from symbols import name_change_function, name_change_function_keys
+from core.system_settings import get_data_path
+from core.symbols import name_change_function, name_change_function_keys
 import re
 
 

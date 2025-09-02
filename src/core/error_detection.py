@@ -1,4 +1,4 @@
-from symbols import accepted_characters, accepted_variables
+from core.symbols import accepted_characters, accepted_variables
 
 
 def valid_symbols(expression: str) -> None:

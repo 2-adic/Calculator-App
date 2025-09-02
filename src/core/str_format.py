@@ -1,4 +1,4 @@
-import symbols
+import core.symbols as symbols
 
 
 def to_subscript(string: str) -> str:

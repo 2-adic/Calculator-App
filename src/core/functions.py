@@ -1,12 +1,12 @@
 import sympy as sy
-import symbols
-import str_format as form
-from latex import convert_render_latex
-import str_format
+import core.symbols as symbols
+import core.str_format as form
+from core.latex import convert_render_latex
+import core.str_format as str_format
 from random import randint
-import error_detection as error
+import core.error_detection as error
 from inspect import currentframe
-from system_settings import get_data_path
+from core.system_settings import get_data_path
 
 
 class Solve:
