@@ -20,8 +20,10 @@ class CaretLineEdit(QtWidgets.QLineEdit):
     __caretSize: int = 2  # visible by default
     __caretColor = QtGui.QColor(255, 255, 255)  # color of the custom caret
 
-    def __init__(self, *args, text: str | None = None, defaultText: str | None = None, **kwargs) -> None:
-        # accept legacy kwargs used elsewhere (e.g. setText="...") and normalised names
+    def __init__(self, text: str | None = None, defaultText: str | None = None, tag: str | None = None, *args, **kwargs) -> None:
+        self.__tag = tag
+
+        # accept legacy kwargs used elsewhere (e.g. setText="...") and normalized names
         if "setText" in kwargs:
             text = kwargs.pop("setText")
         if "defaultText" in kwargs:
@@ -62,13 +64,12 @@ class CaretLineEdit(QtWidgets.QLineEdit):
 
     @caretColor.setter
     def caretColor(self, color: QtGui.QColor) -> None:
+        if self.__caretColor == color:
+            return
         self.__caretColor = color
         # repaint immediately if caret is visible
         if getattr(self, "_CaretLineEdit__caretVisible", False) and self.hasFocus():
-            try:
-                self.update(self.cursorRect())
-            except Exception:
-                self.update()
+            self.update(self.cursorRect())
         else:
             self.update()
 
@@ -99,7 +100,12 @@ class CaretLineEdit(QtWidgets.QLineEdit):
         if self.__caretSize > 0 and self.hasFocus() and self.__caretVisible:
             qp = QtGui.QPainter(self)
             cr = self.cursorRect()
-            x = cr.x() + round(cr.width() / 2) - round(self.__caretSize / 2)
+            x = cr.x() + round(cr.width() / 2) - round(self.__caretSize / 2) + 1
             rect = QtCore.QRect(x, cr.y(), max(1, self.__caretSize), self.fontMetrics().height())
             qp.fillRect(rect, self.__caretColor)
-            
+
+    def tag(self) -> str | None:
+        return self.__tag
+    
+    def setTag(self, tag: str | None) -> None:
+        self.__tag = tag

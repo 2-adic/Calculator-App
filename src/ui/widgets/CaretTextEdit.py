@@ -20,8 +20,10 @@ class CaretTextEdit(QtWidgets.QPlainTextEdit):
     __caretSize: int = 2  # visible by default
     __caretColor = QtGui.QColor(255, 255, 255)  # color of the custom caret
 
-    def __init__(self, *args, text: str | None = None, defaultText: str | None = None, **kwargs) -> None:
-        # accept legacy kwargs used elsewhere (e.g. setText="...") and normalised names
+    def __init__(self, text: str | None = None, defaultText: str | None = None, tag: str | None = None, *args, **kwargs) -> None:
+        self.__tag = tag
+
+        # accept legacy kwargs used elsewhere (e.g. setText="...") and normalized names
         if "setText" in kwargs:
             text = kwargs.pop("setText")
         if "defaultText" in kwargs:
@@ -32,6 +34,9 @@ class CaretTextEdit(QtWidgets.QPlainTextEdit):
         super().__init__(*args, **kwargs)
 
         self.setStyle(CaretTextEditStyle())
+        
+        self.__nativeCursorVisibility()  # show/hide native cursor based on caret size
+
         self.__blinkTimer = QtCore.QTimer(
             self,
             timeout=self.__toggleCaretVisibility,
@@ -49,16 +54,27 @@ class CaretTextEdit(QtWidgets.QPlainTextEdit):
                 # fallback: do nothing if environment doesn't support placeholder
                 pass
 
+    def __nativeCursorVisibility(self) -> None:
+        """
+        Show/Hide native cursor based on caret size.
+        """
+
+        if self.__caretSize > 0:
+            self.setCursorWidth(0)  # hide native cursor
+        else:
+            self.setCursorWidth(1)  # show native cursor
+
     @QtCore.pyqtProperty(int)
     def caretSize(self) -> int:
         return self.__caretSize
 
     @caretSize.setter
-    def caretSize(self, size) -> None:
+    def caretSize(self, size: int) -> None:
         if size < 0:
             size = -1
         if self.__caretSize != size:
             self.__caretSize = size
+            self.__nativeCursorVisibility()  # hide/show native cursor based on caret size
             self.update()
 
     @QtCore.pyqtProperty(QtGui.QColor)
@@ -70,6 +86,7 @@ class CaretTextEdit(QtWidgets.QPlainTextEdit):
         if self.__caretColor == color:
             return
         self.__caretColor = color
+        # repaint immediately if caret is visible
         if getattr(self, "_CaretTextEdit__caretVisible", False) and self.hasFocus():
             self.update(self.cursorRect())
         else:
@@ -105,3 +122,9 @@ class CaretTextEdit(QtWidgets.QPlainTextEdit):
             x = cr.x() + round(cr.width() / 2) - round(self.__caretSize / 2)
             rect = QtCore.QRect(x, cr.y(), max(1, self.__caretSize), self.fontMetrics().height())
             qp.fillRect(rect, self.__caretColor)
+
+    def tag(self) -> str | None:
+        return self.__tag
+    
+    def setTag(self, tag: str | None) -> None:
+        self.__tag = tag
