@@ -9,9 +9,9 @@ from core.str_format import contains_substring, function_convert
 from core.style import Settings, Style
 import core.symbols as symbols
 from core.system_settings import OperatingSystem, get_data_path
-from ui.widgets.CaretLineEdit import CaretLineEdit
-from ui.widgets.CaretTextEdit import CaretTextEdit
-from ui.widgets.WrapTextButton import WrapTextButton
+from ui.common.CaretLineEdit import CaretLineEdit
+from ui.common.CaretTextEdit import CaretTextEdit
+from ui.common.WrapTextButton import WrapTextButton
 from ui.views.ControlWindow import ControlWindow
 from ui.views.MultiBox import MultiBox
 
