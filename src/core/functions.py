@@ -1,3 +1,4 @@
+from copy import deepcopy
 from inspect import currentframe
 from random import randint
 import sympy as sy
@@ -10,22 +11,26 @@ from core.system_settings import get_data_path
 
 
 class Solve:
-    def __init__(self, expression: str, variables: dict[str, str] = dict(), constant_symbol_used: dict[str, bool] = dict(), answer_display: str = "Image", answer_copy: str = "Text", use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
+    def __init__(self, expression: str, terms: dict[str, str] = dict(), constant_symbol_used: dict[str, bool] = dict(), answer_display: str = "Image", answer_copy: str = "Text", use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
 
-        self.__funct = tuple(getattr(self, f"_{self.__class__.__name__}__{name.lower()}") for name in symbols.accepted_functions)  # gets a list of all the functions
-
+        self.__expression = str_format.remove_white_spaces(expression)
+        self.__terms = deepcopy(terms)
+        self.__constant_symbol_used = deepcopy(constant_symbol_used)
         self.__answer_display = answer_display
         self.__answer_copy = answer_copy
         self.__use_commas = use_commas
+        self.__render_color = render_color
+        self.__render_dpi = render_dpi
+
+        self.__functions = tuple(getattr(self, f"_{self.__class__.__name__}__{name.lower()}") for name in symbols.accepted_functions)  # gets a list of all the functions
 
         self.__constant_counter = 0  # keeps track of the amount of constants used
-        self.__expression_save = str_format.remove_white_spaces(expression)
-
-        self.__is_value_used = not all(constant_symbol_used.values())  # gets a bool for if a constant value was used
+        
+        self.__is_value_used = not all(self.__constant_symbol_used.values())  # gets a bool for if a constant value was used
         self.__answer_exact = None
         self.__answer_approximate = None
 
-        self.__calculate(variables, constant_symbol_used, answer_display, answer_copy, use_commas, render_color, render_dpi)
+        self.__calculate()
 
     def __str__(self):
         return self.__expression_solved
@@ -35,9 +40,9 @@ class Solve:
         Prints the initial expression, and the solved expressions.
         """
 
-        expression = self.__expression_save  # copies the expression to save the original
+        expression = self.__expression  # copies the expression to save the original
         expression = expression.replace('¦', '')
-        for key in range(len(self.__funct)):
+        for key in range(len(self.__functions)):
             expression = expression.replace(f"§{key}", symbols.accepted_functions[key])
 
         if self.__is_value_used:  # if a constant value was used, only the approximate answer exists
@@ -88,35 +93,35 @@ class Solve:
 
         return self.__answer_display == "Text" or self.__answer_display == "LaTeX"
 
-    def __calculate(self, variables, constant_symbol_used, answer_display, answer_copy, use_commas, render_color, render_dpi) -> None:
+    def __calculate(self) -> None:
 
-        self.__format_before(variables, constant_symbol_used)
+        self.__format_before()
         self.__expression_solved = self.__solve(self.__expression_solved)  # solves the expression
         self.__exact()  # turns the solution into its exact form
         self.__approximate()  # turns the solution into its approximate form
         self.__result_simplification()
 
-        if answer_display == "Image" or answer_copy == "Image":
-            self.__render(use_commas, render_color, render_dpi)
+        if self.__answer_display == "Image" or self.__answer_copy == "Image":
+            self.__render()
 
         self.__answer_exact_copy = self.__answer_exact
         self.__answer_approximate_copy = self.__answer_approximate
 
-        if answer_display != "LaTeX":
+        if self.__answer_display != "LaTeX":
             self.__answer_exact = self.__format_after(self.__answer_exact)  # formats the exact and approximate answer
             self.__answer_approximate = self.__format_after(self.__answer_approximate)
         else:
             self.__answer_exact = self.__format_latex(self.__answer_exact)
             self.__answer_approximate = self.__format_latex(self.__answer_approximate)
 
-        if answer_copy == "Text":
+        if self.__answer_copy == "Text":
             self.__answer_exact_copy = self.__format_after(self.__answer_exact_copy)
             self.__answer_approximate_copy = self.__format_after(self.__answer_approximate_copy)
-        elif answer_copy == "LaTeX":
+        elif self.__answer_copy == "LaTeX":
             self.__answer_exact_copy = self.__format_latex(self.__answer_exact_copy)
             self.__answer_approximate_copy = self.__format_latex(self.__answer_approximate_copy)
 
-    def __render(self, use_commas: bool = False, color: tuple[int, int, int] = (255, 255, 255), dpi: int = 300) -> None:
+    def __render(self) -> None:
         """
         Renders images of the solved expression.
 
@@ -128,10 +133,10 @@ class Solve:
         approximate = get_data_path("latex_approximate.png")
 
         if self.__answer_exact is not None:  # answer is not rendered if it is none
-            convert_render_latex(self.__answer_exact, use_commas, color, dpi, exact, self.__constant_counter)
+            convert_render_latex(self.__answer_exact, self.__use_commas, self.__render_color, self.__render_dpi, exact, self.__constant_counter)
 
         if self.__answer_approximate is not None:  # answer is not rendered if it is none
-            convert_render_latex(self.__answer_approximate, use_commas, color, dpi, approximate, self.__constant_counter)
+            convert_render_latex(self.__answer_approximate, self.__use_commas, self.__render_color, self.__render_dpi, approximate, self.__constant_counter)
 
     def __exact(self) -> None:
         """
@@ -143,7 +148,7 @@ class Solve:
 
         self.__answer_exact = sy.simplify(self.__expression_solved)
 
-    def __custom_approx(self, expression):
+    def __custom_approximate(self, expression):
 
         if expression.is_Atom:
             # if the expression is a number, evaluates it numerically
@@ -156,11 +161,11 @@ class Solve:
         # prevents exp from being evaluated
         elif expression.func == sy.exp:
             arg = expression.args[0]
-            return sy.exp(self.__custom_approx(arg), evaluate=False)
+            return sy.exp(self.__custom_approximate(arg), evaluate=False)
 
         else:
             # recursively applies custom_approx to all arguments of the expression
-            return expression.func(*[self.__custom_approx(arg) for arg in expression.args])
+            return expression.func(*[self.__custom_approximate(arg) for arg in expression.args])
 
     def __approximate(self) -> None:
         """
@@ -168,26 +173,26 @@ class Solve:
         """
 
         expression = sy.simplify(self.__expression_solved)
-        self.__answer_approximate = self.__custom_approx(expression)
+        self.__answer_approximate = self.__custom_approximate(expression)
 
-    def __format_before(self, variables: dict[str, str], constant_symbol_used: dict[str, bool]) -> None:
+    def __format_before(self) -> None:
         """
         Formats the expression before it is solved.
         """
 
-        expression = self.__expression_save
+        expression = self.__expression
         error.valid_symbols(expression)
         expression = str_format.function_convert(expression)  # converts functions to a format so implicit multiplication won't change them
 
-        for x in expression:  # replaces all variables with their defined values
-            if x in variables:
-                expression = expression.replace(f"{x}", f"({variables[x]})")
+        for x in expression:  # replaces all terms with their defined values
+            if x in self.__terms:
+                expression = expression.replace(f"{x}", f"({self.__terms[x]})")
 
         expression = self.__implicit_to_explicit(expression)  # changes the expression to use explicit multiplication
         expression = expression.replace('¦', '')  # removes the special character after implicit multiplication is formatted
 
-        for key in sorted(constant_symbol_used.keys(), key=lambda key: symbols.constant_order[key]):  # sorts the order to avoid substring replacement errors
-            if constant_symbol_used[key]:
+        for key in sorted(self.__constant_symbol_used.keys(), key=lambda key: symbols.constant_order[key]):  # sorts the order to avoid substring replacement errors
+            if self.__constant_symbol_used[key]:
                 expression = expression.replace(key, symbols.constants[key][0])  # replaces the constant with it's recognized sympy symbol
 
             else:
@@ -210,25 +215,25 @@ class Solve:
 
         return expression
 
-    def __format_latex(self, expression: str) -> str:
+    def __format_latex(self) -> str:
         """
         Formats the answer to be in LaTeX form.
         """
 
         # converts to LaTeX form
-        expression = sy.latex(expression, fold_short_frac=False)
+        latex = sy.latex(self.__expression, fold_short_frac=False)
 
         # replaces some symbols for proper latex formatting
         for key in list(symbols.replace_latex.keys()):
-            expression = expression.replace(key, symbols.replace_latex[key])
+            latex = latex.replace(key, symbols.replace_latex[key])
 
         # replaces some functions names
         for key in symbols.name_change_all_keys:
-            expression = expression.replace(key, symbols.name_change_all[key])
+            latex = latex.replace(key, symbols.name_change_all[key])
 
-        expression = expression.replace(r"\bmod", r"\operatorname{mod}")  # fixes the latex formatting for mod
+        latex = latex.replace(r"\bmod", r"\operatorname{mod}")  # fixes the latex formatting for mod
 
-        return expression
+        return latex
 
     def __result_simplification(self) -> None:
         """
@@ -298,7 +303,7 @@ class Solve:
         """
 
         function_id, parameters, index_start, index_end = str_format.get_function_parameters(expression)
-        ans = self.__funct[int(function_id)](*parameters)
+        ans = self.__functions[int(function_id)](*parameters)
 
         expression = str_format.replace_substring(expression, index_start - len(f"§{function_id}"), index_end, ans)
 
