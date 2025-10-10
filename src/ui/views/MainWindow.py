@@ -115,7 +115,25 @@ class MainWindow(MultiBox, ControlWindow):
         text = self._box_text.toPlainText()  # gets the string from the text box
 
         try:
-            self.__solution = Solve(text, self.__variable_formatting(self._symbols), self.__generate_value_used_bool(), self._settings_user.answer_display, self._settings_user.answer_copy, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
+            # ------------------------------------------------------------------
+            # build terms dict with variables and constants' actual values
+            variables_terms = self.__variable_formatting(self._symbols)
+
+            constants_terms: dict[str, str] = {}
+            for key in list(self._symbols[1].keys()):
+                option_symbol = self._symbols[1][key][1]
+
+                if option_symbol.isChecked():
+                    # use sympy constant symbol
+                    constants_terms[key] = symbols.constants[key][0]
+                else:
+                    # use high-precision numeric value
+                    constants_terms[key] = symbols.constant_values[key]
+
+            all_terms = {**variables_terms, **constants_terms}
+            # ------------------------------------------------------------------
+
+            self.__solution = Solve(text, all_terms, self._settings_user.answer_display, self._settings_user.answer_copy, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
             self.__solution.print()  # shows the before and after expressions (for testing purposes)
             self.__answer = self.__solution.get_exact()
 
