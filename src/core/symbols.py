@@ -8,12 +8,20 @@ constants = {
     'γ': ("EulerGamma",     "0.5772156649015328606065120900824024310421593359399235988057672348848677267776646709369470632917467495")
 }
 
-accepted_variables = sorted([
+constants_terms = {  # labels for constants radio buttons
+    'i': ('i'),
+    'e': ('e',    "2.71..."),
+    'π': ('π',    "3.14..."),
+    'φ': ('φ',    "1.61..."),
+    'γ': ('γ',    "0.57..."),
+}
+
+accepted_variables = {
     'a', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
     'θ', 'λ', 'ω', 'σ'
-])
+}
 
-accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+accepted_numbers = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
 accepted_misc = [
     '(', ')', ',', '.',
@@ -94,9 +102,9 @@ constant_preview = get_constant_values(constants, 2)
 
 # used for checking the type of symbol / if they are allowed -------------------------------------
 
-accepted_constants = sorted(constants.keys())
+accepted_constants = set(constants.keys())
 accepted_functions = sorted(functions, key=len, reverse=True)  # sorts the functions from longest to shortest, so substring function errors won't occur: such as arcsin being misidentified as sin
-accepted_characters = accepted_misc + accepted_variables + accepted_numbers + accepted_constants
+accepted_characters = set(accepted_misc) | accepted_variables | accepted_numbers | accepted_constants
 
 # ------------------------------------------------------------------------------------------------
 
