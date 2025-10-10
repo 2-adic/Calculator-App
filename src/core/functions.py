@@ -1,4 +1,3 @@
-from copy import deepcopy
 from inspect import currentframe
 from random import randint
 import sympy as sy
@@ -11,11 +10,11 @@ from core.system_settings import get_data_path
 
 
 class Solve:
-    def __init__(self, expression: str, terms: dict[str, str] = dict(), constant_symbol_used: dict[str, bool] = dict(), answer_display: str = "Image", answer_copy: str = "Text", use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
+    def __init__(self, expression: str, terms: dict[str, str] = dict(), answer_display: str = "Image", answer_copy: str = "Text", use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
 
         self.__expression = str_format.remove_white_spaces(expression)
-        self.__terms = deepcopy(terms)
-        self.__constant_symbol_used = deepcopy(constant_symbol_used)
+        self.__terms = terms.copy()
+
         self.__answer_display = answer_display
         self.__answer_copy = answer_copy
         self.__use_commas = use_commas
@@ -24,15 +23,23 @@ class Solve:
 
         self.__functions = tuple(getattr(self, f"_{self.__class__.__name__}__{name.lower()}") for name in symbols.accepted_functions)  # gets a list of all the functions
 
+        self.__split_terms()  # split terms into variables and constants
+        self.__format_variables()
+
+        self.__is_approx = self.__is_approximate()
+
         self.__constant_counter = 0  # keeps track of the amount of constants used
         
-        self.__is_value_used = not all(self.__constant_symbol_used.values())  # gets a bool for if a constant value was used
         self.__answer_exact = None
         self.__answer_approximate = None
 
         self.__calculate()
 
     def __str__(self):
+        """
+        Returns the string representation of the solved expression.
+        """
+
         return self.__expression_solved
 
     def print(self) -> None:
@@ -45,12 +52,33 @@ class Solve:
         for key in range(len(self.__functions)):
             expression = expression.replace(f"§{key}", symbols.accepted_functions[key])
 
-        if self.__is_value_used:  # if a constant value was used, only the approximate answer exists
+        if self.__is_approx:  # if a constant value was used, only the approximate answer exists
             print(f"{expression} ≈ {self.__answer_approximate}")
 
         else:
             print(f"{expression} = {self.__answer_exact} ≈ {self.__answer_approximate}")
 
+    def get_terms(self):
+        """
+        Returns the terms used in the expression.
+        """
+
+        return self.__terms
+
+    def get_variables(self):
+        """
+        Returns the variables used in the expression.
+        """
+
+        return self.__variables
+
+    def get_constants(self):
+        """
+        Returns the constants used in the expression.
+        """
+
+        return self.__constants
+    
     def get_exact(self) -> str:
         """
         Returns the answer in its exact form.
@@ -93,7 +121,35 @@ class Solve:
 
         return self.__answer_display == "Text" or self.__answer_display == "LaTeX"
 
+    def __split_terms(self) -> None:
+        """
+        Split terms into variables and constants.
+        """
+
+        self.__variables: dict[str, str] = {}
+        self.__constants: dict[str, str] = {}
+
+        for term in self.__terms:
+            if term in symbols.accepted_variables: 
+                self.__variables[term] = self.__terms[term]
+            elif term in symbols.accepted_constants:
+                self.__constants[term] = self.__terms[term]
+
+    def __is_approximate(self) -> bool:
+        """
+        Returns if the expression requires an approximate answer.
+        """
+
+        for constant in self.__constants:
+            if self.__constants[constant] != symbols.constants[constant][0]:
+                return True
+
+        return False
+
     def __calculate(self) -> None:
+        """
+        Calculates the solved expression in its exact and approximate form.
+        """
 
         self.__format_before()
         self.__expression_solved = self.__solve(self.__expression_solved)  # solves the expression
@@ -143,12 +199,15 @@ class Solve:
         Turns the answer into its exact form.
         """
 
-        if self.__is_value_used:  # does not give an approximate value if a value for a constant is used
+        if self.__is_approx:  # does not give an approximate value if a value for a constant is used
             return
 
         self.__answer_exact = sy.simplify(self.__expression_solved)
 
     def __custom_approximate(self, expression):
+        """
+        Returns the approximate value of the expression.
+        """
 
         if expression.is_Atom:
             # if the expression is a number, evaluates it numerically
@@ -175,6 +234,52 @@ class Solve:
         expression = sy.simplify(self.__expression_solved)
         self.__answer_approximate = self.__custom_approximate(expression)
 
+    def __format_variables(self) -> None:
+        """
+        Sets blank variables equal to themselves.
+        Performs variable substitution, and checks for circularly defined variables.
+        """
+
+        # sets blank variables equal to themselves
+        for key in self.__variables:
+            if self.__variables[key] == '':
+                self.__variables[key] = key
+
+        # apply function_convert to handle functions within variables
+        for key in self.__variables:
+            self.__variables[key] = str_format.function_convert(self.__variables[key])
+
+        # performs chained variable substitution: a=b and b=5 -> a=5
+        # keep iterating until no more substitutions can be made
+        max_iterations = len(self.__variables) + 1  # prevent infinite loops
+        for iteration in range(max_iterations):
+            changes_made = False
+            
+            for var_name in self.__variables:
+                if self.__variables[var_name] == var_name:
+                    continue
+                    
+                # check if this variable's definition contains other variables
+                if not str_format.contains_substring(self.__variables[var_name], list(self.__terms.keys())):
+                    continue
+                
+                # substitute all other variables in this variable's definition
+                original_value = self.__variables[var_name]
+                for other_var in self.__variables:
+                    if other_var != var_name and other_var in self.__variables[var_name]:
+                        # replace variable with its definition
+                        self.__variables[var_name] = self.__variables[var_name].replace(other_var, f"({self.__variables[other_var]})")
+                
+                # check for any changes
+                if self.__variables[var_name] != original_value:
+                    changes_made = True
+            
+            # if no changes, end loop
+            if not changes_made:
+                break
+
+        error.circularly_defined(self.__variables)  # checks for circularly defined variables
+
     def __format_before(self) -> None:
         """
         Formats the expression before it is solved.
@@ -185,14 +290,14 @@ class Solve:
         expression = str_format.function_convert(expression)  # converts functions to a format so implicit multiplication won't change them
 
         for x in expression:  # replaces all terms with their defined values
-            if x in self.__terms:
-                expression = expression.replace(f"{x}", f"({self.__terms[x]})")
+            if x in self.__variables:
+                expression = expression.replace(f"{x}", f"({self.__variables[x]})")
 
         expression = self.__implicit_to_explicit(expression)  # changes the expression to use explicit multiplication
         expression = expression.replace('¦', '')  # removes the special character after implicit multiplication is formatted
 
-        for key in sorted(self.__constant_symbol_used.keys(), key=lambda key: symbols.constant_order[key]):  # sorts the order to avoid substring replacement errors
-            if self.__constant_symbol_used[key]:
+        for key in sorted(self.__constants.keys(), key=lambda key: symbols.constant_order[key]):  # sorts the order to avoid substring replacement errors
+            if self.__constants[key] == symbols.constants[key][0]:
                 expression = expression.replace(key, symbols.constants[key][0])  # replaces the constant with it's recognized sympy symbol
 
             else:
@@ -240,7 +345,7 @@ class Solve:
         Some functions require steps to be further simplified.
         """
 
-        if not self.__is_value_used:
+        if not self.__is_approx:
             self.__answer_exact = sy.expand_log(self.__answer_exact, force=True)  # ln(e^x) -> x, ln(x^n) -> nln(x), etc
 
         self.__answer_approximate = sy.expand_log(self.__answer_approximate, force=True)  # ln(e^x) -> x, ln(x^n) -> nln(x), etc
