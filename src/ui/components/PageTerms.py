@@ -60,9 +60,9 @@ class PageTerms(QtWidgets.QFrame):
         Hides or shows the label container that holds the label and stretches.
         """
 
-        # hide label container if any section is visible
+        # hide label container if any section has terms
         for section in self.__sections:
-            if section.isVisible():
+            if len(section) > 0:
                 self.__labelContainer.hide()
                 return
 

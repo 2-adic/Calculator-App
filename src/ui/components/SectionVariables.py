@@ -25,6 +25,13 @@ class SectionVariables(SectionTerms):
 
         self.__setEdit()
 
+    def __len__(self) -> int:
+        """
+        Returns the number of variables currently managed.
+        """
+
+        return len(self.__termEdits)
+
     def __getVariableSortKey(self, labelText: str) -> tuple[int, str]:
         """
         Generate sort key for variables in the exact order of symbols.accepted_variables.
@@ -135,6 +142,13 @@ class SectionVariables(SectionTerms):
         if len(self.__termEdits) == 0:
             self.hide()
             self.visibilityChanged.emit()
+
+    def count(self) -> int:
+        """
+        Returns the number of variables currently managed.
+        """
+
+        return len(self)
 
     def __resetLinks(self) -> None:
         """

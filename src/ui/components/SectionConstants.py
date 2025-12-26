@@ -26,6 +26,13 @@ class SectionConstants(SectionTerms):
 
         self.__setEdit()
 
+    def __len__(self) -> int:
+        """
+        Returns the number of constants currently managed.
+        """
+
+        return len(self.__termContainers)
+
     def __getConstantSortKey(self, labelText: str) -> tuple[int, str]:
         """
         Generate sort key for constants in the exact order of symbols.constants.keys().
@@ -157,6 +164,13 @@ class SectionConstants(SectionTerms):
         if len(self.__termContainers) == 0:
             self.hide()
             self.visibilityChanged.emit()
+
+    def count(self) -> int:
+        """
+        Returns the number of constants currently managed.
+        """
+
+        return len(self)
 
     def __resetLinks(self) -> None:
         """
