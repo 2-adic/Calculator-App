@@ -1,17 +1,11 @@
-from copy import deepcopy
-import pyperclip
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtGui, QtWidgets
 
 from core.style import Settings, Style
-import core.symbols as symbols
 from core.system_settings import OperatingSystem
 from ui.common.CaretLineEdit import CaretLineEdit
 from ui.common.HorizontalButtonGroup import HorizontalButtonGroup
-from ui.common.VerticalPageSelector import VerticalPageSelector
-from ui.components.PageNotation import PageNotation
-from ui.components.PageTerms import PageTerms
-from ui.components.SectionGridButtons import SectionGridButtons
 from ui.views.ControlWindow import ControlWindow
+from ui.views.Sidebar import Sidebar
 
 from core.functions import Solve
 
@@ -21,74 +15,7 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
         ControlWindow.__init__(self, settings, style, op)
         self.__setup()
 
-        self.__init_page_selector()
-
-    def __init_page_selector(self) -> None:
-
-        # page selector
-
-        self.__page_selector = VerticalPageSelector(self)
-        n = 2
-        for i in range(n):
-            button = QtWidgets.QPushButton()
-            button.setMinimumHeight(self._settings_user.select_height)
-            button.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
-            button.setCheckable(True)  # allows the button to be selected
-
-            if i == 0:
-                button.setText("Variables")
-                button.setChecked(True)  # checks the first button by default
-
-                widget = PageTerms(edit=self.__line_edit)
-                self.__PageTerms = widget
-
-            elif i == 1:
-                button.setText("Notation")
-
-                widget = PageNotation()
-
-                self.__PageNotationSections: list[QtWidgets.QWidget] = widget.getSections()
-
-                for j, section in enumerate(self.__PageNotationSections):
-                    if isinstance(section, SectionGridButtons):
-
-                        section.layout().setContentsMargins(0, 0, 0, 0)
-                        section.connect(self.__copy_button_label)
-
-                        section.setButtonHeight(self._settings_user.symbols_button_height)
-
-                        if j == 0:
-
-                            section.scrollArea().setMinimumHeight(self._op.get_notation_symbols_min_height())  # stops the top scroll area from becoming too collapsed
-
-                            section.setButtonWidth(self._settings_user.symbols_button_width[0])
-
-                        elif j == 1:
-                            section.setButtonWidth(self._settings_user.symbols_button_width[1])
-
-            elif i == 2:
-                button.setText("Test")
-
-                widget = QtWidgets.QWidget()
-                layout = QtWidgets.QVBoxLayout(widget)
-                label = QtWidgets.QLabel(f"Variables Page")
-                label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-                layout.addWidget(label, alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
-
-            widget.layout().setContentsMargins(self._settings_user.content_margin, self._settings_user.content_margin, self._settings_user.content_margin, self._settings_user.content_margin)
-
-            self.__page_selector.addPage(button, widget)
-
-        self.__page_selector.layout().setSpacing(0)
-
-    def __copy_button_label(self) -> None:
-        button = self.sender()
-        text = button.text()
-
-        if text not in symbols.copy_notation[0]:  # adds parentheses to functions
-            text += "()"
-
-        pyperclip.copy(text)
+        self.__sidebar = Sidebar(self._settings_user, self._style, self._op, self.__line_edit, self)
 
     def update_settings(self) -> None:
         """
@@ -212,22 +139,7 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
             }}
         """)
 
-        # page selector
-        for i, widget in enumerate(self.__page_selector.pages()):
-            self._style.set_page_selector(widget)
-
-        # selector buttons
-        n = len(self.__page_selector.buttons())
-        for i, button in enumerate(self.__page_selector.buttons()):
-            self._style.set_selector(button, i, n)
-
-        # page notation
-        for i, section in enumerate(self.__PageNotationSections):
-            if isinstance(section, SectionGridButtons):
-                self._style.set_page_notation(section, section.scrollArea(), section.label(), section.line(), section.buttons())
-
-        # page variables
-        self._style.set_variables_page(self.__PageTerms)
+        self.__sidebar.update_colors()
 
     def __update_self(self) -> None:
         """
@@ -240,9 +152,9 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
         button_box_width = min(max_width, self.width() - (self._settings_user.box_padding * 2))
         self.__box_buttons.resize(button_box_width, self.height() - self._settings_user.title_bar_height - (self._settings_user.box_padding * 2))
 
-        # page selector
-        self.__page_selector.resize(int((self.width() * (1 - self._settings_user.box_width_left)) - (self._settings_user.box_padding * 1.5)), self.height() - (self._settings_user.title_bar_height + (self._settings_user.box_padding * 2)))
-        self.__page_selector.move((self._settings_user.box_padding * 2) + int((self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)), self._settings_user.box_padding + self._settings_user.title_bar_height)
+        # sidebar
+        self.__sidebar.resize(int((self.width() * (1 - self._settings_user.box_width_left)) - (self._settings_user.box_padding * 1.5)), self.height() - (self._settings_user.title_bar_height + (self._settings_user.box_padding * 2)))
+        self.__sidebar.move((self._settings_user.box_padding * 2) + int((self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)), self._settings_user.box_padding + self._settings_user.title_bar_height)
 
     def __test(self) -> None:
         """
@@ -263,7 +175,7 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
         text = self.__line_edit.text()
 
         try:
-            solution = Solve(text, self.__PageTerms.terms(), self._settings_user.answer_display, self._settings_user.answer_copy, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
+            solution = Solve(text, self.__sidebar.terms(), self._settings_user.answer_display, self._settings_user.answer_copy, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
             solution.print()
             print(solution.get_variables())
             print(solution.get_constants())
@@ -271,7 +183,7 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
             print(f"Error: {error}")
 
     def __print_info(self) -> None:
-        print(self.__PageTerms.terms())
+        print(self.__sidebar.terms())
 
     def resizeEvent(self, event):
         self._update_control()
