@@ -34,8 +34,8 @@ class PageTerms(QtWidgets.QFrame):
         self.__labelContainer.setLayout(QtWidgets.QVBoxLayout())
         self.__labelContainer.layout().addStretch()
         self.__labelContainer.layout().addWidget(QtWidgets.QLabel("Variables"), alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
-        self.__labelContainer.layout().addStretch()
         self.layout().addWidget(self.__labelContainer)
+        self.layout().setStretchFactor(self.__labelContainer, 1)
 
         self.__sections.append(SectionVariables(None, labelText="Variables", edit=self.__edit))
         self.__sections.append(SectionConstants(None, labelText="Constants", edit=self.__edit))
@@ -54,6 +54,8 @@ class PageTerms(QtWidgets.QFrame):
         for section in self.__sections:
             self.layout().addWidget(section)
             section.layout().setContentsMargins(0, 0, 0, 0)
+
+        self.layout().addStretch(1)  # add stretch to push sections to top
 
     def updateLabelContainerVisibility(self) -> None:
         """

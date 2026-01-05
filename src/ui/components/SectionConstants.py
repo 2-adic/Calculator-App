@@ -131,6 +131,7 @@ class SectionConstants(SectionTerms):
         self.__updateTerms(terms)
 
         self._formWidget.layout().sort()
+        self._requestScrollAreaUpdate()
 
         # show self if some terms are present
         if len(self.__termContainers) > 0: 
@@ -185,6 +186,8 @@ class SectionConstants(SectionTerms):
         for container in list(self.__termContainers.keys()):
             if container not in links:
                 self.removeTerms(set([container]))
+
+        self._requestScrollAreaUpdate()
 
     def __updateLinks(self, term: str, newLinks: set[str]) -> None:
         """

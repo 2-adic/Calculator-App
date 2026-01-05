@@ -103,6 +103,7 @@ class SectionVariables(SectionTerms):
         self.__updateTerms(terms)
 
         self._formWidget.layout().sort()
+        self._requestScrollAreaUpdate()
 
         # show self if some terms are present
         if len(self.__termEdits) > 0: 
@@ -137,6 +138,8 @@ class SectionVariables(SectionTerms):
             self.variableRemoved.emit(remove)
 
         self.__resetLinks()
+
+        self._requestScrollAreaUpdate()
 
         # hide self if no terms remain
         if len(self.__termEdits) == 0:
