@@ -68,7 +68,7 @@ class SectionVariables(SectionTerms):
         elif self.edit.tag() in symbols.accepted_variables or self.edit.tag() in symbols.accepted_constants:
             raise ValueError("Edit widget's tag cannot be a term.")
 
-        self.edit.textChanged.connect(lambda text, le=self.edit: self.__textUpdate(text, le.tag()))
+        self.edit.textChanged.connect(lambda: self.__textUpdate(self.__getEditText(self.edit), self.edit.tag()))
         self.__termLinks[self.edit.tag()] = set()
         self.__termPins.add(self.edit.tag())
 
@@ -96,7 +96,7 @@ class SectionVariables(SectionTerms):
 
             if term not in self.__termEdits.keys():  # create new lineEdit
                 lineEdit = CaretLineEdit(setText='', defaultText=term, tag=term)
-                lineEdit.textChanged.connect(lambda text, le=lineEdit: self.__textUpdate(text, le.tag()))
+                lineEdit.textChanged.connect(lambda: self.__textUpdate(self.__getEditText(lineEdit), lineEdit.tag()))
                 self.__termEdits[term] = lineEdit
                 self.__termLinks[term] = set()  # initialize term links
 
@@ -194,6 +194,16 @@ class SectionVariables(SectionTerms):
 
         for term in terms:
             self._formWidget.layout().addRow(f"{term} =", self.__termEdits[term])
+
+    def __getEditText(self, edit: CaretLineEdit | CaretTextEdit) -> str:
+        """
+        Get text from edit widget.
+        """
+
+        if isinstance(edit, CaretTextEdit):
+            return edit.toPlainText()
+        else:
+            return edit.text()
 
     def __textUpdate(self, text: str, tag: str | None) -> None:
         """

@@ -18,7 +18,7 @@ class SettingsWindow(ControlWindow):
 
         # Settings Menu -----------------------------------------------------------------------------------------
 
-        defaults = self._settings_user.load_settings()
+        defaults: list[int] = self._settings_user.load_settings()
 
         settings_list = (
             ("General", (
@@ -38,7 +38,7 @@ class SettingsWindow(ControlWindow):
         )
 
         self.__settings_list = settings_list
-        self.__button_storage = []  # keeps track of buttons for future stylesheet changes
+        self.__button_storage: list[QtWidgets.QPushButton] = []  # keeps track of buttons for future stylesheet changes
 
         self.__menu = QtWidgets.QWidget(self)
 

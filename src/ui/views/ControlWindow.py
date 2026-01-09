@@ -10,9 +10,9 @@ class ControlWindow(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self)
 
         # used to keep track of any settings the user changes within the window
-        self._settings_user = settings
-        self._style = style
-        self._op = op
+        self._settings_user: Settings = settings
+        self._style: Style = style
+        self._op: OperatingSystem = op
 
         self._op.set_fullscreen_function(self, self.__button_logic_maximize)
 
@@ -229,7 +229,7 @@ class ControlWindow(QtWidgets.QWidget):
             self.showNormal()
             self.__widget_resize_toggle = True
 
-            self._style.update_border_radius(False, self.__button_close)  # adds a border radius to the window
+            self._style.update_border_radius(self.__button_close, False)  # adds a border radius to the window
 
             self.activateWindow()  # focuses the window
 
@@ -241,7 +241,7 @@ class ControlWindow(QtWidgets.QWidget):
             self.showFullScreen()
             self.__widget_resize_toggle = False
 
-            self._style.update_border_radius(True, self.__button_close)  # removes the border radius
+            self._style.update_border_radius(self.__button_close, True)  # removes the border radius
 
             for widget in self.__widget_resize:  # disables all resizing widgets
                 widget.setEnabled(False)

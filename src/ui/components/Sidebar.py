@@ -64,7 +64,7 @@ class Sidebar(VerticalPageSelector):
 
     def terms(self) -> dict[str, str]:
         return self.__PageTerms.terms()
-
+    
     def update_colors(self) -> None:
         # page selector
         for i, page in enumerate(self.pages()):
@@ -80,8 +80,8 @@ class Sidebar(VerticalPageSelector):
             if isinstance(section, SectionGridButtons):
                 self._style.set_page_notation(section, section.scrollArea(), section.label(), section.line(), section.buttons())
 
-        # page variables
-        self._style.set_variables_page(self.__PageTerms)
+        # page terms
+        self._style.set_page_terms(self.__PageTerms)
 
     def __copy_button_label(self) -> None:
         button = self.sender()

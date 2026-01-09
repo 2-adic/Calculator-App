@@ -121,6 +121,13 @@ class Solve:
 
         return self.__answer_display == "Text" or self.__answer_display == "LaTeX"
 
+    def uses_constant_literal(self) -> bool:
+        """
+        Returns True if a constant's literal value is used.
+        """
+        
+        return any(self.__constants[constant] != symbols.constants[constant][0] for constant in self.__constants)
+
     def __split_terms(self) -> None:
         """
         Split terms into variables and constants.

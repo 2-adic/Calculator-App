@@ -2,20 +2,14 @@ from PyQt6 import QtGui, QtWidgets
 
 from core.style import Settings, Style
 from core.system_settings import OperatingSystem
-from ui.common.CaretLineEdit import CaretLineEdit
 from ui.common.HorizontalButtonGroup import HorizontalButtonGroup
 from ui.views.ControlWindow import ControlWindow
-from ui.views.Sidebar import Sidebar
-
-from core.functions import Solve
 
 
 class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
     def __init__(self, settings: Settings, style: Style, op: OperatingSystem):
         ControlWindow.__init__(self, settings, style, op)
         self.__setup()
-
-        self.__sidebar = Sidebar(self._settings_user, self._style, self._op, self.__line_edit, self)
 
     def update_settings(self) -> None:
         """
@@ -43,14 +37,11 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
 
         self.__box_buttons = QtWidgets.QWidget(self)
         
-        # create a vertical layout for the button box to hold line edit and buttons
+        # create a vertical layout
         self.__main_layout = QtWidgets.QVBoxLayout(self.__box_buttons)
-        self.__main_layout.setContentsMargins(10, 10, 10, 5)  # more space around line edit
-        self.__main_layout.setSpacing(10)  # more space between line edit and buttons
-        
-        # create the line edit first
-        self.__line_edit = CaretLineEdit(self.__box_buttons, setText="", defaultText="Enter your input here...", tag="input")
-        
+        self.__main_layout.setContentsMargins(10, 10, 10, 5)
+        self.__main_layout.setSpacing(10)
+                
         # create a widget to hold the horizontal button layout
         self.__button_container = QtWidgets.QWidget()
         self.__button_layout = HorizontalButtonGroup(self.__button_container)
@@ -76,8 +67,7 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
 
         self._style.init_test_buttons(self.__buttons)  # initializes all buttons
         
-        # add line edit and button container to the main layout
-        self.__main_layout.addWidget(self.__line_edit)
+        # add button container to the main layout
         self.__main_layout.addWidget(self.__button_container)
 
     def __update_colors(self) -> None:
@@ -119,42 +109,16 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
             """
             )
 
-        # line edit styling - apply CaretLineEdit styles
-        self.__line_edit.caretColor = QtGui.QColor(*self._settings_user.color_line_secondary)
-        self.__line_edit.caretSize = self._settings_user.caret_size
-        
-        # add border styling to the line edit
-        self.__line_edit.setStyleSheet(f"""
-            CaretLineEdit {{
-                border: {self._settings_user.box_border}px solid rgb{self._settings_user.color_box_border};
-                border-radius: {self._settings_user.box_border_radius}px;
-                background-color: rgb{self._settings_user.color_box_background};
-                color: rgb{self._settings_user.color_text};
-                padding: 5px;
-                selection-background-color: rgb{self._settings_user.color_text_highlight_active};
-                selection-color: rgb{self._settings_user.color_text};
-            }}
-            CaretLineEdit:focus {{
-                border: {self._settings_user.box_border + 1}px solid rgb{self._settings_user.color_line_secondary};
-            }}
-        """)
-
-        self.__sidebar.update_colors()
-
     def __update_self(self) -> None:
         """
         Updates the position of everything in TestWindow.
         """
 
         self.__box_buttons.move(self._settings_user.box_padding, self._settings_user.title_bar_height + self._settings_user.box_padding)
-        # limit the width to half the window width minus padding
-        max_width = (self.width() // 2) - self._settings_user.box_padding
+        
+        max_width = self.width() - self._settings_user.box_padding
         button_box_width = min(max_width, self.width() - (self._settings_user.box_padding * 2))
         self.__box_buttons.resize(button_box_width, self.height() - self._settings_user.title_bar_height - (self._settings_user.box_padding * 2))
-
-        # sidebar
-        self.__sidebar.resize(int((self.width() * (1 - self._settings_user.box_width_left)) - (self._settings_user.box_padding * 1.5)), self.height() - (self._settings_user.title_bar_height + (self._settings_user.box_padding * 2)))
-        self.__sidebar.move((self._settings_user.box_padding * 2) + int((self.width() * self._settings_user.box_width_left) - (self._settings_user.box_padding * 1.5)), self._settings_user.box_padding + self._settings_user.title_bar_height)
 
     def __test(self) -> None:
         """
@@ -171,19 +135,10 @@ class TestWindow(ControlWindow):  # buttons, and functions for testing purposes
         print(f"Width: {self.width()}, Height: {self.height()}")
 
     def __answer(self):
-        
-        text = self.__line_edit.text()
-
-        try:
-            solution = Solve(text, self.__sidebar.terms(), self._settings_user.answer_display, self._settings_user.answer_copy, self._settings_user.use_commas, self._settings_user.color_latex, self._settings_user.latex_image_dpi)
-            solution.print()
-            print(solution.get_variables())
-            print(solution.get_constants())
-        except Exception as error:
-            print(f"Error: {error}")
+        return
 
     def __print_info(self) -> None:
-        print(self.__sidebar.terms())
+        return
 
     def resizeEvent(self, event):
         self._update_control()

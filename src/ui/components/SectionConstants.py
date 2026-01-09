@@ -69,7 +69,7 @@ class SectionConstants(SectionTerms):
         elif self.edit.tag() in symbols.accepted_variables or self.edit.tag() in symbols.accepted_constants:
             raise ValueError("Edit widget's tag cannot be a term.")
 
-        self.edit.textChanged.connect(lambda text, le=self.edit: self.__textUpdate(text, le.tag()))
+        self.edit.textChanged.connect(lambda: self.__textUpdate(self.__getEditText(self.edit), self.edit.tag()))
         self.__termLinks[self.edit.tag()] = set()
         self.__termPins.add(self.edit.tag())
 
@@ -216,6 +216,16 @@ class SectionConstants(SectionTerms):
 
         for term in terms:
             self._formWidget.layout().addRow(f"{term}:", self.__termContainers[term])
+
+    def __getEditText(self, edit: CaretLineEdit | CaretTextEdit) -> str:
+        """
+        Get text from edit widget.
+        """
+
+        if isinstance(edit, CaretTextEdit):
+            return edit.toPlainText()
+        else:
+            return edit.text()
 
     def __textUpdate(self, text: str, tag: str | None) -> None:
         """
