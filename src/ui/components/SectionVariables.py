@@ -221,8 +221,9 @@ class SectionVariables(SectionTerms):
 
         self.__updateLinks(tag, terms)
 
-        self.__termLinks[tag].update(add)  # add new links
-        self.addTerms(add)  # add new terms
+        if add != set():
+            self.__termLinks[tag].update(add)  # add new links
+            self.addTerms(add)  # add new terms
 
         # emit signal when variables change
         if tag:

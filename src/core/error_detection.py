@@ -55,5 +55,5 @@ def circularly_defined(variables: dict[str, str]) -> None:
     """
 
     for x in variables:
-        if x in variables[x] and f"({x})" != variables[x] and x != variables[x]:
+        if x in variables[x] and x != variables[x]:
             raise Exception(f"'{x}' is circularly defined")
