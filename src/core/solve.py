@@ -327,13 +327,13 @@ class Solve:
 
         return expression
 
-    def __format_latex(self) -> str:
+    def __format_latex(self, expression: str) -> str:
         """
         Formats the answer to be in LaTeX form.
         """
 
         # converts to LaTeX form
-        latex = sy.latex(self.__expression, fold_short_frac=False)
+        latex: str = sy.latex(expression, fold_short_frac=False)
 
         # replaces some symbols for proper latex formatting
         for key in list(symbols.replace_latex.keys()):
