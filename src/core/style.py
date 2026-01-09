@@ -1027,9 +1027,9 @@ class Style:
             QMenu {{
                 background-color: rgb{self.__settings.color_box_background};
                 border: 1px solid rgb{self.__settings.color_box_border};
-                border-radius: 0px;
-                color: white;
-                font-size: {self.__settings.primary_font_size}px;
+                border-radius: {self.__settings.box_border_radius}px;
+                color: rgb{self.__settings.color_text};
+                font-size: {self.__settings.secondary_font_size}px;
             }}
             QMenu::item::selected {{
                 background-color: rgb{self.__settings.color_box_hover};
@@ -1141,6 +1141,19 @@ class Style:
             }}
             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
                 background: none;
+            }}
+            QMenu {{
+                background-color: rgb{self.__settings.color_box_background};
+                border: 1px solid rgb{self.__settings.color_box_border};
+                border-radius: {self.__settings.box_border_radius}px;
+                color: rgb{self.__settings.color_text};
+                font-size: {self.__settings.secondary_font_size}px;
+            }}
+            QMenu::item::selected {{
+                background-color: rgb{self.__settings.color_box_hover};
+            }}
+            QMenu::item:pressed {{
+                background-color: rgb{self.__settings.color_box_selected};
             }}
             """
         )
@@ -1467,6 +1480,19 @@ class Style:
 
                     CaretLineEdit {{
                         qproperty-caretColor: rgb{self.__settings.color_line_secondary};
+                    }}
+                    QMenu {{
+                        background-color: rgb{self.__settings.color_box_background};
+                        border: 1px solid rgb{self.__settings.color_box_border};
+                        border-radius: {self.__settings.box_border_radius}px;
+                        color: rgb{self.__settings.color_text};
+                        font-size: {self.__settings.secondary_font_size}px;
+                    }}
+                    QMenu::item::selected {{
+                        background-color: rgb{self.__settings.color_box_hover};
+                    }}
+                    QMenu::item:pressed {{
+                        background-color: rgb{self.__settings.color_box_selected};
                     }}
                     """
                 )

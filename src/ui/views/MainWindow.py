@@ -50,7 +50,6 @@ class MainWindow(ControlWindow):
         self._user_select = None
         self._box_text = CaretTextEdit(parent=self, caretSize=self._settings_user.caret_size, setText="", defaultText="", tag="input")
         self._box_text.focusOutEvent = self.__box_text_focus_event
-        self.__set_custom_context_menu(self._box_text)
 
         self._bar_spacer = QtWidgets.QWidget(self)  # adds a blank space to the right of the bar buttons
 
@@ -164,18 +163,6 @@ class MainWindow(ControlWindow):
 
         self.__answer = text
         self.__answer_temp = text
-
-    def __set_custom_context_menu(self, widget: CaretTextEdit) -> None:
-        """
-        Sets the context menu stylesheet.
-        """
-        
-        def context_menu_event(event: QtGui.QContextMenuEvent) -> None:
-            menu = widget.createStandardContextMenu()
-            self._style.set_context_menu(menu)
-            menu.exec(event.globalPos())
-
-        widget.contextMenuEvent = context_menu_event
 
     def __box_text_focus_event(self, event: QtGui.QFocusEvent) -> None:
         """
