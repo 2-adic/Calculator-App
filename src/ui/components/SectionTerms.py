@@ -7,13 +7,15 @@ class SectionTermsScrollArea(QtWidgets.QScrollArea):
     """
     Custom scroll area that reports its content size as the preferred size hint.
     """
+    MIN_COLLAPSED_HEIGHT = 98
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._contentHeight = 98
+        self._contentHeight = self.MIN_COLLAPSED_HEIGHT
+        self.setMinimumHeight(self.MIN_COLLAPSED_HEIGHT)
     
     def setContentHeight(self, height: int):
-        self._contentHeight = max(0, height)
+        self._contentHeight = max(self.MIN_COLLAPSED_HEIGHT, height)
         self.updateGeometry()
     
     def sizeHint(self):
@@ -129,13 +131,15 @@ class SectionTerms(QtWidgets.QWidget):
         
         # calculate the ideal height for the content
         idealHeight = contentHeight + padding
+        minHeight = SectionTermsScrollArea.MIN_COLLAPSED_HEIGHT
+        targetHeight = max(minHeight, idealHeight)
         
         # update the scroll area's size hint to prefer the content height
-        self.__scrollArea.setContentHeight(idealHeight)
+        self.__scrollArea.setContentHeight(targetHeight)
 
         # let the layout shrink below the hint if needed, but never grow past content height
-        if self.__scrollArea.minimumHeight() != 0:
-            self.__scrollArea.setMinimumHeight(0)
+        if self.__scrollArea.minimumHeight() != minHeight:
+            self.__scrollArea.setMinimumHeight(minHeight)
 
-        if self.__scrollArea.maximumHeight() != idealHeight:
-            self.__scrollArea.setMaximumHeight(idealHeight)
+        if self.__scrollArea.maximumHeight() != targetHeight:
+            self.__scrollArea.setMaximumHeight(targetHeight)
