@@ -1,10 +1,22 @@
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
-from system_settings import get_data_path
+from PyQt6 import QtCore, QtGui
 
+from core.system_settings import get_data_path
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from PyQt6 import QtWidgets
+
+    from ui.common.CaretTextEdit import CaretTextEdit
+    from ui.common.WrapTextButton import WrapTextButton
+    from ui.components.PageTerms import PageTerms
 
 class Settings:
     def __init__(self):
+
+        # General Settings ---------------------------------------------------------------------------------------
+
+        self.__primary_font_size = 15  # the main font size used throughout the program
+        self.__secondary_font_size = 14  # the secondary font size used throughout the program
 
         # Window ------------------------------------------------------------------------------------------------
 
@@ -31,16 +43,31 @@ class Settings:
         self.__title_bar_height = 22  # height of the title bar
         self.__title_bar_button_width = int(1.5 * self.__title_bar_height)  # width of the title bar buttons
         self.__title_bar_settings_icon_scale = .8  # the size of the icon relative to the button size
+        self.__title_bar_settings_button_border_radius = 3  # border radius of the settings button
         self.__title_bar_settings_spacing = int(self.__title_bar_height / 11)  # spacing between the button and the top / bottom of the title bar
         self.__title_bar_settings_width = self.__title_bar_height - (2 * self.__title_bar_settings_spacing)  # width of the settings button
         self.__title_bar_settings_separate = 20  # spacing between the settings button, and the other buttons
+        self.__title_bar_label_font_size = 11  # size of the title bar text
 
-        self.__window_title_main = 'Calculator'
-        self.__window_title_settings = 'Settings'
+        self.__window_title_main = "Calculator"
+        self.__window_title_settings = "Settings"
         self.__window_title_position = (
             int(5 + (self.__title_bar_height / 2) - (22 / 2)),  # x position
             int(3 + (self.__title_bar_height / 2) - (22 / 2))  # y position
         )
+
+        # scroll bar
+        self.__scrollbar_width = 12  # width of the scroll bar
+        self.__scrollbar_margin = (4, 4, 4, 0)  # top, right, bottom, left margins of the scroll bar within the scroll area
+        self.__scrollbar_border_radius = 4  # border radius of the scroll bar
+        self.__scrollbar_min_height = 20  # minimum height of the scroll bar
+
+        # Settings Menu -----------------------------------------------------------------------------------------
+
+        self.__settings_primary_button_width = 100  # width of the setting menu and apply buttons
+        self.__settings_secondary_button_width = 80  # width of the secondary buttons within the settings menu
+
+        self.__settings_button_height = 30  # height of the buttons within the settings menu
 
         # Testing Buttons ---------------------------------------------------------------------------------------
 
@@ -61,8 +88,8 @@ class Settings:
         self.__bar_button_height = 40  # height of the bar buttons under the text box
 
         # answer box
-        self.__answer_default = 'Answer'
-        self.__answer_format_size = 20  # the size of the symbol that shows the current selected answer format
+        self.__answer_default = "Answer"
+        self.__answer_format_font_size = 20  # the size of the symbol that shows the current selected answer format
         self.__answer_format_indent = 10  # the distance from the format symbol and the left side of the answer box
 
         self.__box_answer_height_scale = 2 / 5  # fraction of screen height
@@ -121,7 +148,7 @@ class Settings:
         self.__answer_display = None
         self.__answer_copy = None
 
-    def save_settings(self, buttons, settings_list):
+    def save_settings(self, buttons: "list[QtWidgets.QPushButton]", settings_list: tuple) -> None:
         """
         Saves the settings to a txt file.
         """
@@ -139,25 +166,25 @@ class Settings:
             for function, default, setting_name, *options in section[1]:
                 button = selected_buttons[i]
                 text = button.text()
-                save += f'{options.index(text)} '
+                save += f"{options.index(text)} "
 
                 i += 1
 
         save = save[:-1]  # removes the last space
 
         # saves the settings to the txt file
-        path = get_data_path('settings.txt')
+        path = get_data_path("settings.txt")
         with open(path, 'w') as file:
             file.write(save)
 
-    def load_settings(self) -> list:
+    def load_settings(self) -> list[int]:
         """
         Loads the settings from a txt file. This is used when the program is launched.
         """
 
         try:
             # gets the saved settings from the file
-            path = get_data_path('settings.txt')
+            path = get_data_path("settings.txt")
             with open(path, 'r') as file:
                 line = file.readline()
 
@@ -170,7 +197,7 @@ class Settings:
             return defaults
 
         except Exception as error:
-            print('Error: could not load settings, default settings will be used instead.')
+            print("Error: could not load settings, default settings will be used instead.")
             return self.__default_settings()
 
     def __default_settings(self) -> list:
@@ -179,6 +206,22 @@ class Settings:
         """
 
         return [0, 0, 0, 2, 0, 0]
+
+    @property
+    def primary_font_size(self) -> int:
+        return self.__primary_font_size
+
+    @primary_font_size.setter
+    def primary_font_size(self, value: int) -> None:
+        self.__primary_font_size = value
+
+    @property
+    def secondary_font_size(self) -> int:
+        return self.__secondary_font_size
+
+    @secondary_font_size.setter
+    def secondary_font_size(self, value: int) -> None:
+        self.__secondary_font_size = value
 
     @property
     def window_start_size_main(self) -> tuple[int, int, int, int]:
@@ -270,6 +313,14 @@ class Settings:
         self.__title_bar_settings_icon_scale = value
 
     @property
+    def title_bar_settings_button_border_radius(self) -> float:
+        return self.__title_bar_settings_button_border_radius
+
+    @title_bar_settings_button_border_radius.setter
+    def title_bar_settings_button_border_radius(self, value: float) -> None:
+        self.__title_bar_settings_button_border_radius = value
+
+    @property
     def title_bar_settings_spacing(self) -> int:
         return self.__title_bar_settings_spacing
 
@@ -294,6 +345,14 @@ class Settings:
         self.__title_bar_settings_separate = value
 
     @property
+    def title_bar_label_font_size(self) -> int:
+        return self.__title_bar_label_font_size
+    
+    @title_bar_label_font_size.setter
+    def title_bar_label_font_size(self, value: int) -> None:
+        self.__title_bar_label_font_size = value
+
+    @property
     def window_title_main(self) -> str:
         return self.__window_title_main
 
@@ -316,6 +375,62 @@ class Settings:
     @window_title_position.setter
     def window_title_position(self, value: tuple[int, int]) -> None:
         self.__window_title_position = value
+
+    @property
+    def scrollbar_width(self) -> int:
+        return self.__scrollbar_width
+
+    @scrollbar_width.setter
+    def scrollbar_width(self, value: int) -> None:
+        self.__scrollbar_width = value
+
+    @property
+    def scrollbar_margin(self) -> tuple[int, int]:
+        return self.__scrollbar_margin
+
+    @scrollbar_margin.setter
+    def scrollbar_margin(self, value: tuple[int, int]) -> None:
+        self.__scrollbar_margin = value
+
+    @property
+    def scrollbar_border_radius(self) -> int:
+        return self.__scrollbar_border_radius
+
+    @scrollbar_border_radius.setter
+    def scrollbar_border_radius(self, value: int) -> None:
+        self.__scrollbar_border_radius = value
+
+    @property
+    def scrollbar_min_height(self) -> int:
+        return self.__scrollbar_min_height
+
+    @scrollbar_min_height.setter
+    def scrollbar_min_height(self, value: int) -> None:
+        self.__scrollbar_min_height = value
+
+    @property
+    def settings_primary_button_width(self) -> int:
+        return self.__settings_primary_button_width
+
+    @settings_primary_button_width.setter
+    def settings_primary_button_width(self, value: int) -> None:
+        self.__settings_primary_button_width = value
+
+    @property
+    def settings_secondary_button_width(self) -> int:
+        return self.__settings_secondary_button_width
+
+    @settings_secondary_button_width.setter
+    def settings_secondary_button_width(self, value: int) -> None:
+        self.__settings_secondary_button_width = value
+
+    @property
+    def settings_button_height(self) -> int:
+        return self.__settings_button_height
+
+    @settings_button_height.setter
+    def settings_button_height(self, value: int) -> None:
+        self.__settings_button_height = value
 
     @property
     def test_button_width(self) -> int:
@@ -398,12 +513,12 @@ class Settings:
         self.__answer_default = value
 
     @property
-    def answer_format_size(self) -> int:
-        return self.__answer_format_size
+    def answer_format_font_size(self) -> int:
+        return self.__answer_format_font_size
 
-    @answer_format_size.setter
-    def answer_format_size(self, value: int) -> None:
-        self.__answer_format_size = value
+    @answer_format_font_size.setter
+    def answer_format_font_size(self, value: int) -> None:
+        self.__answer_format_font_size = value
 
     @property
     def answer_format_indent(self) -> int:
@@ -751,9 +866,9 @@ class Style:
 
     # ControlWindow --------------------------------------------------------------------------------
 
-    def set_button_close(self, button) -> None:
+    def set_button_close(self, button: "QtWidgets.QPushButton") -> None:
         button.setStyleSheet(
-            f'''
+            f"""
             QPushButton {{
                 background-color: transparent;
                 border: none;
@@ -765,12 +880,12 @@ class Style:
             QPushButton:pressed {{
                 background-color: rgb{self.__settings.color_title_bar_button_exit_press};
             }}
-            '''
+            """
         )
 
-    def set_button_maximize(self, button) -> None:
+    def set_button_maximize(self, button: "QtWidgets.QPushButton") -> None:
         button.setStyleSheet(
-            f'''
+            f"""
             QPushButton {{
                 background-color: transparent;
                 border: none;
@@ -781,12 +896,12 @@ class Style:
             QPushButton:pressed {{
                 background-color: rgb{self.__settings.color_title_bar_button_press};
             }}
-            '''
+            """
         )
 
-    def set_button_minimize(self, button) -> None:
+    def set_button_minimize(self, button: "QtWidgets.QPushButton") -> None:
         button.setStyleSheet(
-            f'''
+            f"""
             QPushButton {{
                 background-color: transparent;
                 border: none;
@@ -800,19 +915,19 @@ class Style:
             QPushButton::icon {{
                 margin-bottom: -5px; 
             }}
-            '''
+            """
         )
 
-    def set_title_label(self, label) -> None:
+    def set_title_label(self, label: "QtWidgets.QLabel") -> None:
         label.setStyleSheet(
-            f'''
+            f"""
             color: rgb{self.__settings.color_title_bar_text};
             font-weight: bold;
-            font-size: 11px;
-            '''
+            font-size: {self.__settings.title_bar_label_font_size}px;
+            """
         )
 
-    def update_border_radius(self, remove_radius: bool, button) -> None:
+    def update_border_radius(self, button: "QtWidgets.QPushButton", remove_radius: bool) -> None:
         if remove_radius:
             self.__settings.window_border_radius = 0
 
@@ -823,51 +938,51 @@ class Style:
 
     # SettingWindow --------------------------------------------------------------------------------
 
-    def set_stacked_widget(self, widget) -> None:
+    def set_stacked_widget(self, widget: "QtWidgets.QStackedWidget") -> None:
         widget.setStyleSheet(
-            f'''
+            f"""
             * {{
                 border: none;
             }}
-            '''
+            """
         )
 
-    def set_button_apply(self, button) -> None:
+    def set_button_apply(self, button: "QtWidgets.QPushButton") -> None:
         button.setStyleSheet(
-            f'''
+            f"""
             QPushButton {{ 
-                max-width: 100px;
+                max-width: {self.__settings.settings_primary_button_width}px;
             }}
             QPushButton:pressed {{
                 background-color: rgb{self.__settings.color_box_selected}
             }}
-            '''
+            """
         )
 
-    def set_button_storage(self, buttons) -> None:
+    def set_button_storage(self, buttons: "list[QtWidgets.QPushButton]") -> None:
         for button in buttons:
             button.setStyleSheet(
-                f'''
+                f"""
                 QPushButton {{
                     border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
-                    width: 80px;
+                    width: {self.__settings.settings_secondary_button_width}px;
                 }}
-                '''
+                """
             )
 
-    def set_menu(self, widget) -> None:
+    def set_menu(self, widget: "QtWidgets.QWidget") -> None:
         widget.setStyleSheet(
-            f'''
+            f"""
             QWidget {{
                 border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                 background-color: rgb{self.__settings.color_box_background};
                 border-radius: {self.__settings.box_border_radius}px;
                 color: rgb{self.__settings.color_text};
-                font-size: 15px;
+                font-size: {self.__settings.primary_font_size}px;
             }}
             QPushButton {{
-                width: 100px; 
-                min-height: 30px;
+                width: {self.__settings.settings_primary_button_width}px; 
+                min-height: {self.__settings.settings_button_height}px;
             }}
             QPushButton:hover {{
                 background-color: rgb{self.__settings.color_box_hover};
@@ -879,15 +994,15 @@ class Style:
                 border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
             }}
             QScrollBar:vertical {{
-                border-radius: 4px;
+                border-radius: {self.__settings.scrollbar_border_radius}px;
                 background-color: rgb{self.__settings.color_scrollbar_background};
-                width: 12px;
-                margin: 4px 4px 4px 0px;
+                width: {self.__settings.scrollbar_width}px;
+                margin: {self.__settings.scrollbar_margin[0]}px {self.__settings.scrollbar_margin[1]}px {self.__settings.scrollbar_margin[2]}px {self.__settings.scrollbar_margin[3]}px;
             }}
             QScrollBar::handle:vertical {{
                 background-color: rgb{self.__settings.color_box_border};
-                border-radius: 4px;
-                min-height: 20px;
+                border-radius: {self.__settings.scrollbar_border_radius}px;
+                min-height: {self.__settings.scrollbar_min_height}px;
             }}
             QScrollBar::add-line:vertical {{
                 width: 0px;
@@ -898,20 +1013,23 @@ class Style:
             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
                 background: none;
             }}
-            '''
+            """
         )
 
     # MainWindow -----------------------------------------------------------------------------------
     
-    def set_context_menu(self, menu) -> None:
+    def set_context_menu(self, menu: "QtWidgets.QMenu | None") -> None:
+        if menu is None:
+            return
+        
         menu.setStyleSheet(
-            f'''
+            f"""
             QMenu {{
                 background-color: rgb{self.__settings.color_box_background};
                 border: 1px solid rgb{self.__settings.color_box_border};
-                border-radius: 0px;
-                color: white;
-                font-size: 13px;
+                border-radius: {self.__settings.box_border_radius}px;
+                color: rgb{self.__settings.color_text};
+                font-size: {self.__settings.secondary_font_size}px;
             }}
             QMenu::item::selected {{
                 background-color: rgb{self.__settings.color_box_hover};
@@ -919,15 +1037,15 @@ class Style:
             QMenu::item:pressed {{
                 background-color: rgb{self.__settings.color_box_selected};
             }}
-            '''
+            """
         )
     
-    def set_button_settings(self, button) -> None:
+    def set_button_settings(self, button: "QtWidgets.QPushButton") -> None:
         button.setStyleSheet(
-            f'''
+            f"""
             QPushButton {{
                 background-color: transparent;
-                border-radius: 3px
+                border-radius: {self.__settings.title_bar_settings_button_border_radius}px;
             }}
             QPushButton:hover {{
                 background-color: rgb{self.__settings.color_title_bar_button_hover};
@@ -935,21 +1053,21 @@ class Style:
             QPushButton:pressed {{
                 background-color: rgb{self.__settings.color_title_bar_button_press}
             }}
-            '''
+            """
         )
 
-    def set_box_answer(self, wrap_button) -> None:
+    def set_box_answer(self, wrap_button: "WrapTextButton") -> None:
         button = wrap_button.button()
         label = wrap_button.label()
 
         button.setStyleSheet(
-            f'''
+            f"""
             QPushButton {{
                 border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                 border-radius: {self.__settings.box_border_radius}px;
                 background-color: rgb{self.__settings.color_box_background};
                 color: rgb{self.__settings.color_text};
-                font-size: 15px;
+                font-size: {self.__settings.primary_font_size}px;
             }}
             QPushButton:hover {{
                 background-color: rgb{self.__settings.color_box_hover};
@@ -958,35 +1076,34 @@ class Style:
             QPushButton:pressed {{
                 background-color: rgb{self.__settings.color_box_selected};
             }}
-            '''
+            """
         )
 
         label.setStyleSheet(
-            f'''
+            f"""
             QLabel {{
                 color: rgb{self.__settings.color_text};
-                font-size: 15px;
+                font-size: {self.__settings.primary_font_size}px;
             }}
-            '''
+            """
         )
         
-    def set_box_answer_format_label(self, label) -> None:
+    def set_box_answer_format_label(self, label: "QtWidgets.QLabel") -> None:
         label.setStyleSheet(
-            f'''
+            f"""
             QLabel {{
-                font-size: {self.__settings.answer_format_size}px;
+                font-size: {self.__settings.answer_format_font_size}px;
                 color: rgb{self.__settings.color_text}
             }}
-            '''
+            """
         )
 
-    def set_box_text(self, text_box) -> None:
+    def set_box_text(self, text_box: "CaretTextEdit") -> None:
         # changes the caret color
-        text_box.caret_color = QColor(*self.__settings.color_line_secondary)
-        text_box.background_color = QColor(*self.__settings.color_box_background)
+        text_box.caretColor = QtGui.QColor(*self.__settings.color_line_secondary)
 
         text_box.setStyleSheet(
-            f'''
+            f"""
             QPlainTextEdit {{
                 border-top: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                 border-left: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
@@ -995,7 +1112,7 @@ class Style:
                 border-top-left-radius: {self.__settings.box_border_radius}px;
                 border-top-right-radius: {self.__settings.box_border_radius}px;
                 color: rgb{self.__settings.color_text};
-                font-size: 15px;
+                font-size: {self.__settings.primary_font_size}px;
             }}
             QPlainTextEdit:active {{
                 selection-background-color: rgb{self.__settings.color_text_highlight_active};
@@ -1006,15 +1123,15 @@ class Style:
                 selection-color: rgb{self.__settings.color_text};
             }}
             QScrollBar:vertical {{
-                border-radius: 4px;
+                border-radius: {self.__settings.scrollbar_border_radius}px;
                 background-color: rgb{self.__settings.color_scrollbar_background};
-                width: 12px;
-                margin: 4px 4px 4px 0px;
+                width: {self.__settings.scrollbar_width}px;
+                margin: {self.__settings.scrollbar_margin[0]}px {self.__settings.scrollbar_margin[1]}px {self.__settings.scrollbar_margin[2]}px {self.__settings.scrollbar_margin[3]}px;
             }}
             QScrollBar::handle:vertical {{
                 background-color: rgb{self.__settings.color_box_border};
-                border-radius: 4px;
-                min-height: 20px;
+                border-radius: {self.__settings.scrollbar_border_radius}px;
+                min-height: {self.__settings.scrollbar_min_height}px;
             }}
             QScrollBar::add-line:vertical {{
                 width: 0px;
@@ -1025,30 +1142,43 @@ class Style:
             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
                 background: none;
             }}
-            '''
+            QMenu {{
+                background-color: rgb{self.__settings.color_box_background};
+                border: 1px solid rgb{self.__settings.color_box_border};
+                border-radius: {self.__settings.box_border_radius}px;
+                color: rgb{self.__settings.color_text};
+                font-size: {self.__settings.secondary_font_size}px;
+            }}
+            QMenu::item::selected {{
+                background-color: rgb{self.__settings.color_box_hover};
+            }}
+            QMenu::item:pressed {{
+                background-color: rgb{self.__settings.color_box_selected};
+            }}
+            """
         )
 
-    def set_bar_blank(self, widget) -> None:
+    def set_bar_blank(self, widget: "QtWidgets.QWidget") -> None:
         widget.setStyleSheet(
-            f'''
+            f"""
             QWidget {{
                 border-bottom: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                 border-right: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                 border-bottom-right-radius: {self.__settings.box_border_radius}px;
                 background-color: rgb{self.__settings.color_box_background};
             }}
-            '''
+            """
         )
 
-    def set_bar_format(self, button) -> None:
+    def set_bar_format(self, button: "QtWidgets.QPushButton") -> None:
         button.setStyleSheet(
-            f'''
+            f"""
             QPushButton {{
                 border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                 border-top-right-radius: {self.__settings.box_border_radius}px;
                 background-color: rgb{self.__settings.color_box_background};
                 color: rgb{self.__settings.color_text};
-                font-size: 15px;
+                font-size: {self.__settings.primary_font_size}px;
             }}
             QPushButton:hover {{
                 background-color: rgb{self.__settings.color_box_hover};
@@ -1057,10 +1187,10 @@ class Style:
             QPushButton:pressed {{
                 background-color: rgb{self.__settings.color_box_selected};
             }}
-            '''
+            """
         )
 
-    def set_button_format_visibility(self, bar_answer, bar_format, is_visible: bool) -> None:
+    def set_button_format_visibility(self, bar_answer: "QtWidgets.QPushButton", bar_format: "QtWidgets.QPushButton", is_visible: bool) -> None:
         """
         Hides or shows the format button. Allows for correct visuals.
 
@@ -1070,13 +1200,13 @@ class Style:
         if is_visible:
             bar_format.show()
             bar_answer.setStyleSheet(
-                f'''
+                f"""
                 QPushButton {{
                     border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                     border-bottom-left-radius: {self.__settings.box_border_radius}px;
                     background-color: rgb{self.__settings.color_box_background};
                     color: rgb{self.__settings.color_text};
-                    font-size: 15px;
+                    font-size: {self.__settings.primary_font_size}px;
                 }}
                 QPushButton:hover {{
                     background-color: rgb{self.__settings.color_box_hover};
@@ -1085,20 +1215,20 @@ class Style:
                 QPushButton:pressed {{
                     background-color: rgb{self.__settings.color_box_selected};
                 }}
-                '''
+                """
             )
 
         else:
             bar_format.hide()
             bar_answer.setStyleSheet(
-                f'''
+                f"""
                 QPushButton {{
                     border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                     border-bottom-left-radius: {self.__settings.box_border_radius}px;
                     border-top-right-radius: {self.__settings.box_border_radius}px;
                     background-color: rgb{self.__settings.color_box_background};
                     color: rgb{self.__settings.color_text};
-                    font-size: 15px;
+                    font-size: {self.__settings.primary_font_size}px;
                 }}
                 QPushButton:hover {{
                     background-color: rgb{self.__settings.color_box_hover};
@@ -1107,43 +1237,32 @@ class Style:
                 QPushButton:pressed {{
                     background-color: rgb{self.__settings.color_box_selected};
                 }}
-                '''
+                """
             )
 
-    # MultiWindow ----------------------------------------------------------------------------------
+    # Sidebar --------------------------------------------------------------------------------------
 
-    def set_selector_label(self, label) -> None:
-        label.setStyleSheet(
-            f'''
-            * {{
-                border: none;
-                color: rgb{self.__settings.color_text_secondary};
-                font-size: 15px;
-            }}
-            '''
-        )
-    
-    def set_scroll_area(self, scroll_area) -> None:
+    def set_scroll_area(self, scroll_area: "QtWidgets.QScrollArea") -> None:
         scroll_area.setStyleSheet(
-            f'''
+            f"""
             * {{
                 border: none;
             }}
             QScrollArea {{
                 background-color: rgb{self.__settings.color_box_background};
                 color: rgb{self.__settings.color_text};
-                font-size: 15px;
+                font-size: {self.__settings.primary_font_size}px;
             }}
             QScrollBar:vertical {{
-                border-radius: 4px;
+                border-radius: {self.__settings.scrollbar_border_radius}px;
                 background-color: rgb{self.__settings.color_scrollbar_background};
-                width: 12px;
-                margin: 4px 4px 4px 0px;
+                width: {self.__settings.scrollbar_width}px;
+                margin: {self.__settings.scrollbar_margin[0]}px {self.__settings.scrollbar_margin[1]}px {self.__settings.scrollbar_margin[2]}px {self.__settings.scrollbar_margin[3]}px;
             }}
             QScrollBar::handle:vertical {{
                 background-color: rgb{self.__settings.color_box_border};
-                border-radius: 4px;
-                min-height: 20px;
+                border-radius: {self.__settings.scrollbar_border_radius}px;
+                min-height: {self.__settings.scrollbar_min_height}px;
             }}
             QScrollBar::add-line:vertical {{
                 width: 0px;
@@ -1154,85 +1273,100 @@ class Style:
             QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
                 background: none;
             }}
-            '''
+            """
         )
     
-    def set_areas(self, test) -> None:
+    def set_page_selector(self, page: "QtWidgets.QWidget") -> None:
 
-        # updates colors for the widgets in all the tabs
-        for i, areas in enumerate(test):
-            area = areas[0]
+        page.setStyleSheet(
+            f"""
+            QLineEdit:active {{
+                selection-background-color: rgb{self.__settings.color_text_highlight_active};
+                selection-color: rgb{self.__settings.color_text};
+            }}
+            QLineEdit:!active {{
+                selection-background-color: rgb{self.__settings.color_text_highlight_inactive};
+                selection-color: rgb{self.__settings.color_text};
+            }}
+            QWidget {{
+                border-bottom: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                border-left: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                border-right: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                background-color: rgb{self.__settings.color_box_background};
+                border-bottom-left-radius: {self.__settings.box_border_radius}px;
+                border-bottom-right-radius: {self.__settings.box_border_radius}px;
+                color: rgb{self.__settings.color_text};
+                font-size: {self.__settings.primary_font_size}px;
+            }}
+            """
+        )
 
-            area.setStyleSheet(
-                f'''
-                QLineEdit:active {{
-                    selection-background-color: rgb{self.__settings.color_text_highlight_active};
-                    selection-color: rgb{self.__settings.color_text};
-                }}
-                QLineEdit:!active {{
-                    selection-background-color: rgb{self.__settings.color_text_highlight_inactive};
-                    selection-color: rgb{self.__settings.color_text};
-                }}
-                QWidget {{
-                    border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
-                    background-color: rgb{self.__settings.color_box_background};
-                    border-bottom-left-radius: {self.__settings.box_border_radius}px;
-                    border-bottom-right-radius: {self.__settings.box_border_radius}px;
-                    color: rgb{self.__settings.color_text};
-                    font-size: 15px;
-                }}
-                '''
-            )
-
-        # updates colors for the scroll areas in the notation tab
-        for scroll_area in test[1][2]:
-            self.set_scroll_area(scroll_area)
-
-    def set_multibox_label(self, label) -> None:
+    def set_label(self, label: "QtWidgets.QLabel | None") -> None:
+        if label is None:
+            return
+        
         label.setStyleSheet(
-            f'''
+            f"""
             QLabel {{
                 font-weight: bold;
-                font-size: 14px;
+                font-size: {self.__settings.secondary_font_size}px;
                 color: rgb{self.__settings.color_text};
                 border: none;
             }}
-            '''
+            """
         )
 
-    def set_line_primary(self, line) -> None:
+    def set_line_primary(self, line: "QtWidgets.QFrame | None") -> None:
+        if line is None:
+            return
+        
         line.setStyleSheet(
-            f'''
+            f"""
             QFrame {{
                 border: 1px solid rgb{self.__settings.color_line_primary};
                 background-color: rgb{self.__settings.color_line_primary};
                 border-radius: 1px
             }}
-            '''
+            """
         )
 
-    def set_line_secondary(self, line) -> None:
-        line.setStyleSheet(
-            f'''
-            background-color: rgb{self.__settings.color_line_secondary};
-            border-radius: 1px
-            '''
+    def set_page_notation(self, widget: "QtWidgets.QWidget", scrollArea: "QtWidgets.QScrollArea", label: "QtWidgets.QLabel | None", line: "QtWidgets.QFrame | None", buttons: list["QtWidgets.QPushButton"]) -> None:
+
+        widget.setStyleSheet(
+            f"""
+            QLineEdit:active {{
+                selection-background-color: rgb{self.__settings.color_text_highlight_active};
+                selection-color: rgb{self.__settings.color_text};
+            }}
+            QLineEdit:!active {{
+                selection-background-color: rgb{self.__settings.color_text_highlight_inactive};
+                selection-color: rgb{self.__settings.color_text};
+            }}
+            QWidget {{
+                border-bottom: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                border-left: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                border-right: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                background-color: rgb{self.__settings.color_box_background};
+                border-bottom-left-radius: {self.__settings.box_border_radius}px;
+                border-bottom-right-radius: {self.__settings.box_border_radius}px;
+                color: rgb{self.__settings.color_text};
+                font-size: {self.__settings.primary_font_size}px;
+            }}
+            """
         )
 
-    def set_notation(self, labels, lines, buttons) -> None:
+        self.set_scroll_area(scrollArea)
 
         # updates the label colors in the notation tab
-        for label in labels:
-            self.set_multibox_label(label)
+        self.set_label(label)
 
         # updates the line colors in the notation tab
-        for line in lines:
-            self.set_line_primary(line)
+        self.set_line_primary(line)
 
         # updates the button colors in the notation tab
         for button in buttons:
             button.setStyleSheet(
-                f'''
+                f"""
                 QPushButton {{
                     border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                     border-radius: {self.__settings.box_border_radius}px;
@@ -1244,71 +1378,213 @@ class Style:
                 QPushButton:pressed {{
                     background-color: rgb{self.__settings.color_box_selected};
                 }}
-                '''
+                """
             )
+
+    def set_page_terms(self, page: "PageTerms") -> None:
+        from ui.components.SectionConstants import SectionConstants
+        from ui.components.SectionVariables import SectionVariables
         
-    def set_variable_radio_button_initial(self, radio_button) -> None:
-        radio_button.setStyleSheet(
-            f'''
-            QRadioButton::indicator {{
-                width: {self.__settings.radio_button_radius}px;
-                height: {self.__settings.radio_button_radius}px;
-                border-radius: {self.__settings.radio_button_border_radius}px;
-                border: 2px solid rgb{self.__settings.color_box_border};
+        page.setStyleSheet(
+            f"""
+            QLineEdit:active {{
+                selection-background-color: rgb{self.__settings.color_text_highlight_active};
+                selection-color: rgb{self.__settings.color_text};
+            }}
+            QLineEdit:!active {{
+                selection-background-color: rgb{self.__settings.color_text_highlight_inactive};
+                selection-color: rgb{self.__settings.color_text};
+            }}
+            QWidget {{
+                border-bottom: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                border-left: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                border-right: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                 background-color: rgb{self.__settings.color_box_background};
+                border-bottom-left-radius: {self.__settings.box_border_radius}px;
+                border-bottom-right-radius: {self.__settings.box_border_radius}px;
+                color: rgb{self.__settings.color_text};
+                font-size: {self.__settings.primary_font_size}px;
             }}
-            QRadioButton::indicator:hover {{
-                background-color: rgb{self.__settings.color_box_hover};
+            #LabelContainer {{
+                border: none;
+                background-color: transparent;
             }}
-            QRadioButton::indicator:checked {{
-                background-color: rgb{self.__settings.color_box_selected};
+            #LabelContainer > QLabel {{
+                border: none;
+                color: rgb{self.__settings.color_text_secondary};
+                font-size: {self.__settings.primary_font_size}px;
             }}
-            '''
+            """
         )
         
-    def set_variable_radio_button(self, symbols) -> None:
+        for section in page.getSections():
+            if isinstance(section, SectionVariables):
+                section.setObjectName("SectionTerms")
+                section.setStyleSheet(
+                    f"""
+                    QWidget {{
+                        border: none;
+                        background-color: rgb{self.__settings.color_box_background};
+                        border-bottom-left-radius: {self.__settings.box_border_radius}px;
+                        border-bottom-right-radius: {self.__settings.box_border_radius}px;
+                        color: rgb{self.__settings.color_text};
+                        font-size: {self.__settings.primary_font_size}px;
+                    }}
 
-        for i, section in enumerate(symbols):
-            # updates the caret colors for the line edits
-            if i == 0:
-                for key in list(section.keys()):
-                    line_edit = section[key][1]
-                    line_edit.caret_color = QColor(*self.__settings.color_line_secondary)
-                    line_edit.background_color = QColor(*self.__settings.color_box_background)
+                    QScrollArea {{
+                        background-color: rgb{self.__settings.color_box_background};
+                        color: rgb{self.__settings.color_text};
+                        font-size: {self.__settings.primary_font_size}px;
+                    }}
+                    QScrollBar:vertical {{
+                        border-radius: {self.__settings.scrollbar_border_radius}px;
+                        background-color: rgb{self.__settings.color_scrollbar_background};
+                        width: {self.__settings.scrollbar_width}px;
+                        margin: {self.__settings.scrollbar_margin[0]}px {self.__settings.scrollbar_margin[1]}px {self.__settings.scrollbar_margin[2]}px {self.__settings.scrollbar_margin[3]}px;
+                    }}
+                    QScrollBar::handle:vertical {{
+                        background-color: rgb{self.__settings.color_box_border};
+                        border-radius: {self.__settings.scrollbar_border_radius}px;
+                        min-height: {self.__settings.scrollbar_min_height}px;
+                    }}
+                    QScrollBar::add-line:vertical {{
+                        width: 0px;
+                    }}
+                    QScrollBar::sub-line:vertical {{
+                        width: 0px;
+                    }}
+                    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                        background: none;
+                    }}
 
-            # updates the colors for the constant's radio buttons
-            if i == 1:
-                for key in list(section.keys()):
-                    element = section[key]
+                    QLabel {{
+                        border: none;
+                        font-weight: bold;
+                        font-size: {self.__settings.secondary_font_size}px;
+                        color: rgb{self.__settings.color_text};
+                    }}
 
-                    for j, button in enumerate(element):
-                        if j > 0:
-                            button.setStyleSheet(
-                                f'''
-                                QRadioButton::indicator {{
-                                    border-radius: 6px;
-                                    border: 2px solid rgb{self.__settings.color_box_border};
-                                    background-color: rgb{self.__settings.color_box_background};
-                                }}
-                                QRadioButton::indicator:hover {{
-                                    background-color: rgb{self.__settings.color_box_hover};
-                                }}
-                                QRadioButton::indicator:checked {{
-                                    background-color: rgb{self.__settings.color_box_selected};
-                                }}
-                                '''
-                            )
+                    /*targets all horizontal lines*/
+                    QFrame[frameShape="HLine"] {{
+                        border: 1px solid rgb{self.__settings.color_line_secondary};
+                        background-color: rgb{self.__settings.color_line_secondary};
+                        border-radius: 1px
+                    }}
 
-    def set_button_selector(self, button, i: int, total):
-        if i == 0:  # left selector has a curved left corner
-            button.setStyleSheet(
-                f'''
+                    /*targets "SectionTerms" title horizontal lines*/
+                    #SectionTerms > QFrame[frameShape="HLine"] {{
+                        border: 1px solid rgb{self.__settings.color_line_primary};
+                        background-color: rgb{self.__settings.color_line_primary};
+                        border-radius: 1px
+                    }}
+
+                    CaretLineEdit {{
+                        qproperty-caretColor: rgb{self.__settings.color_line_secondary};
+                    }}
+                    QMenu {{
+                        background-color: rgb{self.__settings.color_box_background};
+                        border: 1px solid rgb{self.__settings.color_box_border};
+                        border-radius: {self.__settings.box_border_radius}px;
+                        color: rgb{self.__settings.color_text};
+                        font-size: {self.__settings.secondary_font_size}px;
+                    }}
+                    QMenu::item::selected {{
+                        background-color: rgb{self.__settings.color_box_hover};
+                    }}
+                    QMenu::item:pressed {{
+                        background-color: rgb{self.__settings.color_box_selected};
+                    }}
+                    """
+                )
+
+            elif isinstance(section, SectionConstants):
+                section.setObjectName("SectionTerms")
+                section.setStyleSheet(
+                    f"""
+                    QWidget{{
+                        border: none;
+                        background-color: rgb{self.__settings.color_box_background};
+                        border-bottom-left-radius: {self.__settings.box_border_radius}px;
+                        border-bottom-right-radius: {self.__settings.box_border_radius}px;
+                        color: rgb{self.__settings.color_text};
+                        font-size: {self.__settings.primary_font_size}px;
+                    }}
+
+                    QScrollArea {{
+                        background-color: rgb{self.__settings.color_box_background};
+                        color: rgb{self.__settings.color_text};
+                        font-size: {self.__settings.primary_font_size}px;
+                    }}
+                    QScrollBar:vertical {{
+                        border-radius: {self.__settings.scrollbar_border_radius}px;
+                        background-color: rgb{self.__settings.color_scrollbar_background};
+                        width: {self.__settings.scrollbar_width}px;
+                        margin: {self.__settings.scrollbar_margin[0]}px {self.__settings.scrollbar_margin[1]}px {self.__settings.scrollbar_margin[2]}px {self.__settings.scrollbar_margin[3]}px;
+                    }}
+                    QScrollBar::handle:vertical {{
+                        background-color: rgb{self.__settings.color_box_border};
+                        border-radius: {self.__settings.scrollbar_border_radius}px;
+                        min-height: {self.__settings.scrollbar_min_height}px;
+                    }}
+                    QScrollBar::add-line:vertical {{
+                        width: 0px;
+                    }}
+                    QScrollBar::sub-line:vertical {{
+                        width: 0px;
+                    }}
+                    QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+                        background: none;
+                    }}
+
+                    QLabel {{
+                        border: none;
+                        font-weight: bold;
+                        font-size: {self.__settings.secondary_font_size}px;
+                        color: rgb{self.__settings.color_text};
+                    }}
+
+                    /*targets all horizontal lines*/
+                    QFrame[frameShape="HLine"] {{
+                        border: 1px solid rgb{self.__settings.color_line_secondary};
+                        background-color: rgb{self.__settings.color_line_secondary};
+                        border-radius: 1px
+                    }}
+
+                    /*targets "SectionTerms" title horizontal lines*/
+                    #SectionTerms > QFrame[frameShape="HLine"] {{
+                        border: 1px solid rgb{self.__settings.color_line_primary};
+                        background-color: rgb{self.__settings.color_line_primary};
+                        border-radius: 1px
+                    }}
+
+                    QRadioButton::indicator {{
+                        width: {self.__settings.radio_button_radius}px;
+                        height: {self.__settings.radio_button_radius}px;
+                        border-radius: {self.__settings.radio_button_border_radius}px;
+                        border: 2px solid rgb{self.__settings.color_box_border};
+                        background-color: rgb{self.__settings.color_box_background};
+                    }}
+                    QRadioButton::indicator:hover {{
+                        background-color: rgb{self.__settings.color_box_hover};
+                    }}
+                    QRadioButton::indicator:checked {{
+                        background-color: rgb{self.__settings.color_box_selected};
+                    }}
+                    """
+                )
+
+    def set_selector(self, selector: "QtWidgets.QAbstractButton", i: int, total: int):
+        if i == 0:  # left selector
+            selector.setStyleSheet(
+                f"""
                 QPushButton {{
                     color: rgb{self.__settings.color_text};
-                    border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                    border-top: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                    border-bottom: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                    border-left: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                     background-color: rgb{self.__settings.color_box_background};
                     border-top-left-radius: {self.__settings.box_border_radius}px;
-                    font-size: 15px;
+                    font-size: {self.__settings.primary_font_size}px;
                 }}
                 QPushButton:hover {{
                     padding-top: -{self.__settings.button_text_hover_raise}px;
@@ -1317,18 +1593,21 @@ class Style:
                 QPushButton:checked {{
                     background-color: rgb{self.__settings.color_box_selected};
                 }}
-                '''
+                """
             )
 
-        elif i == total - 1:  # middle selectors have no curved corners
-            button.setStyleSheet(
-                f'''
+        elif i == total - 1:  # right selector
+            selector.setStyleSheet(
+                f"""
                 QPushButton {{
                     color: rgb{self.__settings.color_text};
-                    border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                    border-top: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                    border-bottom: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                    border-left: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                    border-right: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                     background-color: rgb{self.__settings.color_box_background};
                     border-top-right-radius: {self.__settings.box_border_radius}px;
-                    font-size: 15px;
+                    font-size: {self.__settings.primary_font_size}px;
                 }}
                 QPushButton:hover {{
                     padding-top: -{self.__settings.button_text_hover_raise}px;
@@ -1337,51 +1616,48 @@ class Style:
                 QPushButton:checked {{
                     background-color: rgb{self.__settings.color_box_selected};
                 }}
-                '''
+                """
             )
 
-        else:  # right selector has a curved right corner
-            button.setStyleSheet(
-                f'''
+        else:  # middle selectors
+            selector.setStyleSheet(
+                f"""
                 QPushButton {{
                     color: rgb{self.__settings.color_text};
-                    border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                    border-top: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                    border-bottom: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                    border-left: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
+                    border-right: none;
                     background-color: rgb{self.__settings.color_box_background};
-                    font-size: 15px;
+                    font-size: {self.__settings.primary_font_size}px;
+
                 }}
                 QPushButton:hover {{
                     padding-top: -{self.__settings.button_text_hover_raise}px;
                     background-color: rgb{self.__settings.color_box_hover};
                 }}
-                QPushButton:pressed {{
+                QPushButton:checked {{
                     background-color: rgb{self.__settings.color_box_selected};
                 }}
-                '''
+                """
             )
-
-    def set_button_selectors(self, buttons) -> None:
-        total = len(buttons)
-
-        # updates the color for the selector buttons
-        for i, button in enumerate(buttons):
-            self.set_button_selector(button, i, total)
-
+            
     # TestWindow ----------------------------------------------------------------------------------
 
-    def init_test_buttons(self, buttons):
+    def init_test_buttons(self, buttons: list["QtWidgets.QPushButton"]) -> None:
         for i, button in enumerate(buttons):  # sets the button parameters
             button.setFixedSize(self.__settings.test_button_width, self.__settings.test_button_height)
-            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
 
-    def set_test_box_buttons(self, widget) -> None:
+    def set_test_box_buttons(self, widget: "QtWidgets.QWidget") -> None:
         widget.setStyleSheet(
-            f'''
+            f"""
             QWidget {{
                 border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
                 background-color: rgb{self.__settings.color_box_background};
                 border-radius: {self.__settings.box_border_radius}px;
                 color: rgb{self.__settings.color_text};
-                font-size: 15px;
+                font-size: {self.__settings.primary_font_size}px;
             }}
             QPushButton {{
                 border: {self.__settings.box_border}px solid rgb{self.__settings.color_box_border};
@@ -1394,5 +1670,5 @@ class Style:
             QPushButton:pressed {{
                 background-color: rgb{self.__settings.color_box_selected};
             }}
-            '''
+            """
         )

@@ -1,42 +1,15 @@
-General:
-    - "Cannot find reference 'connect' in 'pyqtSignal | pyqtSignal | function'" is a benign warning
-
 Bugs:
-    - When deleting multiple variables at once, some variables in the multi area are still showing up
-        - Currently it seems to only happen when a variable is inside another variable, and everything is deleted from the textbox
-
     - When using tab to go to the next variable, it sometimes skips to the textbox
         - How it should work (in each step the user presses tab), it should loop as shown: text box -> variable 1 -> variable 2 -> variable n -> text box
         - Give the user a way to still type a tab in the text box (maybe mac: option + tab, Windows: 'not sure yet' + tab)
-
-    - If the user is in a variable box while their mouse is on top of a variable text box, their mouse flashes between two different cursor shapes
-        - Solution: when typing is detected, hide the cursor until the user moves their mouse again
-
-    - LaTeX answer image still clips outside the answer box in specific circumstances
-        - Bug does not happen on Windows, only on macOS (not sure why)
-        - Ex: x + 7
-        - This should be fixed, but testing on macOS is needed
 
     - Windows flash open and close while typing in the text box (when spamming enter, or pressing multiple keys at the same time)
         - Not sure why this happens
         - Find a way to stop these windows from generating
         - Does not happen on macOS, only Windows 10
 
-    - Variable labels become too compacted and blocks each other's view
-        - Only happens on macOS
-
-    - Fix the rendering of mod
-        - Ex: mod(x, y) renders as xmody
-
     - Copying the answer as an image does not allow it to be pasted as a file in file explorer
         - Could not find a fix for this
-
-    - Word wrapping for the answer box only works if spaces are present
-        - Causes long instances of multiplication to not wrap
-            - Ex: a*b*c*d*e...
-            - May want to add spaces between multiplication symbols (not sure if functionality is wanted yet)
-                - Ex: a*b*c -> a * b * c
-                - string.replace('*', ' * ')
 
     - macOS only bugs:
 

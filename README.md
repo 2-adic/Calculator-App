@@ -61,9 +61,9 @@ Python 3.11+ is required.
 git clone https://github.com/2-adic/Calculator-App.git
 ````
 
-### Install the Required Libraries:
+### Install the Required Packages:
 
-It is suggested to use a [virtual environment](https://github.com/2-adic/Calculator-App/blob/documentation/virtual_environment.md).
+*It's recommended to activate a [virtual environment](https://github.com/2-adic/Calculator-App/blob/documentation/virtual_environment.md) before installing the packages.*
 
 ````
 pip install -r requirements.txt
@@ -71,35 +71,8 @@ pip install -r requirements.txt
 
 ### Run the Program:
 
-Run main.py to start the app. This can be done through an IDE, or directly through the terminal.
+To start the app, run the `main.py` script located in the `src` directory. This can be done through an IDE, or directly through the terminal.
 
 ````
-python3 main.py
+python ./src/main.py
 ````
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

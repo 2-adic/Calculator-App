@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QLineEdit
+from PyQt6 import QtWidgets
 from random import randint
 
 
@@ -20,7 +20,7 @@ def get_position_change(key_list_prev: list, key_list_curr: list, string: str) -
     return i_curr - i_prev
 
 
-def get_line_edit_key(dictionary: dict, line_edit: QLineEdit) -> str:
+def get_line_edit_key(dictionary: dict, line_edit: QtWidgets.QLineEdit) -> str:
 
     for i, key in enumerate(sorted(dictionary.keys())):
         if dictionary[key][1] == line_edit:
@@ -38,11 +38,11 @@ def get_constant_values(dictionary: dict, digits: int) -> dict:
 
     max_digits = 100
     if digits > max_digits:
-        print(f'Constants will use their maximum saved value of {max_digits}, since the specified value is over that amount: {digits}')
+        print(f"Constants will use their maximum saved value of {max_digits}, since the specified value is over that amount: {digits}")
         digits = max_digits
 
     elif digits < 1:
-        print(f'Constants will be 1 digit long, since the specified value is under that amount: {digits}')
+        print(f"Constants will be 1 digit long, since the specified value is under that amount: {digits}")
         digits = 1
 
     digits += 2  # since digits are counted from after the decimal place, 2 is added to address this
@@ -60,7 +60,7 @@ def test_colors(settings) -> None:
     Changes the colors of the windows to test if all colors are changing.
     """
 
-    '''
+    """
     settings.color_background = 54, 92, 46
     settings.color_text = 177, 58, 58
     settings.color_text_highlight_active = 168, 171, 45
@@ -79,9 +79,9 @@ def test_colors(settings) -> None:
     settings.color_line_primary = 82, 54, 66
     settings.color_line_secondary = 20, 140, 51
     settings.color_scrollbar_background = 134, 51, 75
-    '''
+    """
 
-    '''
+    """
     settings.color_background = 49, 89, 153
     settings.color_text = 181, 96, 133
     settings.color_text_highlight_active = 168, 171, 45
@@ -102,7 +102,7 @@ def test_colors(settings) -> None:
     settings.color_scrollbar_background = 134, 51, 75
 
     settings.color_latex = settings.color_text
-    '''
+    """
 
     settings.color_background = 49, 89, 153
     settings.color_text = 255, 255, 255
@@ -135,7 +135,7 @@ def generate_new_colors() -> None:
     color_max = 200
 
     string = (
-        '''
+        """
         settings.color_background
         settings.color_text
         settings.color_text_highlight_active
@@ -154,7 +154,7 @@ def generate_new_colors() -> None:
         settings.color_line_primary
         settings.color_line_secondary
         settings.color_scrollbar_background
-        '''
+        """
     )
 
     string = string.replace(' ', '')
@@ -165,7 +165,7 @@ def generate_new_colors() -> None:
 
     result = ''
     for line in lines:
-        line += f' = {randint(color_min, color_max)}, {randint(color_min, color_max)}, {randint(color_min, color_max)}'
+        line += f" = {randint(color_min, color_max)}, {randint(color_min, color_max)}, {randint(color_min, color_max)}"
         result += line + '\n'
 
     print(result)

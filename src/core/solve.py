@@ -1,33 +1,45 @@
-import sympy as sy
-import symbols
-import str_format as form
-from latex import convert_render_latex
-import str_format
-from random import randint
-import error_detection as error
 from inspect import currentframe
-from system_settings import get_data_path
+from random import randint
+import sympy as sy
+
+import core.error_detection as error
+from core.latex import convert_render_latex
+import core.str_format as str_format
+import core.symbols as symbols
+from core.system_settings import get_data_path
 
 
 class Solve:
-    def __init__(self, expression: str, variables: dict[str, str] = dict(), constant_symbol_used: dict[str, bool] = dict(), answer_display: str = 'Image', answer_copy: str = 'Text', use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
+    def __init__(self, expression: str, terms: dict[str, str] = dict(), answer_display: str = "Image", answer_copy: str = "Text", use_commas: bool = False, render_color: tuple[int, int, int] = (255, 255, 255), render_dpi: int = 300):
 
-        self.__funct = tuple(getattr(self, f'_{self.__class__.__name__}__{name.lower()}') for name in symbols.accepted_functions)  # gets a list of all the functions
+        self.__expression = str_format.remove_white_spaces(expression)
+        self.__terms = terms.copy()
 
         self.__answer_display = answer_display
         self.__answer_copy = answer_copy
         self.__use_commas = use_commas
+        self.__render_color = render_color
+        self.__render_dpi = render_dpi
+
+        self.__functions = tuple(getattr(self, f"_{self.__class__.__name__}__{name.lower()}") for name in symbols.accepted_functions)  # gets a list of all the functions
+
+        self.__split_terms()  # split terms into variables and constants
+        self.__format_variables()
+
+        self.__is_approx = self.__is_approximate()
 
         self.__constant_counter = 0  # keeps track of the amount of constants used
-        self.__expression_save = str_format.remove_white_spaces(expression)
-
-        self.__is_value_used = not all(constant_symbol_used.values())  # gets a bool for if a constant value was used
+        
         self.__answer_exact = None
         self.__answer_approximate = None
 
-        self.__calculate(variables, constant_symbol_used, answer_display, answer_copy, use_commas, render_color, render_dpi)
+        self.__calculate()
 
     def __str__(self):
+        """
+        Returns the string representation of the solved expression.
+        """
+
         return self.__expression_solved
 
     def print(self) -> None:
@@ -35,17 +47,38 @@ class Solve:
         Prints the initial expression, and the solved expressions.
         """
 
-        expression = self.__expression_save  # copies the expression to save the original
+        expression = self.__expression  # copies the expression to save the original
         expression = expression.replace('¦', '')
-        for key in range(len(self.__funct)):
-            expression = expression.replace(f'§{key}', symbols.accepted_functions[key])
+        for key in range(len(self.__functions)):
+            expression = expression.replace(f"§{key}", symbols.accepted_functions[key])
 
-        if self.__is_value_used:  # if a constant value was used, only the approximate answer exists
-            print(f'{expression} ≈ {self.__answer_approximate}')
+        if self.__is_approx:  # if a constant value was used, only the approximate answer exists
+            print(f"{expression} ≈ {self.__answer_approximate}")
 
         else:
-            print(f'{expression} = {self.__answer_exact} ≈ {self.__answer_approximate}')
+            print(f"{expression} = {self.__answer_exact} ≈ {self.__answer_approximate}")
 
+    def get_terms(self):
+        """
+        Returns the terms used in the expression.
+        """
+
+        return self.__terms
+
+    def get_variables(self):
+        """
+        Returns the variables used in the expression.
+        """
+
+        return self.__variables
+
+    def get_constants(self):
+        """
+        Returns the constants used in the expression.
+        """
+
+        return self.__constants
+    
     def get_exact(self) -> str:
         """
         Returns the answer in its exact form.
@@ -64,59 +97,94 @@ class Solve:
         Returns the answer to be copied.
         """
 
-        if self.__answer_copy == 'Text' or self.__answer_copy == 'LaTeX':
+        if self.__answer_copy == "Text" or self.__answer_copy == "LaTeX":
             return self.__answer_exact_copy
 
         else:
-            return get_data_path('latex_exact.png')
+            return get_data_path("latex_exact.png")
 
     def get_approximate_copy(self) -> str:
         """
         Returns the answer to be copied.
         """
 
-        if self.__answer_copy == 'Text' or self.__answer_copy == 'LaTeX':
+        if self.__answer_copy == "Text" or self.__answer_copy == "LaTeX":
             return self.__answer_approximate_copy
 
         else:
-            return get_data_path('latex_approximate.png')
+            return get_data_path("latex_approximate.png")
 
     def is_text_used(self) -> bool:
         """
         Returns if text is used for the display.
         """
 
-        return self.__answer_display == 'Text' or self.__answer_display == 'LaTeX'
+        return self.__answer_display == "Text" or self.__answer_display == "LaTeX"
 
-    def __calculate(self, variables, constant_symbol_used, answer_display, answer_copy, use_commas, render_color, render_dpi) -> None:
+    def uses_constant_literal(self) -> bool:
+        """
+        Returns True if a constant's literal value is used.
+        """
+        
+        return any(self.__constants[constant] != symbols.constants[constant][0] for constant in self.__constants)
 
-        self.__format_before(variables, constant_symbol_used)
+    def __split_terms(self) -> None:
+        """
+        Split terms into variables and constants.
+        """
+
+        self.__variables: dict[str, str] = {}
+        self.__constants: dict[str, str] = {}
+
+        for term in self.__terms:
+            if term in symbols.accepted_variables: 
+                self.__variables[term] = self.__terms[term]
+            elif term in symbols.accepted_constants:
+                self.__constants[term] = self.__terms[term]
+
+    def __is_approximate(self) -> bool:
+        """
+        Returns if the expression requires an approximate answer.
+        """
+
+        for constant in self.__constants:
+            if self.__constants[constant] != symbols.constants[constant][0]:
+                return True
+
+        return False
+
+    def __calculate(self) -> None:
+        """
+        Calculates the solved expression in its exact and approximate form.
+        """
+
+        self.__format_before()
         self.__expression_solved = self.__solve(self.__expression_solved)  # solves the expression
         self.__exact()  # turns the solution into its exact form
         self.__approximate()  # turns the solution into its approximate form
         self.__result_simplification()
 
-        if answer_display == 'Image' or answer_copy == 'Image':
-            self.__render(use_commas, render_color, render_dpi)
+        if self.__answer_display == "Image" or self.__answer_copy == "Image":
+            self.__render()
 
         self.__answer_exact_copy = self.__answer_exact
         self.__answer_approximate_copy = self.__answer_approximate
 
-        if answer_display != 'LaTeX':
+        if self.__answer_display != "LaTeX":
             self.__answer_exact = self.__format_after(self.__answer_exact)  # formats the exact and approximate answer
             self.__answer_approximate = self.__format_after(self.__answer_approximate)
         else:
             self.__answer_exact = self.__format_latex(self.__answer_exact)
             self.__answer_approximate = self.__format_latex(self.__answer_approximate)
 
-        if answer_copy == 'Text':
+        if self.__answer_copy == "Text":
             self.__answer_exact_copy = self.__format_after(self.__answer_exact_copy)
             self.__answer_approximate_copy = self.__format_after(self.__answer_approximate_copy)
-        elif answer_copy == 'LaTeX':
+        elif self.__answer_copy == "LaTeX":
             self.__answer_exact_copy = self.__format_latex(self.__answer_exact_copy)
             self.__answer_approximate_copy = self.__format_latex(self.__answer_approximate_copy)
 
-    def __render(self, use_commas: bool = False, color: tuple[int, int, int] = (255, 255, 255), dpi: int = 300) -> None:
+    def __render(self) -> None:
         """
         Renders images of the solved expression.
 
@@ -124,26 +192,29 @@ class Solve:
         :param dpi: The quality of the image (also affects how much it can be expanded).
         """
 
-        exact = get_data_path('latex_exact.png')
-        approximate = get_data_path('latex_approximate.png')
+        exact = get_data_path("latex_exact.png")
+        approximate = get_data_path("latex_approximate.png")
 
         if self.__answer_exact is not None:  # answer is not rendered if it is none
-            convert_render_latex(self.__answer_exact, use_commas, color, dpi, exact, self.__constant_counter)
+            convert_render_latex(self.__answer_exact, self.__use_commas, self.__render_color, self.__render_dpi, exact, self.__constant_counter)
 
         if self.__answer_approximate is not None:  # answer is not rendered if it is none
-            convert_render_latex(self.__answer_approximate, use_commas, color, dpi, approximate, self.__constant_counter)
+            convert_render_latex(self.__answer_approximate, self.__use_commas, self.__render_color, self.__render_dpi, approximate, self.__constant_counter)
 
     def __exact(self) -> None:
         """
         Turns the answer into its exact form.
         """
 
-        if self.__is_value_used:  # does not give an approximate value if a value for a constant is used
+        if self.__is_approx:  # does not give an approximate value if a value for a constant is used
             return
 
         self.__answer_exact = sy.simplify(self.__expression_solved)
 
-    def __custom_approx(self, expression):
+    def __custom_approximate(self, expression):
+        """
+        Returns the approximate value of the expression.
+        """
 
         if expression.is_Atom:
             # if the expression is a number, evaluates it numerically
@@ -156,11 +227,11 @@ class Solve:
         # prevents exp from being evaluated
         elif expression.func == sy.exp:
             arg = expression.args[0]
-            return sy.exp(self.__custom_approx(arg), evaluate=False)
+            return sy.exp(self.__custom_approximate(arg), evaluate=False)
 
         else:
             # recursively applies custom_approx to all arguments of the expression
-            return expression.func(*[self.__custom_approx(arg) for arg in expression.args])
+            return expression.func(*[self.__custom_approximate(arg) for arg in expression.args])
 
     def __approximate(self) -> None:
         """
@@ -168,30 +239,76 @@ class Solve:
         """
 
         expression = sy.simplify(self.__expression_solved)
-        self.__answer_approximate = self.__custom_approx(expression)
+        self.__answer_approximate = self.__custom_approximate(expression)
 
-    def __format_before(self, variables: dict[str, str], constant_symbol_used: dict[str, bool]) -> None:
+    def __format_variables(self) -> None:
+        """
+        Sets blank variables equal to themselves.
+        Performs variable substitution, and checks for circularly defined variables.
+        """
+
+        # sets blank variables equal to themselves
+        for key in self.__variables:
+            if self.__variables[key] == '':
+                self.__variables[key] = key
+
+        # apply function_convert to handle functions within variables
+        for key in self.__variables:
+            self.__variables[key] = str_format.function_convert(self.__variables[key])
+
+        # performs chained variable substitution: a=b and b=5 -> a=5
+        # keep iterating until no more substitutions can be made
+        max_iterations = len(self.__variables) + 1  # prevent infinite loops
+        for iteration in range(max_iterations):
+            changes_made = False
+            
+            for var_name in self.__variables:
+                if self.__variables[var_name] == var_name:
+                    continue
+                    
+                # check if this variable's definition contains other variables
+                if not str_format.contains_substring(self.__variables[var_name], list(self.__terms.keys())):
+                    continue
+                
+                # substitute all other variables in this variable's definition
+                original_value = self.__variables[var_name]
+                for other_var in self.__variables:
+                    if other_var != var_name and other_var in self.__variables[var_name]:
+                        # replace variable with its definition
+                        self.__variables[var_name] = self.__variables[var_name].replace(other_var, f"({self.__variables[other_var]})")
+                
+                # check for any changes
+                if self.__variables[var_name] != original_value:
+                    changes_made = True
+            
+            # if no changes, end loop
+            if not changes_made:
+                break
+
+        error.circularly_defined(self.__variables)  # checks for circularly defined variables
+
+    def __format_before(self) -> None:
         """
         Formats the expression before it is solved.
         """
 
-        expression = self.__expression_save
+        expression = self.__expression
         error.valid_symbols(expression)
         expression = str_format.function_convert(expression)  # converts functions to a format so implicit multiplication won't change them
 
-        for x in expression:  # replaces all variables with their defined values
-            if x in variables:
-                expression = expression.replace(f'{x}', f'({variables[x]})')
+        for x in expression:  # replaces all terms with their defined values
+            if x in self.__variables:
+                expression = expression.replace(f"{x}", f"({self.__variables[x]})")
 
         expression = self.__implicit_to_explicit(expression)  # changes the expression to use explicit multiplication
         expression = expression.replace('¦', '')  # removes the special character after implicit multiplication is formatted
 
-        for key in sorted(constant_symbol_used.keys(), key=lambda key: symbols.constant_order[key]):  # sorts the order to avoid substring replacement errors
-            if constant_symbol_used[key]:
+        for key in sorted(self.__constants.keys(), key=lambda key: symbols.constant_order[key]):  # sorts the order to avoid substring replacement errors
+            if self.__constants[key] == symbols.constants[key][0]:
                 expression = expression.replace(key, symbols.constants[key][0])  # replaces the constant with it's recognized sympy symbol
 
             else:
-                expression = expression.replace(key, f'({symbols.constant_values[key]})')
+                expression = expression.replace(key, f"({symbols.constant_values[key]})")
 
         self.__expression_solved = expression
 
@@ -203,7 +320,7 @@ class Solve:
         """
 
         expression = str(expression)
-        expression = expression.replace('**', '^')
+        expression = expression.replace("**", '^')
 
         for key in symbols.name_change_all_keys:
             expression = expression.replace(key, symbols.name_change_all[key])
@@ -216,26 +333,26 @@ class Solve:
         """
 
         # converts to LaTeX form
-        expression = sy.latex(expression, fold_short_frac=False)
+        latex: str = sy.latex(expression, fold_short_frac=False)
 
         # replaces some symbols for proper latex formatting
         for key in list(symbols.replace_latex.keys()):
-            expression = expression.replace(key, symbols.replace_latex[key])
+            latex = latex.replace(key, symbols.replace_latex[key])
 
         # replaces some functions names
         for key in symbols.name_change_all_keys:
-            expression = expression.replace(key, symbols.name_change_all[key])
+            latex = latex.replace(key, symbols.name_change_all[key])
 
-        expression = expression.replace(r'\bmod', r'\operatorname{mod}')  # fixes the latex formatting for mod
+        latex = latex.replace(r"\bmod", r"\operatorname{mod}")  # fixes the latex formatting for mod
 
-        return expression
+        return latex
 
     def __result_simplification(self) -> None:
         """
         Some functions require steps to be further simplified.
         """
 
-        if not self.__is_value_used:
+        if not self.__is_approx:
             self.__answer_exact = sy.expand_log(self.__answer_exact, force=True)  # ln(e^x) -> x, ln(x^n) -> nln(x), etc
 
         self.__answer_approximate = sy.expand_log(self.__answer_approximate, force=True)  # ln(e^x) -> x, ln(x^n) -> nln(x), etc
@@ -264,12 +381,12 @@ class Solve:
             if x in symbols.accepted_numbers or x == '.':
                 num += x
             else:
-                if num == '.':  # user error; displays 'error' in answer box
-                    print('Not yet fixed, do later')
+                if num == '.':  # user error; displays "error" in answer box
+                    print("Not yet fixed, do later")
 
                 elif num != '' and '.' in num:  # num is not blank, and is a decimal
                     # replaces the first instance of each number
-                    string = string.replace(num, f'({sy.Rational(num)})', 1)
+                    string = string.replace(num, f"({sy.Rational(num)})", 1)
 
                 num = ''  # resets num
 
@@ -297,10 +414,10 @@ class Solve:
         :return: The expression with the solved function.
         """
 
-        function_id, parameters, index_start, index_end = form.get_function_parameters(expression)
-        ans = self.__funct[int(function_id)](*parameters)
+        function_id, parameters, index_start, index_end = str_format.get_function_parameters(expression)
+        ans = self.__functions[int(function_id)](*parameters)
 
-        expression = form.replace_substring(expression, index_start - len(f'§{function_id}'), index_end, ans)
+        expression = str_format.replace_substring(expression, index_start - len(f"§{function_id}"), index_end, ans)
 
         return expression
 
@@ -320,7 +437,7 @@ class Solve:
         # solves the differentiation
         return str(sy.diff(sy.simplify(f), sy.symbols(x)))
 
-    def __integrate(self, f: str, x: str) -> str:  # 'integrate(f, x)' -> ∫(f)dx
+    def __integrate(self, f: str, x: str) -> str:  # "integrate(f, x)" -> ∫(f)dx
         """
         Integrates the expression given.
 
@@ -334,38 +451,38 @@ class Solve:
         f = self.__solve(f)  # solves functions within this function before solving it
 
         # adds a unique constant
-        new_constant = 'C' + form.to_subscript(str(self.__constant_counter))
+        new_constant = 'C' + str_format.to_subscript(str(self.__constant_counter))
         self.__constant_counter += 1
 
         # solves the integration
-        return str(sy.integrate(sy.simplify(f), sy.symbols(x))) + ' + ' + new_constant
+        return str(sy.integrate(sy.simplify(f), sy.symbols(x))) + " + " + new_constant
 
     def __log(self, x: str, b: str) -> str:
-        return f'log({x},{b})'
+        return f"log({x},{b})"
 
     def __ln(self, x: str) -> str:
-        return f'ln({x})'
+        return f"ln({x})"
 
     def __exp(self, x: str) -> str:
-        return f'exp({x})'
+        return f"exp({x})"
 
     def __pow(self, x: str, y: str) -> str:
-        return f'({x})**({y})'
+        return f"({x})**({y})"
 
     def __root(self, x: str, y: str) -> str:
-        return f'({x})**(1/{y})'
+        return f"({x})**(1/{y})"
 
     def __sqrt(self, x: str) -> str:
-        return f'sqrt({x})'
+        return f"sqrt({x})"
 
     def __floor(self, x: str) -> str:
-        return f'floor({x})'
+        return f"floor({x})"
 
     def __ceil(self, x: str) -> str:
-        return f'ceiling({x})'
+        return f"ceiling({x})"
 
     def __sign(self, x: str) -> str:
-        return f'sign({x})'
+        return f"sign({x})"
 
     def __random(self, a: str, b: str) -> str:
 
@@ -374,82 +491,82 @@ class Solve:
 
         error.all_is_int((a, b), currentframe().f_code.co_name)
 
-        return f'{randint(int(a), int(b))}'
+        return f"{randint(int(a), int(b))}"
 
     def __abs(self, x: str) -> str:
-        return f'Abs({x})'
+        return f"Abs({x})"
 
     def __mod(self, x: str, y: str) -> str:
-        return f'Mod({x},{y})'
+        return f"Mod({x},{y})"
 
     def __sin(self, x: str) -> str:
-        return f'sin({x})'
+        return f"sin({x})"
 
     def __cos(self, x: str) -> str:
-        return f'cos({x})'
+        return f"cos({x})"
 
     def __tan(self, x: str) -> str:
-        return f'tan({x})'
+        return f"tan({x})"
 
     def __csc(self, x: str) -> str:
-        return f'csc({x})'
+        return f"csc({x})"
 
     def __sec(self, x: str) -> str:
-        return f'sec({x})'
+        return f"sec({x})"
 
     def __cot(self, x: str) -> str:
-        return f'cot({x})'
+        return f"cot({x})"
 
     def __asin(self, x: str) -> str:
-        return f'asin({x})'
+        return f"asin({x})"
 
     def __acos(self, x: str) -> str:
-        return f'acos({x})'
+        return f"acos({x})"
 
     def __atan(self, x: str) -> str:
-        return f'atan({x})'
+        return f"atan({x})"
 
     def __acsc(self, x: str) -> str:
-        return f'acsc({x})'
+        return f"acsc({x})"
 
     def __asec(self, x: str) -> str:
-        return f'asec({x})'
+        return f"asec({x})"
 
     def __acot(self, x: str) -> str:
-        return f'acot({x})'
+        return f"acot({x})"
 
     def __sinh(self, x: str) -> str:
-        return f'sinh({x})'
+        return f"sinh({x})"
 
     def __cosh(self, x: str) -> str:
-        return f'cosh({x})'
+        return f"cosh({x})"
 
     def __tanh(self, x: str) -> str:
-        return f'tanh({x})'
+        return f"tanh({x})"
 
     def __csch(self, x: str) -> str:
-        return f'csch({x})'
+        return f"csch({x})"
 
     def __sech(self, x: str) -> str:
-        return f'sech({x})'
+        return f"sech({x})"
 
     def __coth(self, x: str) -> str:
-        return f'coth({x})'
+        return f"coth({x})"
 
     def __asinh(self, x: str) -> str:
-        return f'asinh({x})'
+        return f"asinh({x})"
 
     def __acosh(self, x: str) -> str:
-        return f'acosh({x})'
+        return f"acosh({x})"
 
     def __atanh(self, x: str) -> str:
-        return f'atanh({x})'
+        return f"atanh({x})"
 
     def __acsch(self, x: str) -> str:
-        return f'acsch({x})'
+        return f"acsch({x})"
 
     def __asech(self, x: str) -> str:
-        return f'asech({x})'
+        return f"asech({x})"
 
     def __acoth(self, x: str) -> str:
-        return f'acoth({x})'
+        return f"acoth({x})"

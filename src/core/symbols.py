@@ -1,19 +1,27 @@
-from misc_functions import get_constant_values
+from core.misc_functions import get_constant_values
 
 constants = {
     'i': ('I',              'i'),
-    'e': ('E',              '2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274'),
-    'π': ('pi',             '3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679'),
-    'φ': ('GoldenRatio',    '1.6180339887498948482045868343656381177203091798057628621354486227052604628189024497072072041893911374'),
-    'γ': ('EulerGamma',     '0.5772156649015328606065120900824024310421593359399235988057672348848677267776646709369470632917467495')
+    'e': ('E',              "2.7182818284590452353602874713526624977572470936999595749669676277240766303535475945713821785251664274"),
+    'π': ("pi",             "3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679"),
+    'φ': ("GoldenRatio",    "1.6180339887498948482045868343656381177203091798057628621354486227052604628189024497072072041893911374"),
+    'γ': ("EulerGamma",     "0.5772156649015328606065120900824024310421593359399235988057672348848677267776646709369470632917467495")
 }
 
-accepted_variables = sorted([
+constants_terms = {  # labels for constants radio buttons
+    'i': ('i'),
+    'e': ('e',    "2.71..."),
+    'π': ('π',    "3.14..."),
+    'φ': ('φ',    "1.61..."),
+    'γ': ('γ',    "0.57..."),
+}
+
+accepted_variables = {
     'a', 'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
     'θ', 'λ', 'ω', 'σ'
-])
+}
 
-accepted_numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+accepted_numbers = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
 accepted_misc = [
     '(', ')', ',', '.',
@@ -22,55 +30,55 @@ accepted_misc = [
 ]
 
 angle_functions = [  # contains all functions that require an angle input
-    'sin',
-    'cos',
-    'tan',
-    'csc',
-    'sec',
-    'cot',
-    'asin',
-    'acos',
-    'atan',
-    'acsc',
-    'asec',
-    'acot',
-    'sinh',
-    'cosh',
-    'tanh',
-    'csch',
-    'sech',
-    'coth',
-    'asinh',
-    'acosh',
-    'atanh',
-    'acsch',
-    'asech',
-    'acoth'
+    "sin",
+    "cos",
+    "tan",
+    "csc",
+    "sec",
+    "cot",
+    "asin",
+    "acos",
+    "atan",
+    "acsc",
+    "asec",
+    "acot",
+    "sinh",
+    "cosh",
+    "tanh",
+    "csch",
+    "sech",
+    "coth",
+    "asinh",
+    "acosh",
+    "atanh",
+    "acsch",
+    "asech",
+    "acoth"
 ]
 
 functions = [
-    'diff',
-    'integrate',
-    'log',
-    'ln',
-    'exp',
-    'pow',
-    'root',
-    'sqrt',
-    'abs',
-    'mod',
-    'floor',
-    'ceil',
-    'sign',
-    'random',
+    "diff",
+    "integrate",
+    "log",
+    "ln",
+    "exp",
+    "pow",
+    "root",
+    "sqrt",
+    "abs",
+    "mod",
+    "floor",
+    "ceil",
+    "sign",
+    "random",
     *angle_functions
 ]
 
 name_change_function = {  # the function names to replace after the expression has been solved
-    'log': 'ln',  # replaces log with ln since log is treated as log base e
-    'Abs': 'abs',
-    'Mod': 'mod',
-    'ceiling': 'ceil',
+    "log": "ln",  # replaces log with ln since log is treated as log base e
+    "Abs": "abs",
+    "Mod": "mod",
+    "ceiling": "ceil",
 }
 
 copy_notation = [
@@ -79,7 +87,7 @@ copy_notation = [
 ]
 
 replace_latex = {  # symbols to replace for proper latex formatting
-    'θ': r'\theta'
+    'θ': r"\theta"
 }
 
 subscript = {
@@ -94,9 +102,9 @@ constant_preview = get_constant_values(constants, 2)
 
 # used for checking the type of symbol / if they are allowed -------------------------------------
 
-accepted_constants = sorted(constants.keys())
+accepted_constants = set(constants.keys())
 accepted_functions = sorted(functions, key=len, reverse=True)  # sorts the functions from longest to shortest, so substring function errors won't occur: such as arcsin being misidentified as sin
-accepted_characters = accepted_misc + accepted_variables + accepted_numbers + accepted_constants
+accepted_characters = set(accepted_misc) | accepted_variables | accepted_numbers | accepted_constants
 
 # ------------------------------------------------------------------------------------------------
 

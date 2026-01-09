@@ -1,11 +1,10 @@
-from PyQt6.QtCore import Qt, QObject, QTimer
-from PyQt6.QtGui import QKeyEvent
-import platform
 import ctypes
-from PIL import Image
 import io
-import subprocess
 import os
+from PIL import Image
+import platform
+from PyQt6 import QtCore, QtGui
+import subprocess
 
 
 def get_system_info() -> tuple[str, str]:
@@ -17,15 +16,15 @@ def get_system_info() -> tuple[str, str]:
     version = None
 
     # gets the version of Windows
-    if name == 'Windows':
+    if name == "Windows":
         version = platform.version()
         build_number = int(version.split('.')[2])
 
         if build_number >= 10240:
-            version = '10'
+            version = "10"
 
         elif build_number >= 22000:
-            version = '11'
+            version = "11"
 
     return name, version
 
@@ -38,21 +37,21 @@ def get_data_path(file_name: str | None):
     Used to get the path to files which need permissions to use.
     """
 
-    app_name = 'Calculator App'
+    app_name = "Calculator App"
 
-    if system_name == 'Windows':
-        app_data_folder = os.path.join(os.environ['APPDATA'], app_name)
+    if system_name == "Windows":
+        app_data_folder = os.path.join(os.environ["APPDATA"], app_name)
         if not os.path.exists(app_data_folder):
             os.makedirs(app_data_folder)
 
-    elif system_name == 'Darwin':
+    elif system_name == "Darwin":
         home = os.path.expanduser('~')
-        app_data_folder = os.path.join(home, 'Library', 'Application Support', app_name)
+        app_data_folder = os.path.join(home, "Library", "Application Support", app_name)
         if not os.path.exists(app_data_folder):
             os.makedirs(app_data_folder)
 
     else:
-        print('Folder not set.')
+        print("Folder not set.")
         return None
 
     return os.path.join(app_data_folder, file_name)
@@ -77,10 +76,10 @@ class OperatingSystem:
         Returns the scroll bar height created per variable in the variables tab. This depends on the OS the user is on.
         """
 
-        if self.__system_name == 'Windows':
+        if self.__system_name == "Windows":
             height = 37
 
-        elif self.__system_name == 'Darwin':
+        elif self.__system_name == "Darwin":
             height = 49
 
         else:
@@ -93,10 +92,10 @@ class OperatingSystem:
         Returns the minimum height of the symbols scroll area in the notations tab.
         """
 
-        if self.__system_name == 'Windows':
+        if self.__system_name == "Windows":
             height = 86
 
-        elif self.__system_name == 'Darwin':
+        elif self.__system_name == "Darwin":
             height = 98
 
         else:
@@ -109,10 +108,10 @@ class OperatingSystem:
         Returns how curved the windows should be depending on the OS.
         """
 
-        if self.__system_name == 'Windows' and self.__system_version == '11':
+        if self.__system_name == "Windows" and self.__system_version == "11":
             radius = 10
 
-        elif self.__system_name == 'Darwin':
+        elif self.__system_name == "Darwin":
             radius = 10
 
         else:
@@ -125,7 +124,7 @@ class OperatingSystem:
         Copies a png image to the clipboard.
         """
 
-        if self.__system_name == 'Windows':
+        if self.__system_name == "Windows":
 
             import win32clipboard as clp
 
@@ -133,45 +132,45 @@ class OperatingSystem:
 
             # converts the image to a png
             output_png = io.BytesIO()
-            image.save(output_png, format='PNG')
+            image.save(output_png, format="PNG")
             png_data = output_png.getvalue()
 
             # convert the image to DIB
             output_dib = io.BytesIO()
-            image.convert('RGB').save(output_dib, format='BMP')
+            image.convert("RGB").save(output_dib, format="BMP")
             dib_data = output_dib.getvalue()[14:]  # skips the first 14 bytes which removes the header
 
             # copies the png to the clipboard
             clp.OpenClipboard()
             clp.EmptyClipboard()
-            clp.SetClipboardData(clp.RegisterClipboardFormat('PNG'), png_data)  # sets the PNG format
+            clp.SetClipboardData(clp.RegisterClipboardFormat("PNG"), png_data)  # sets the PNG format
             clp.SetClipboardData(clp.CF_DIB, dib_data)  # sets the DIB format
             clp.CloseClipboard()
 
-        elif self.__system_name == 'Darwin':
+        elif self.__system_name == "Darwin":
             image = Image.open(file_path)
-            output_path = '/tmp/temp_image.png'
+            output_path = "/tmp/temp_image.png"
             image.save(output_path)
 
             # uses AppleScript to copy the image to the clipboard as a file reference
-            script = f'set the clipboard to (read (POSIX file "{output_path}") as «class PNGf»)'
-            subprocess.run(['osascript', '-e', script])
+            script = f"set the clipboard to (read (POSIX file \"{output_path}\") as «class PNGf»)"
+            subprocess.run(["osascript", "-e", script])
 
     def is_maximize_shortcut(self, event):
 
-        if self.__system_name == 'Windows':  # Windows
-            return event.key() == Qt.Key.Key_F11
+        if self.__system_name == "Windows":  # Windows
+            return event.key() == QtCore.Qt.Key.Key_F11
 
         # macOS's full screen shortcut is detected through the MacOSEventFilter class
 
-        elif self.__system_name == 'Linux':  # Linux
+        elif self.__system_name == "Linux":  # Linux
             return False  # functionality not added yet
 
         else:
             return False  # operating system not recognized
 
     def enable_blur(self, window):
-        if self.__system_name == 'Windows':
+        if self.__system_name == "Windows":
 
             hwnd = window.windowHandle().winId().__int__()  # obtains the HWND
 
@@ -214,16 +213,16 @@ class OperatingSystem:
         name = self.__system_name
         version = self.__system_version
 
-        if name == 'Darwin':
-            name = 'macOS'
+        if name == "Darwin":
+            name = "macOS"
 
         # adds the version if there is one
         if version is None:
             str_end = ''
         else:
-            str_end = f' {version}'
+            str_end = f" {version}"
 
-        print(f'Operating system is {name}{str_end}')
+        print(f"Operating system is {name}{str_end}")
 
     def __show_taskbar_icon(self):
         """
@@ -232,19 +231,19 @@ class OperatingSystem:
 
         name = self.__system_name
 
-        if name == 'Windows':
+        if name == "Windows":
 
             # configures Windows to show the taskbar icon
-            myappid = u'mycompany.myproduct.subproduct.version'  # arbitrary string
+            myappid = u"mycompany.myproduct.subproduct.version"  # arbitrary string
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     def set_fullscreen_function(self, window, function):
-        if self.__system_name == 'Darwin':
+        if self.__system_name == "Darwin":
             self.filter = MacOSEventFilter()
             self.filter.set_function_fullscreen(function)
             window.installEventFilter(self.filter)
 
-class MacOSEventFilter(QObject):
+class MacOSEventFilter(QtCore.QObject):
 
     def __init__(self):
         super().__init__()
@@ -260,10 +259,10 @@ class MacOSEventFilter(QObject):
     def eventFilter(self, obj, event):
 
         # detects if a macOS user presses "control + command + f" to fullscreen the window
-        if isinstance(event, QKeyEvent) and event.key() == 70 and event.modifiers() == (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier):
+        if isinstance(event, QtGui.QKeyEvent) and event.key() == 70 and event.modifiers() == (QtCore.Qt.KeyboardModifier.ControlModifier | QtCore.Qt.KeyboardModifier.MetaModifier):
             if self.__trigger_fullscreen:  # uses a trigger as a cooldown before this can be activated again
                 self.__trigger_fullscreen = False
-                QTimer.singleShot(645, self.__trigger_reset_fullscreen)
+                QtCore.QTimer.singleShot(645, self.__trigger_reset_fullscreen)
                 self.__function_fullscreen()
 
             return True  # event is handled
